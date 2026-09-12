@@ -5,13 +5,14 @@ import torch
 @dataclass
 class Network:
     '''
-    Represents a fully connected neural network as a stack of (weights, bias) tensor pairs,
-    one pair per layer, going from the first hidden layer to the output layer.
+    Represents a fully connected neural network as a stack of (weights, bias)
+    tensor pairs, one pair per layer, going from the first hidden layer to
+    the output layer.
 
-    - 'layers': a list of tuples, each holding one layer's weight matrix (shape
-      [out_features, in_features]) and bias vector (shape [out_features]).
-    - 'loss': the network's average loss over a training set, set externally after
-      evaluation. 'None' until evaluated for the first time.
+    - 'layers': a list of tuples, each holding one layer's weight matrix
+    (shape [out_features, in_features]) and bias vector (shape [out_features]).
+    - 'loss': the network's average loss over a training set, set externally
+    after evaluation. 'None' until evaluated for the first time.
     - 'fitness': derived from 'loss' (1 / (1 + loss)), or 'None' if the network
       hasn't been evaluated yet. Higher is better, bounded in (0, 1).
     '''
@@ -28,8 +29,11 @@ class Network:
     def forwardPass(self, inputs: list[float]):
         if len(inputs) != len(self.layers[0][0]):
             raise ValueError(f"Given Inputs do not match the required input size. The Network has an inputSize of {len(self.layers[0][0])}.")
+        # start forward pass with the input layer
         for layerIdx in range(0, len(self.layers)):
             currLayer = self.layers[layerIdx]
+            for neuronIdx in range(0,len(currLayer)):
+                ...
 
 
 def initializeNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
