@@ -42,7 +42,7 @@ class Network:
         return outputPrev
 
 
-def initializeNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
+def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
     '''
     Receives the dimensions and returns the new Network as a list of tuples containing 
     edgeWeight- and Bias-tensors with randomly generated values.
