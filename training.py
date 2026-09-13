@@ -187,3 +187,4 @@ if __name__ == "__main__":
 
     NetworkTwo = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
     print(NetworkTwo.loss)
+    print(torch.cuda.is_available())
