@@ -49,6 +49,7 @@ def evaluateNetwork(network: Network, trainingData: list, detailed: bool = False
     '''
     networkLoss = 0.0
     detailedRes = []
+    res = network.forwardPass(trainingData)
     for point in trainingData:
         inputTensor = torch.tensor([point[0], point[1]], device="cuda:0")
         networkPred = network.forwardPass(inputTensor)[0]

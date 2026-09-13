@@ -28,16 +28,14 @@ class Network:
         if self.loss is not None:
             return 1/(1 + self.loss)
         return None
-
+    
     def forwardPass(self, inputs: torch.Tensor):
-        if inputs.size()[0] != self.layers[0][0].size()[1]:
+        if inputs.size()[1] != self.layers[0][0].size()[1]:
             raise ValueError(f"Given Inputs do not match the required input size. The Network has an inputSize of {self.layers[0][0].size()[1]}.")
-        # start forward pass with the input layer
         outputPrev = inputs
         for idx in range(0, len(self.layers)):
-            edgeWeights = self.layers[idx][0]
-            bias = self.layers[idx][1]
-            output = torch.relu(edgeWeights @ outputPrev + bias)
+            # for each layer multiply the previous outputMatrices and the weightMatrices and add the biastensor 
+            output = torch.relu(outputPrev @ self.layers[idx][0].T + self.layers[idx][1])
             outputPrev = output
         return outputPrev
 
