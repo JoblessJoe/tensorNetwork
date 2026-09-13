@@ -50,16 +50,16 @@ def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
 
     # building input Layer
     newNetwork = list()
-    inputWeights = torch.rand([hiddenSizes[0],inputSize])
-    inputBiases = torch.rand([hiddenSizes[0]])
+    inputWeights = torch.rand([hiddenSizes[0],inputSize], device="cuda:0")
+    inputBiases = torch.rand([hiddenSizes[0]], device="cuda:0")
     newNetwork.append((inputWeights, inputBiases))
 
     # building hidden Layers
     for i in range(1,len(hiddenSizes)):
-        newWeights = torch.rand(hiddenSizes[i], hiddenSizes[i-1])
-        newBiases = torch.rand([hiddenSizes[i]])
+        newWeights = torch.rand(hiddenSizes[i], hiddenSizes[i-1], device="cuda:0")
+        newBiases = torch.rand([hiddenSizes[i]], device="cuda:0")
         newNetwork.append((newWeights, newBiases))
 
     # building output layer
-    newNetwork.append((torch.rand([outputSize, hiddenSizes[-1]]), torch.rand([outputSize])))
+    newNetwork.append((torch.rand([outputSize, hiddenSizes[-1]], device="cuda:0"), torch.rand([outputSize], device="cuda:0")))
     return Network(layers=newNetwork, loss=None)

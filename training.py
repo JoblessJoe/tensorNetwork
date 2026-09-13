@@ -50,7 +50,7 @@ def evaluateNetwork(network: Network, trainingData: list, detailed: bool = False
     networkLoss = 0.0
     detailedRes = []
     for point in trainingData:
-        inputTensor = torch.tensor([point[0], point[1]])
+        inputTensor = torch.tensor([point[0], point[1]], device="cuda:0")
         networkPred = network.forwardPass(inputTensor)[0]
         loss = crossEntropyLoss(point[2], networkPred)
         networkLoss += loss
@@ -85,14 +85,14 @@ def pickRandomParents(selection: list[Network]) -> tuple[Network]:
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     '''Builds a new tensor by picking each element from 'a' or 'b' with 50/50 chance.'''
-    fromA = torch.rand_like(a) < 0.5
+    fromA = torch.rand_like(a, device="cuda:0") < 0.5
     return torch.where(fromA, a, b)
 
 
 def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torch.Tensor:
     '''Each element has 'mutationRate' chance to get gaussian noise (std 'sigma') added to it.'''
-    mutate = torch.rand_like(value) < mutationRate
-    noise = torch.randn_like(value) * sigma
+    mutate = torch.rand_like(value, device="cuda:0") < mutationRate
+    noise = torch.randn_like(value, device="cuda:0") * sigma
     return value + noise * mutate
 
 
@@ -182,10 +182,10 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
 if __name__ == "__main__":
     print(torch.cuda.is_available())
-    #trainingData = generateTrainingData(1000)
-    #NetworkOne = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
-    #print(NetworkOne.loss)
+    trainingData = generateTrainingData(1000)
+    NetworkOne = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
+    print(NetworkOne.loss)
 
-    #NetworkTwo = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
-    #print(NetworkTwo.loss)
+    NetworkTwo = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
+    print(NetworkTwo.loss)
     
