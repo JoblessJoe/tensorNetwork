@@ -48,16 +48,20 @@ def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
 
     # building input Layer
     newNetwork = list()
-    inputWeights = torch.rand([hiddenSizes[0],inputSize], device="cuda:0")
-    inputBiases = torch.rand([hiddenSizes[0]], device="cuda:0")
+    inputWeights = torch.empty([hiddenSizes[0],inputSize], device="cuda:0")
+    torch.nn.init.kaiming_uniform_(inputWeights, nonlinearity='relu')
+    inputBiases = torch.zeros([hiddenSizes[0]], device="cuda:0")
     newNetwork.append((inputWeights, inputBiases))
 
     # building hidden Layers
     for i in range(1,len(hiddenSizes)):
-        newWeights = torch.rand(hiddenSizes[i], hiddenSizes[i-1], device="cuda:0")
-        newBiases = torch.rand([hiddenSizes[i]], device="cuda:0")
+        newWeights = torch.empty(hiddenSizes[i], hiddenSizes[i-1], device="cuda:0")
+        torch.nn.init.kaiming_uniform_(newWeights, nonlinearity='relu')
+        newBiases = torch.zeros([hiddenSizes[i]], device="cuda:0")
         newNetwork.append((newWeights, newBiases))
 
     # building output layer
-    newNetwork.append((torch.rand([outputSize, hiddenSizes[-1]], device="cuda:0"), torch.rand([outputSize], device="cuda:0")))
+    outputWeights = torch.empty([outputSize, hiddenSizes[-1]], device="cuda:0")
+    torch.nn.init.xavier_uniform_(outputWeights)
+    newNetwork.append((outputWeights, torch.zeros([outputSize], device="cuda:0")))
     return Network(layers=newNetwork, loss=None)
