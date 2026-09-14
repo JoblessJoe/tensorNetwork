@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 from random import uniform, randint
 import time
+import typing
 import torch
 from network import Network, buildNetwork
 
@@ -23,26 +24,25 @@ def inCircle(inx, iny) -> float:
     return 0.0
 
 
-def generateTrainingData(dataPoints=1000):
+def generateTrainingData(criterium: typing.Callable[[float, float], float], xBounds: tuple[float, float], yBounds: tuple[float, float], dataPoints=1000):
     '''
     Generates two tensors:
         - the tuples of points (x,y)
-        - the binary truth values for those points (inCircle)
-    and returns them as a tuple of Tensors, by the shape [pointsTensor, inCircleTensor]
+        - the binary truth values for those points (criteriumMet)
+    and returns them as a tuple of Tensors, by the shape [pointsTensor, criteriumMetTensor]
     By default it generates a list with a 1000 data points, but that number can be chosen individually.
+    'criterium' needs to be a callable that takes two floats and returns a float.
     '''
     if not (100 <= dataPoints <= 100000):
         raise ValueError(f"dataPoints value must be between 100 and 100000. Your value: {dataPoints}")
     points = []
     targets = []
-    xBounds = (1.5, 2.5)
-    yBounds = (0.5, 1.5)
     for i in range(0, dataPoints):
         xVal = uniform(xBounds[0], xBounds[1])
         yVal = uniform(yBounds[0], yBounds[1])
-        isInCircle = inCircle(xVal, yVal)
+        criteriumMet = criterium(xVal, yVal)
         points.append((xVal, yVal))
-        targets.append(isInCircle)
+        targets.append(criteriumMet)
     pointsTensor = torch.tensor(points, device=gpu)
     targetsTensor = torch.tensor(targets, device=gpu)
     return (pointsTensor, targetsTensor)
@@ -210,7 +210,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
 
 if __name__ == "__main__":
-    trainingData = generateTrainingData(1000)
+    trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
     trainingIterations = 2500
     populationSize = 300
 
