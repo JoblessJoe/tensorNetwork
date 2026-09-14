@@ -6,6 +6,11 @@ import torch
 from network import Network, buildNetwork
 
 
+gpu = "cuda:1"
+# "cuda:1" == Tesla P40
+# "cuda:0" == GTX 1660
+
+
 def inCircle(inx, iny) -> float:
     '''
     Circle center at x=2, y=1, radius = 0.4
@@ -38,8 +43,8 @@ def generateTrainingData(dataPoints=1000):
         isInCircle = inCircle(xVal, yVal)
         points.append((xVal, yVal))
         targets.append(isInCircle)
-    pointsTensor = torch.tensor(points, device="cuda:0")
-    targetsTensor = torch.tensor(targets, device="cuda:0")
+    pointsTensor = torch.tensor(points, device=gpu)
+    targetsTensor = torch.tensor(targets, device=gpu)
     return (pointsTensor, targetsTensor)
 
 
@@ -90,14 +95,14 @@ def pickRandomParents(selection: list[Network]) -> tuple[Network]:
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     '''Builds a new tensor by picking each element from 'a' or 'b' with 50/50 chance.'''
-    fromA = torch.rand_like(a, device="cuda:0") < 0.5
+    fromA = torch.rand_like(a, device=gpu) < 0.5
     return torch.where(fromA, a, b)
 
 
 def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torch.Tensor:
     '''Each element has 'mutationRate' chance to get gaussian noise (std 'sigma') added to it.'''
-    mutate = torch.rand_like(value, device="cuda:0") < mutationRate
-    noise = torch.randn_like(value, device="cuda:0") * sigma
+    mutate = torch.rand_like(value, device=gpu) < mutationRate
+    noise = torch.randn_like(value, device=gpu) * sigma
     return value + noise * mutate
 
 
