@@ -5,8 +5,9 @@ from network import Network, DEVICE
 from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
+from pngCount import count
 
-pngCount=0
+pngCount=count
 
 
 def inCircle(inx, iny) -> float:
@@ -44,7 +45,7 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
 
 if __name__ == "__main__":
     trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
-    trainingIterations = 2500
+    trainingIterations = 1000
     populationSize = 300
     circle = ((2.0, 1.0), 0.4)
     xBounds=(1.5, 2.5)

@@ -66,15 +66,10 @@ def selection(networks: list[Network], keepPart: float) -> list[Network]:
     return ranked[:split]
 
 
-def pickRandomParents(selection: list[Network]) -> tuple[Network]:
-    '''Picks two random Networks out of the selection of elite individuals and returns them as a tuple.'''
-
-    parent1 = selection[randint(0, len(selection)-1)]
-    parent2 = selection[randint(0, len(selection)-1)]
-    while parent1 is parent2:
-        parent1 = selection[randint(0, len(selection)-1)]
-        parent2 = selection[randint(0, len(selection)-1)]
-    return (parent1, parent2)
+def pickRandomParents(selection: list[Network], size: int, eliteCount: int) -> tuple[Network]:
+    '''Returns a Tensor of randomly picked parents.'''
+    parents = torch.stack([torch.randint(0, len(selection), (size -eliteCount,)), torch.randint(0, len(selection), (size -eliteCount,))])
+    return parents
 
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
