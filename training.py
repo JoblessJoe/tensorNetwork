@@ -181,8 +181,8 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
             currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
         elapsed = time.perf_counter() - start
         avgIterTime += elapsed
-        if loopCount % 50 == 0:
-            print(f"Iteration #{loopCount}, average Iteration time: {avgIterTime / loopCount:.2f}")
+        if loopCount % 100 == 0:
+            print(f"Iteration #{loopCount}\n average Iteration time: {avgIterTime / loopCount:.2f}")
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
@@ -193,11 +193,11 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
 
 if __name__ == "__main__":
-    print(torch.cuda.is_available())
+    #print(torch.cuda.is_available())
     trainingData = generateTrainingData(1000)
-    NetworkOne = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
+    NetworkOne = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
     print(f"network #1 loss: {NetworkOne.loss} \nnetwork #1 accuracy: {NetworkOne.accuracy}")
 
-    NetworkTwo = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
+    NetworkTwo = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
     print(f"network #2 loss: {NetworkTwo.loss} \nnetwork #2 accuracy: {NetworkTwo.accuracy}")
     
