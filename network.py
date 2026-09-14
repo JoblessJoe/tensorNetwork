@@ -33,11 +33,11 @@ class Network:
         if inputs.size()[1] != self.layers[0][0].size()[1]:
             raise ValueError(f"Given Inputs do not match the required input size. The Network has an inputSize of {self.layers[0][0].size()[1]}.")
         outputPrev = inputs
-        for idx in range(0, len(self.layers)):
+        for idx in range(0, len(self.layers)-1):
             # for each layer multiply the previous outputMatrices and the weightMatrices and add the biastensor 
             output = torch.relu(outputPrev @ self.layers[idx][0].T + self.layers[idx][1])
             outputPrev = output
-        return outputPrev
+        return torch.sigmoid(outputPrev @ self.layers[len(self.layers)][0].T + self.layers[len(self.layers)][1])
 
 
 def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
