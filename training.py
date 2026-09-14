@@ -36,13 +36,13 @@ def crossEntropyLoss(target: torch.Tensor, prediction: torch.Tensor) -> float:
     '''Binary cross entropy between a 0/1 target and the network's (scalar tensor) prediction.'''
     pred = prediction.clamp(1e-7, 1 - 1e-7)  # forwardPass ends in ReLU, not a bounded probability, so clamp to keep log() finite
     loss = -(target * torch.log(pred) + (1 - target) * torch.log(1 - pred))
-    return loss.mean().item()
+    return loss.mean()
 
 def getAccuracy(predictions: torch.Tensor, target: torch.Tensor) -> float:
     '''
     Returns the Accuracy of a networks predictions as a float between 0.0 and 1.0.
     '''
-    correct = (predictions.round() == target).sum().item()
+    correct = (predictions.round() == target).sum()
     total = len(predictions)
     return correct / total
 
@@ -190,8 +190,8 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Training iterations: {iterations}\n"
         f"Average iteration:   {avgIterTime:.4f} seconds\n"
         f"Training time:       {totalTrainingTime:.2f} seconds\n"
-        f"Final loss:          {bestNetwork.loss:.4f}\n"
-        f"Accuracy:            {bestNetwork.accuracy:.2%}\n"
+        f"Final loss:          {bestNetwork.loss.item():.4f}\n"
+        f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
         f"{'=' * 44}\n"
     )
     return bestNetwork  # returns the fittest network after all iterations are done
