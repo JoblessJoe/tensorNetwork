@@ -22,6 +22,7 @@ class Network:
 
     layers: list[tuple[torch.Tensor, torch.Tensor]]
     loss: typing.Optional[float] = None
+    accuracy: typing.Optional[float] = None
 
     @property
     def fitness(self):

@@ -49,14 +49,24 @@ def crossEntropyLoss(target: torch.Tensor, prediction: torch.Tensor) -> float:
     loss = -(target * torch.log(pred) + (1 - target) * torch.log(1 - pred))
     return loss.mean().item()
 
-
-def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> float:
+def getAccuracy(predictions: torch.Tensor, target: torch.Tensor) -> float:
     '''
-    Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss of the network.
+    Returns the Accuracy of a networks predictions as a float between 0.0 and 1.0.
+    '''
+    correct = (predictions.round() == target).sum()
+    total = len(predictions)
+    return correct / total
+
+
+def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> tuple[float, float]:
+    '''
+    Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss and the accuracy of the network as a tuple.
+    Output: (loss, accuracy)
     '''
     res = network.forwardPass(trainingData).squeeze(1) # Result Tensor for the predictions for each trainingPoint the network made
     loss = crossEntropyLoss(target, res)
-    return loss
+    accuracy = getAccuracy(res, target)
+    return (loss, accuracy)
 
 
 def selection(networks: list[Network], keepPart: float) -> list[Network]:
@@ -158,15 +168,18 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         loopCount += 1
         # evaluating each network on the trainingdata
         for i in range(0, populationSize):
-            loss = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
+            evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
+            loss = evaluation[0]
+            accuracy = evaluation[1]
             currPopulation[i].loss = loss
+            currPopulation[i].accuracy = accuracy
 
         # store only the best performers
         best = selection(currPopulation, keepPartSelection)
         if loopCount < iterations:
             currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
         elapsed = time.perf_counter() - start
-        print(f"Iteration #{loopCount} finished in {elapsed:.2f} seconds")
+        #print(f"Iteration #{loopCount} finished in {elapsed:.2f} seconds")
 
     bestNetwork = selection(currPopulation, 1.0)[0]
     print(f"Finished {iterations} iterations, returning trained network. ")
@@ -179,8 +192,8 @@ if __name__ == "__main__":
     print(torch.cuda.is_available())
     trainingData = generateTrainingData(1000)
     NetworkOne = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
-    print(NetworkOne.loss)
+    print(f"network #1 loss: {NetworkOne.loss} \nnetwork #1 accuracy: {NetworkOne.accuracy}")
 
     NetworkTwo = trainingLoop(1000, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
-    print(NetworkTwo.loss)
+    print(f"network #2 loss: {NetworkTwo.loss} \nnetwork #2 accuracy: {NetworkTwo.accuracy}")
     
