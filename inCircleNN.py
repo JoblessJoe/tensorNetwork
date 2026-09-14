@@ -28,7 +28,7 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
     yMax = yBounds[1]
     xSpace = torch.linspace(xMin, xMax, pixelCount, device=DEVICE)
     ySpace = torch.linspace(yMin, yMax, pixelCount, device=DEVICE)
-    X, Y = torch.meshgrid(xSpace, ySpace) # creating the grid of pixels in the needed resolution
+    X, Y = torch.meshgrid(xSpace, ySpace, indexing='ij') # creating the grid of pixels in the needed resolution
     prediction = network.forwardPass(torch.stack([X.flatten(), Y.flatten()], dim=1)) # running  forwardPass over the grid. Returns a prediction for EACH Pixel in the image
     prediction = prediction.reshape(pixelCount, pixelCount).cpu()
 
@@ -40,14 +40,13 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
     ax.add_patch(circlePlot)
     os.makedirs('visualizations', exist_ok=True)
     plt.savefig(f"visualizations/circle_viz_#{pngCount}.png")
-    plt.show()
 
 
 if __name__ == "__main__":
     trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
-    trainingIterations = 1000
-    populationSize = 300
-    circle = ((1.5,2.5), (2.0, 1.0))
+    trainingIterations = 100
+    populationSize = 30
+    circle = ((2.0, 1.0), 0.4)
     xBounds=(1.5, 2.5)
     yBounds=(0.5, 1.5)
     pixelCount = 200

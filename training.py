@@ -4,6 +4,7 @@ from random import uniform, randint
 import time
 import typing
 import torch
+from tqdm import tqdm
 from network import Network, buildNetwork, DEVICE
 
 
@@ -153,23 +154,27 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
     loopCount = 0
     avgIterTime = 0
-    while loopCount < iterations:
-        start = time.perf_counter()
-        loopCount += 1
-        # evaluating each network on the trainingdata
-        for i in range(0, populationSize):
-            evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
-            loss = evaluation[0]
-            accuracy = evaluation[1]
-            currPopulation[i].loss = loss
-            currPopulation[i].accuracy = accuracy
+    with tqdm(total=iterations, desc=networkName, unit="gen") as pbar:
+        while loopCount < iterations:
+            start = time.perf_counter()
+            loopCount += 1
+            # evaluating each network on the trainingdata
+            for i in range(0, populationSize):
+                evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
+                loss = evaluation[0]
+                accuracy = evaluation[1]
+                currPopulation[i].loss = loss
+                currPopulation[i].accuracy = accuracy
 
-        # store only the best performers
-        best = selection(currPopulation, keepPartSelection)
-        if loopCount < iterations:
-            currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
-        elapsed = time.perf_counter() - start
-        avgIterTime += elapsed
+            # store only the best performers
+            best = selection(currPopulation, keepPartSelection)
+            if loopCount < iterations:
+                currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
+            elapsed = time.perf_counter() - start
+            avgIterTime += elapsed
+
+            pbar.set_postfix(loss=f"{best[0].loss:.4f}", acc=f"{best[0].accuracy:.2%}")
+            pbar.update(1)
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
