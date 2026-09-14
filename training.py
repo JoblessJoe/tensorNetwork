@@ -175,6 +175,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
             # store only the best performers
             bestStart = time.perf_counter()
             best = selection(currPopulation, keepPartSelection)
+            torch.cuda.synchronize()
             bestTime += time.perf_counter() - bestStart
             if loopCount < iterations:
                 startPopBuild = time.perf_counter()
