@@ -1,19 +1,9 @@
 import torch
-from network import Network
+from network import Network, DEVICE
 from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
 
-
-if torch.cuda.is_available():
-    gpu = "cuda:1"
-elif torch.backends.mps.is_available():
-    gpu = "mps"
-else:
-    gpu = "cpu"
-# "cuda:1" == Tesla P40
-# "cuda:0" == GTX 1660
-# "cpu" == on macbook
 
 
 def inCircle(inx, iny) -> float:
@@ -33,8 +23,8 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
     xMax = xBounds[1]
     yMin = yBounds[0]
     yMax = yBounds[1]
-    xSpace = torch.linspace(xMin, xMax, pixelCount, device=gpu)
-    ySpace = torch.linspace(yMin, yMax, pixelCount, device=gpu)
+    xSpace = torch.linspace(xMin, xMax, pixelCount, device=DEVICE)
+    ySpace = torch.linspace(yMin, yMax, pixelCount, device=DEVICE)
     X, Y = torch.meshgrid(xSpace, ySpace) # creating the grid of pixels in the needed resolution
     prediction = network.forwardPass(torch.stack([X.flatten(), Y.flatten()], dim=1)) # running  forwardPass over the grid. Returns a prediction for EACH Pixel in the image
     prediction = prediction.reshape(pixelCount, pixelCount)

@@ -4,7 +4,15 @@ import typing
 import torch
 
 
-DEVICE = "cuda:1"  # "cuda:1" == Tesla P40, "cuda:0" == GTX 1660
+if torch.cuda.is_available():
+    DEVICE = "cuda:1"
+elif torch.backends.mps.is_available():
+    DEVICE = "mps"
+else:
+    DEVICE = "cpu"
+# "cuda:1" == Tesla P40
+# "cuda:0" == GTX 1660
+# "cpu" == on macbook
 
 
 @dataclass

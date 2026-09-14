@@ -4,12 +4,7 @@ from random import uniform, randint
 import time
 import typing
 import torch
-from network import Network, buildNetwork
-
-
-gpu = "cuda:1"
-# "cuda:1" == Tesla P40
-# "cuda:0" == GTX 1660
+from network import Network, buildNetwork, DEVICE
 
 
 def generateTrainingData(criterium: typing.Callable[[float, float], float], xBounds: tuple[float, float], yBounds: tuple[float, float], dataPoints=1000):
@@ -31,8 +26,8 @@ def generateTrainingData(criterium: typing.Callable[[float, float], float], xBou
         criteriumMet = criterium(xVal, yVal)
         points.append((xVal, yVal))
         targets.append(criteriumMet)
-    pointsTensor = torch.tensor(points, device=gpu)
-    targetsTensor = torch.tensor(targets, device=gpu)
+    pointsTensor = torch.tensor(points, device=DEVICE)
+    targetsTensor = torch.tensor(targets, device=DEVICE)
     return (pointsTensor, targetsTensor)
 
 
@@ -83,14 +78,14 @@ def pickRandomParents(selection: list[Network]) -> tuple[Network]:
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     '''Builds a new tensor by picking each element from 'a' or 'b' with 50/50 chance.'''
-    fromA = torch.rand_like(a, device=gpu) < 0.5
+    fromA = torch.rand_like(a, device=DEVICE) < 0.5
     return torch.where(fromA, a, b)
 
 
 def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torch.Tensor:
     '''Each element has 'mutationRate' chance to get gaussian noise (std 'sigma') added to it.'''
-    mutate = torch.rand_like(value, device=gpu) < mutationRate
-    noise = torch.randn_like(value, device=gpu) * sigma
+    mutate = torch.rand_like(value, device=DEVICE) < mutationRate
+    noise = torch.randn_like(value, device=DEVICE) * sigma
     return value + noise * mutate
 
 
