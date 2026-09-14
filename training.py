@@ -7,7 +7,11 @@ from network import Network, buildNetwork
 
 
 def inCircle(inx, iny) -> float:
-    '''Circle center at x=2, y=1, radius = 0.4'''
+    '''
+    Circle center at x=2, y=1, radius = 0.4
+    Takes two coordinates x and y and returns a binary truth value 1.0 or 0.0, 
+    reflecting if that point is inside the circle (True/1.0).
+    '''
     dist = math.sqrt(((inx-2)**2) + (iny-1)**2)
     if dist <= 0.4:
         return 1.0
@@ -16,53 +20,43 @@ def inCircle(inx, iny) -> float:
 
 def generateTrainingData(dataPoints=1000):
     '''
-    Generates a list of Points to train the model on.
-    Each element consists of a tuple: (x,y, isInCircle)
-    x and y coordinates and a binary bool value if it is in the circle.
+    Generates two tensors:
+        - the tuples of points (x,y)
+        - the binary truth values for those points (inCircle)
+    and returns them as a tuple of Tensors, by the shape [pointsTensor, inCircleTensor]
     By default it generates a list with a 1000 data points, but that number can be chosen individually.
     '''
     if not (100 <= dataPoints <= 100000):
         raise ValueError(f"dataPoints value must be between 100 and 100000. Your value: {dataPoints}")
-    data = []
+    points = []
+    targets = []
     xBounds = (1.5, 2.5)
     yBounds = (0.5, 1.5)
     for i in range(0, dataPoints):
         xVal = uniform(xBounds[0], xBounds[1])
         yVal = uniform(yBounds[0], yBounds[1])
         isInCircle = inCircle(xVal, yVal)
-        point = (xVal, yVal, isInCircle)
-        data.append(point)
-    return data
+        points.append((xVal, yVal))
+        targets.append(isInCircle)
+    pointsTensor = torch.tensor(points, device="cuda:0")
+    targetsTensor = torch.tensor(targets, device="cuda:0")
+    return (pointsTensor, targetsTensor)
 
 
-def crossEntropyLoss(target: float, prediction: torch.Tensor) -> float:
+def crossEntropyLoss(target: torch.Tensor, prediction: torch.Tensor) -> float:
     '''Binary cross entropy between a 0/1 target and the network's (scalar tensor) prediction.'''
     pred = prediction.clamp(1e-7, 1 - 1e-7)  # forwardPass ends in ReLU, not a bounded probability, so clamp to keep log() finite
     loss = -(target * torch.log(pred) + (1 - target) * torch.log(1 - pred))
-    return loss.item()
+    return loss.mean().item()
 
 
-def evaluateNetwork(network: Network, trainingData: list, detailed: bool = False) -> float | dict:
+def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> float:
     '''
-    Takes a List of TrainingPoints and a Network and returns the cross entropy loss of the network.
-    \nIf parameter 'detailed' is set to True it will output a List of results for each trainingPoint.
+    Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss of the network.
     '''
-    networkLoss = 0.0
-    detailedRes = []
-    res = network.forwardPass(trainingData)
-    for point in trainingData:
-        inputTensor = torch.tensor([point[0], point[1]], device="cuda:0")
-        networkPred = network.forwardPass(inputTensor)[0]
-        loss = crossEntropyLoss(point[2], networkPred)
-        networkLoss += loss
-        if detailed:
-            curr = {"point": (point[0], point[1]), "solution": point[2], "networkPrediction": networkPred.item(), "loss": loss}
-            detailedRes.append(curr)
-
-    networkLoss = networkLoss / len(trainingData)
-    if detailed:
-        return {"detailedResult": detailedRes, "NetworkLoss": networkLoss}
-    return networkLoss
+    res = network.forwardPass(trainingData) # Result Tensor for the predictions for each trainingPoint the network made
+    loss = crossEntropyLoss(target, res)
+    return loss
 
 
 def selection(networks: list[Network], keepPart: float) -> list[Network]:
@@ -129,15 +123,15 @@ def buildPopulation(populationSize: int, selection: list[Network], sigma: float,
 
 
 def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
-                  keepPartSelection: float, trainingData: list, startNetwork: Network | None = None,
+                  keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
                   inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None) -> Network:
     '''Runs the training of a network fora given amount of 'iterations'.
     \n It handles:
-    * population generation
-    * evaluation
-    * selection
-    * breeding
-    * mutation
+        * population generation
+        * evaluation
+        * selection
+        * breeding
+        * mutation
     And when training is finished it returns the trained network.
     '''
     functionStart = time.perf_counter()
@@ -164,7 +158,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         loopCount += 1
         # evaluating each network on the trainingdata
         for i in range(0, populationSize):
-            loss = evaluateNetwork(currPopulation[i], trainingData)
+            loss = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
             currPopulation[i].loss = loss
 
         # store only the best performers
