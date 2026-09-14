@@ -54,7 +54,7 @@ def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.
     '''
     Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss of the network.
     '''
-    res = network.forwardPass(trainingData) # Result Tensor for the predictions for each trainingPoint the network made
+    res = network.forwardPass(trainingData).squeeze(1) # Result Tensor for the predictions for each trainingPoint the network made
     loss = crossEntropyLoss(target, res)
     return loss
 
@@ -123,8 +123,8 @@ def buildPopulation(populationSize: int, selection: list[Network], sigma: float,
 
 
 def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
-                  keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
-                  inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None) -> Network:
+                keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
+                inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None) -> Network:
     '''Runs the training of a network fora given amount of 'iterations'.
     \n It handles:
         * population generation
