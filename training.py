@@ -154,22 +154,33 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
     loopCount = 0
     avgIterTime = 0
+    evalTime = 0.0
+    popTime = 0.0
+    bestTime = 0.0
     with tqdm(total=iterations, desc=networkName, unit="gen") as pbar:
         while loopCount < iterations:
             start = time.perf_counter()
             loopCount += 1
             # evaluating each network on the trainingdata
             for i in range(0, populationSize):
+                evalStart = time.perf_counter()
                 evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
+                torch.cuda.synchronize()
+                evalTime += time.perf_counter()-evalStart
                 loss = evaluation[0]
                 accuracy = evaluation[1]
                 currPopulation[i].loss = loss
                 currPopulation[i].accuracy = accuracy
 
             # store only the best performers
+            bestStart = time.perf_counter()
             best = selection(currPopulation, keepPartSelection)
+            bestTime += time.perf_counter() - bestStart
             if loopCount < iterations:
+                startPopBuild = time.perf_counter()
                 currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
+                torch.cuda.synchronize()
+                popTime += time.perf_counter()-startPopBuild
             elapsed = time.perf_counter() - start
             avgIterTime += elapsed
 
@@ -179,6 +190,9 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
     totalTrainingTime = time.perf_counter()-functionStart
+    popTime = popTime/loopCount
+    evalTime = evalTime/loopCount
+    bestTime = bestTime/loopCount
     print(
         f"\n{'=' * 44}\n"
         f"{networkName:^44}\n"
@@ -189,6 +203,9 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Population size:     {populationSize}\n"
         f"Training iterations: {iterations}\n"
         f"Average iteration:   {avgIterTime:.4f} seconds\n"
+        f"Avg. EvalTime:       {evalTime:.2f} seconds\n"
+        f"Avg. PopTime:        {popTime:.2f} seconds\n"
+        f"Avg BestTime:        {bestTime:.2f} seconds\n"
         f"Training time:       {totalTrainingTime:.2f} seconds\n"
         f"Final loss:          {bestNetwork.loss.item():.4f}\n"
         f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
