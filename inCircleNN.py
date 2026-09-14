@@ -1,9 +1,12 @@
+import os
+
 import torch
 from network import Network, DEVICE
 from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
 
+pngCount=0
 
 
 def inCircle(inx, iny) -> float:
@@ -27,21 +30,24 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
     ySpace = torch.linspace(yMin, yMax, pixelCount, device=DEVICE)
     X, Y = torch.meshgrid(xSpace, ySpace) # creating the grid of pixels in the needed resolution
     prediction = network.forwardPass(torch.stack([X.flatten(), Y.flatten()], dim=1)) # running  forwardPass over the grid. Returns a prediction for EACH Pixel in the image
-    prediction = prediction.reshape(pixelCount, pixelCount)
+    prediction = prediction.reshape(pixelCount, pixelCount).cpu()
 
     fig, ax = plt.subplots()
     ax.imshow(prediction, extent=[xMin, xMax, yMin, yMax], origin='lower', cmap='viridis')
     circlePlot = plt.Circle((circle[0]), circle[1], fill=False, color='red', linewidth=2)
+    global pngCount
+    pngCount +=1
     ax.add_patch(circlePlot)
-    plt.savefig('circle_viz.png')  # not plt.show() -- server has no display
+    os.makedirs('visualizations', exist_ok=True)
+    plt.savefig(f"visualizations/circle_viz_#{pngCount}.png")
     plt.show()
 
 
 if __name__ == "__main__":
     trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
-    trainingIterations = 2500
+    trainingIterations = 1000
     populationSize = 300
-    circle = ((1.5,2.5), (2, 1))
+    circle = ((1.5,2.5), (2.0, 1.0))
     xBounds=(1.5, 2.5)
     yBounds=(0.5, 1.5)
     pixelCount = 200
