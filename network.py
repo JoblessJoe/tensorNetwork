@@ -37,7 +37,7 @@ class Network:
             # for each layer multiply the previous outputMatrices and the weightMatrices and add the biastensor 
             output = torch.relu(outputPrev @ self.layers[idx][0].T + self.layers[idx][1])
             outputPrev = output
-        return torch.sigmoid(outputPrev @ self.layers[len(self.layers)][0].T + self.layers[len(self.layers)][1])
+        return torch.sigmoid(outputPrev @ self.layers[len(self.layers)-1][0].T + self.layers[len(self.layers)-1][1])
 
 
 def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
