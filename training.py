@@ -195,8 +195,8 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 if __name__ == "__main__":
     #print(torch.cuda.is_available())
     trainingData = generateTrainingData(1000)
-    #NetworkOne = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2])
-    #print(f"network #1 loss: {NetworkOne.loss} \nnetwork #1 accuracy: {NetworkOne.accuracy}")
+    NetworkOne = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2, 2])
+    print(f"network #1 loss: {NetworkOne.loss} \nnetwork #1 accuracy: {NetworkOne.accuracy}\n")
 
     NetworkTwo = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
-    print(f"network #2 loss: {NetworkTwo.loss} \nnetwork #2 accuracy: {NetworkTwo.accuracy}")
+    print(f"network #2 loss: {NetworkTwo.loss} \nnetwork #2 accuracy: {NetworkTwo.accuracy}\n")
