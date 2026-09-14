@@ -53,12 +53,12 @@ def getAccuracy(predictions: torch.Tensor, target: torch.Tensor) -> float:
     '''
     Returns the Accuracy of a networks predictions as a float between 0.0 and 1.0.
     '''
-    correct = (predictions.round() == target).sum()
+    correct = (predictions.round() == target).sum().item()
     total = len(predictions)
     return correct / total
 
 
-def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> tuple[float, float]:
+def Network(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> tuple[float, float]:
     '''
     Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss and the accuracy of the network as a tuple.
     Output: (loss, accuracy)
