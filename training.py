@@ -163,6 +163,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
 
     loopCount = 0
+    avgIterTime = 0
     while loopCount < iterations:
         start = time.perf_counter()
         loopCount += 1
@@ -179,8 +180,11 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         if loopCount < iterations:
             currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
         elapsed = time.perf_counter() - start
-        #print(f"Iteration #{loopCount} finished in {elapsed:.2f} seconds")
+        avgIterTime += elapsed
+        if loopCount % 50 == 0:
+            print(f"Iteration #{loopCount}, averae Iteration time: {avgIterTime / loopCount}")
 
+    avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
     print(f"Finished {iterations} iterations, returning trained network. ")
     totalTrainingTime = time.perf_counter()-functionStart
