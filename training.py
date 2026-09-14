@@ -182,7 +182,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         elapsed = time.perf_counter() - start
         avgIterTime += elapsed
         if loopCount % 50 == 0:
-            print(f"Iteration #{loopCount}, averae Iteration time: {avgIterTime / loopCount}")
+            print(f"Iteration #{loopCount}, average Iteration time: {avgIterTime / loopCount:.2f}")
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
