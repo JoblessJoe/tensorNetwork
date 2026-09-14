@@ -6,7 +6,7 @@ from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
 
-pngCount=0
+pngCount=3
 
 
 def inCircle(inx, iny) -> float:
