@@ -134,7 +134,8 @@ def buildPopulation(populationSize: int, selection: list[Network], sigma: float,
 
 def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
-                inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None) -> Network:
+                inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
+                networkName: str = "network") -> Network:
     '''Runs the training of a network fora given amount of 'iterations'.
     \n It handles:
         * population generation
@@ -181,22 +182,41 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
             currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
         elapsed = time.perf_counter() - start
         avgIterTime += elapsed
-        if loopCount % 100 == 0:
-            print(f"Iteration #{loopCount}\n average Iteration time: {avgIterTime / loopCount:.2f}")
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
-    print(f"Finished {iterations} iterations, returning trained network. ")
     totalTrainingTime = time.perf_counter()-functionStart
-    print(f"Training finished in {totalTrainingTime:.2f} seconds.\nFinal loss score: {bestNetwork.loss:.2f}\n")
+    print(
+        f"\n{'=' * 44}\n"
+        f"{networkName:^44}\n"
+        f"{'=' * 44}\n"
+        f"Input size:          {inputSize}\n"
+        f"Hidden sizes:        {hiddenSizes}\n"
+        f"Output size:         {outputSize}\n"
+        f"Population size:     {populationSize}\n"
+        f"Training iterations: {iterations}\n"
+        f"Average iteration:   {avgIterTime:.4f} seconds\n"
+        f"Training time:       {totalTrainingTime:.2f} seconds\n"
+        f"Final loss:          {bestNetwork.loss:.4f}\n"
+        f"Accuracy:            {bestNetwork.accuracy:.2%}\n"
+        f"{'=' * 44}\n"
+    )
     return bestNetwork  # returns the fittest network after all iterations are done
 
 
 if __name__ == "__main__":
-    #print(torch.cuda.is_available())
     trainingData = generateTrainingData(1000)
-    NetworkOne = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[2, 2])
-    print(f"network #1 loss: {NetworkOne.loss} \nnetwork #1 accuracy: {NetworkOne.accuracy}\n")
+    trainingIterations = 2500
+    populationSize = 300
 
-    NetworkTwo = trainingLoop(2500, 300, 0.1, 0.05, 3, 0.1, trainingData, inputSize=2, outputSize=1, hiddenSizes=[5])
-    print(f"network #2 loss: {NetworkTwo.loss} \nnetwork #2 accuracy: {NetworkTwo.accuracy}\n")
+    in1 = 2
+    out1=1
+    hidden1 =[2,2]
+    NetworkOne = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
+                              inputSize=in1, hiddenSizes=hidden1, outputSize=out1, networkName="Network #1")
+
+    in2 = 2
+    out2 = 1
+    hidden2 = [5]
+    NetworkTwo = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
+                              inputSize=in2, hiddenSizes=hidden2, outputSize=out2, networkName="Network #2")
