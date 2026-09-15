@@ -42,7 +42,7 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
 
 if __name__ == "__main__":
     trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
-    trainingIterations = 1000
+    trainingIterations = 5000
     populationSize = 300
     circle = ((2.0, 1.0), 0.4)
     xBounds=(1.5, 2.5)
@@ -52,9 +52,9 @@ if __name__ == "__main__":
     in1 = 2
     out1=1
     hidden1 =[100,100,50, 25]
-    NetworkOne = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
-                              inputSize=in1, hiddenSizes=hidden1, outputSize=out1, networkName="Network #1")
-    visualize(xBounds, yBounds, pixelCount, circle, NetworkOne)
+    #NetworkOne = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
+    #                          inputSize=in1, hiddenSizes=hidden1, outputSize=out1, networkName="Network #1")
+    #visualize(xBounds, yBounds, pixelCount, circle, NetworkOne)
     
     in2 = 2
     out2 = 1
