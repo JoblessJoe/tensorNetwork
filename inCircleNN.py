@@ -1,13 +1,11 @@
 import os
+from datetime import datetime
 
 import torch
 from network import Network, DEVICE
 from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
-from pngCount import count
-
-pngCount=count
 
 
 def inCircle(inx, iny) -> float:
@@ -36,11 +34,10 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
     fig, ax = plt.subplots()
     ax.imshow(prediction, extent=[xMin, xMax, yMin, yMax], origin='lower', cmap='viridis')
     circlePlot = plt.Circle((circle[0]), circle[1], fill=False, color='red', linewidth=2)
-    global pngCount
-    pngCount +=1
     ax.add_patch(circlePlot)
     os.makedirs('visualizations', exist_ok=True)
-    plt.savefig(f"visualizations/circle_viz_#{pngCount}.png")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    plt.savefig(f"visualizations/circle_viz_{timestamp}.png")
 
 
 if __name__ == "__main__":
