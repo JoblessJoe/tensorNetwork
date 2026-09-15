@@ -51,6 +51,30 @@ class Network:
         return torch.sigmoid(outputPrev @ self.layers[len(self.layers)-1][0].T + self.layers[len(self.layers)-1][1])
 
 
+def batchForwardPass(networks: list[Network], inputs: torch.Tensor) -> torch.Tensor:
+    '''
+    Runs forwardPass for an entire population of Networks at once, instead of once per Network.
+    All Networks in 'networks' must share the same architecture (same layer shapes).
+    Returns a tensor of shape [populationSize, batchSize, outputSize].
+    '''
+    if inputs.size()[1] != networks[0].layers[0][0].size()[1]:
+        raise ValueError(f"Given Inputs do not match the required input size. The Networks have an inputSize of {networks[0].layers[0][0].size()[1]}.")
+
+    popSize = len(networks)
+    outputPrev = inputs.expand(popSize, -1, -1)  # [popSize, batch, inFeatures] - broadcast view, no copy
+
+    for idx in range(0, len(networks[0].layers) - 1):
+        popWeights = torch.stack([n.layers[idx][0] for n in networks])  # [popSize, out, in]
+        popBiases = torch.stack([n.layers[idx][1] for n in networks])   # [popSize, out]
+        output = torch.relu(outputPrev @ popWeights.transpose(1, 2) + popBiases.unsqueeze(1))
+        outputPrev = output
+
+    lastIdx = len(networks[0].layers) - 1
+    popWeights = torch.stack([n.layers[lastIdx][0] for n in networks])
+    popBiases = torch.stack([n.layers[lastIdx][1] for n in networks])
+    return torch.sigmoid(outputPrev @ popWeights.transpose(1, 2) + popBiases.unsqueeze(1))
+
+
 def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
     '''
     Receives the dimensions and returns the new Network as a list of tuples containing 
