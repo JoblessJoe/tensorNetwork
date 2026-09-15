@@ -51,14 +51,14 @@ if __name__ == "__main__":
 
     in1 = 2
     out1=1
-    hidden1 =[7,4]
+    hidden1 =[30,15]
     NetworkOne = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
                               inputSize=in1, hiddenSizes=hidden1, outputSize=out1, networkName="Network #1")
     visualize(xBounds, yBounds, pixelCount, circle, NetworkOne)
     
     in2 = 2
     out2 = 1
-    hidden2 = [50]
+    hidden2 = [200]
     NetworkTwo = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
                               inputSize=in2, hiddenSizes=hidden2, outputSize=out2, networkName="Network #2")
     visualize(xBounds, yBounds, pixelCount, circle, NetworkTwo) 
