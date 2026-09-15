@@ -61,10 +61,14 @@ def evaluateNetwork(networks: list[Network], trainingData: torch.Tensor, target:
 
 def selection(networks: list[Network], keepPart: float) -> list[Network]:
     '''Takes a list of Networks after Training and keep only the top percentage chosen by 'keepPart' and returns this elite selection as a list'''
-
-    ranked = sorted(networks, key=lambda e: e.fitness, reverse=True)
+    fitness = []
+    for n in networks:
+        fitness += [n.fitness]
+    fTensor = torch.stack(fitness)
     split = int(len(networks) * keepPart)
-    return ranked[:split]
+    sel = torch.topk(fTensor, split)
+    result = [networks[el] for el in sel.indices]
+    return result
 
 
 def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int) -> tuple[Network]:
@@ -164,7 +168,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     loopCount = 0
     avgIterTime = 0
     popTime = 0.0
-    bestTime = 0.0
+    sortTime = 0.0
     evalTime = 0.0
     with tqdm(total=iterations, desc=networkName, unit="gen") as pbar:
         while loopCount < iterations:
@@ -178,10 +182,10 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
             evalTime += time.perf_counter() - evalStart
 
             # store only the best performers
-            bestStart = time.perf_counter()
+            sortStart = time.perf_counter()
             best = selection(currPopulation, keepPartSelection)
             torch.cuda.synchronize()
-            bestTime += time.perf_counter() - bestStart
+            sortTime += time.perf_counter() - sortStart
             if loopCount < iterations:
                 startPopBuild = time.perf_counter()
                 currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
@@ -198,7 +202,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     totalTrainingTime = time.perf_counter()-functionStart
     popTime = popTime/loopCount
     evalTime = evalTime/loopCount
-    bestTime = bestTime/loopCount
+    sortTime = sortTime/loopCount
     print(
         f"\n{'=' * 44}\n"
         f"{networkName:^44}\n"
@@ -211,7 +215,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Average iteration:   {avgIterTime:.4f} seconds\n"
         f"Avg. EvalTime:       {evalTime:.3f} seconds\n"
         f"Avg. PopTime:        {popTime:.3f} seconds\n"
-        f"Avg BestTime:        {bestTime:.3f} seconds\n"
+        f"Avg SortTime:        {sortTime:.3f} seconds\n"
         f"Training time:       {totalTrainingTime:.3f} seconds\n"
         f"Final loss:          {bestNetwork.loss.item():.4f}\n"
         f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
