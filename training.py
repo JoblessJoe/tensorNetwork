@@ -52,7 +52,7 @@ def evaluateNetwork(networks: list[Network], trainingData: torch.Tensor, target:
     Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss and the accuracy of the network as a tuple.
     Output: (loss, accuracy)
     '''
-    res = batchForwardPass(networks, trainingData) # Result Tensor for the predictions for each trainingPoint the network made
+    res = batchForwardPass(networks, trainingData).squeeze(-1) # Result Tensor for the predictions for each trainingPoint the network made
     for i in range(0, len(networks)):
         networks[i].loss = crossEntropyLoss(target, res[i])
         networks[i].accuracy = getAccuracy(res[i], target)
