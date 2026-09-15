@@ -66,9 +66,9 @@ def selection(networks: list[Network], keepPart: float) -> list[Network]:
     return ranked[:split]
 
 
-def pickRandomParents(selection: list[Network], size: int, eliteCount: int) -> tuple[Network]:
+def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int) -> tuple[Network]:
     '''Returns a Tensor of randomly picked parents.'''
-    parents = torch.stack([torch.randint(0, len(selection), (size -eliteCount,)), torch.randint(0, len(selection), (size -eliteCount,))])
+    parents = torch.stack([torch.randint(0, len(selection), (populationSize -eliteCount,)), torch.randint(0, len(selection), (populationSize -eliteCount,))])
     return parents
 
 
@@ -85,34 +85,47 @@ def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torc
     return value + noise * mutate
 
 
-def breed(parent1: Network, parent2: Network, sigma: float, mutationRate: float) -> Network:
-    '''Takes two 'parent'-networks and randomly chooses edges and biases from them to build a new 'child'-network from them.'''
-    newLayers = []
-    for (weights1, bias1), (weights2, bias2) in zip(parent1.layers, parent2.layers):
-        newWeights = crossoverTensor(weights1, weights2)
-        newWeights = mutateTensor(newWeights, sigma, mutationRate)
-        newBias = crossoverTensor(bias1, bias2)
-        newBias = mutateTensor(newBias, sigma, mutationRate)
-        newLayers.append((newWeights, newBias))
-    return Network(layers=newLayers, loss=None)
+def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutationRate: float) -> list[Network]:
+    '''Takes a tensor of the 'to breed-/parent'-networks and randomly chooses edges and biases from them and returns a list of 'child'-networks.
+    '''
+    newGen = []
+
+    for i in range(0, len(selection[0].layers)):
+        selWeights = torch.stack([n.layers[i][0] for n in selection]) # gets the weights for layer 'i' of all the selection networks and makes them into a tensor
+        selBiases = torch.stack([n.layers[i][1] for n in selection])
+        parentsAW = selWeights[parents[0]] # extracting only the to breed networks for that layer and handing it to the crossoverTensor function 
+        parentsABias = selBiases[parents[0]]
+        parentsBW = selWeights[parents[1]]
+        parentsBBias = selBiases[parents[1]]
+        newLayerWeights = mutateTensor(crossoverTensor(parentsAW, parentsBW), sigma, mutationRate)
+        newLayerBiases = mutateTensor(crossoverTensor(parentsABias, parentsBBias), sigma, mutationRate)
+        newGen += [(newLayerWeights, newLayerBiases)]
+
+    # Now rebuilding a list of networks out of the batched layered 'newGen' variable
+    networks = []
+    numChildren = parents.shape[1]
+    children = [[] for _ in range(numChildren)]
+    for layerIdx in range(0, len(selection[0].layers)):
+        for childIdx in range(0, numChildren):
+            weights = newGen[layerIdx][0][childIdx]
+            bias = newGen[layerIdx][1][childIdx]
+            children[childIdx] += [(weights, bias)]
+
+    for child in children:
+        networks += [Network(child)]
+
+    return networks
 
 
 def buildPopulation(populationSize: int, selection: list[Network], sigma: float, mutationRate: float, eliteCount: int = 3) -> list[Network]:
     '''Builds a new generation of Networks breeded from the selection of the previous generation and returns it as a list.'''
-    currPopCount = 0
-    newPopulation = []
 
-    # Saving elite individuals from mutation
+    parents = pickRandomParents(selection, populationSize, eliteCount)
+    newPopulation = breed(selection, parents, sigma, mutationRate)
+
+    # Saving elite individuals from mutation and breeding
     for i in range(0, eliteCount):
-        currPopCount += 1
         newPopulation.append(selection[i])
-
-    while currPopCount < populationSize:
-        currPopCount += 1
-        parents = pickRandomParents(selection,populationSize, eliteCount)
-        child = breed(parents[0], parents[1], sigma, mutationRate)
-        newPopulation.append(child)
-
     return newPopulation
 
 
