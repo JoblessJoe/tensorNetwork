@@ -5,7 +5,7 @@ import time
 import typing
 import torch
 from tqdm import tqdm
-from network import Network, buildNetwork, DEVICE
+from network import Network, buildNetwork, DEVICE, batchForwardPass
 
 
 def generateTrainingData(criterium: typing.Callable[[float, float], float], xBounds: tuple[float, float], yBounds: tuple[float, float], dataPoints=1000):
@@ -47,15 +47,16 @@ def getAccuracy(predictions: torch.Tensor, target: torch.Tensor) -> float:
     return correct / total
 
 
-def evaluateNetwork(network: Network, trainingData: torch.Tensor, target: torch.Tensor) -> tuple[float, float]:
+def evaluateNetwork(networks: list[Network], trainingData: torch.Tensor, target: torch.Tensor) -> list[Network]:
     '''
     Takes a tensor of TrainingPoints and a Network and returns the cross entropy loss and the accuracy of the network as a tuple.
     Output: (loss, accuracy)
     '''
-    res = network.forwardPass(trainingData).squeeze(1) # Result Tensor for the predictions for each trainingPoint the network made
-    loss = crossEntropyLoss(target, res)
-    accuracy = getAccuracy(res, target)
-    return (loss, accuracy)
+    res = batchForwardPass(networks, trainingData) # Result Tensor for the predictions for each trainingPoint the network made
+    for i in range(0, len(networks)):
+        networks[i].loss = crossEntropyLoss(target, res[i])
+        networks[i].accuracy = getAccuracy(res[i], target)
+    return networks
 
 
 def selection(networks: list[Network], keepPart: float) -> list[Network]:
@@ -162,27 +163,19 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
     loopCount = 0
     avgIterTime = 0
-    evalTime = 0.0
     popTime = 0.0
     bestTime = 0.0
-    evalLoopTime = 0.0
+    evalTime = 0.0
     with tqdm(total=iterations, desc=networkName, unit="gen") as pbar:
         while loopCount < iterations:
             start = time.perf_counter()
             loopCount += 1
+
             # evaluating each network on the trainingdata
-            evalLoopStart=time.perf_counter()
-            for i in range(0, populationSize):
-                evalStart = time.perf_counter()
-                evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
-                torch.cuda.synchronize()
-                evalTime += time.perf_counter()-evalStart
-                loss = evaluation[0]
-                accuracy = evaluation[1]
-                currPopulation[i].loss = loss
-                currPopulation[i].accuracy = accuracy
+            evalStart=time.perf_counter()
+            currPopulation = evaluateNetwork(currPopulation, trainingData[0], trainingData[1])
             torch.cuda.synchronize()
-            evalLoopTime += time.perf_counter()- evalLoopStart
+            evalTime += time.perf_counter() - evalStart
 
             # store only the best performers
             bestStart = time.perf_counter()
@@ -206,7 +199,6 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     popTime = popTime/loopCount
     evalTime = evalTime/loopCount
     bestTime = bestTime/loopCount
-    evalLoopTime = evalLoopTime/loopCount
     print(
         f"\n{'=' * 44}\n"
         f"{networkName:^44}\n"
@@ -220,7 +212,6 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Avg. EvalTime:       {evalTime:.3f} seconds\n"
         f"Avg. PopTime:        {popTime:.3f} seconds\n"
         f"Avg BestTime:        {bestTime:.3f} seconds\n"
-        f"Avg EvalLoop time per Population: {evalLoopTime:.3f}\n"
         f"Training time:       {totalTrainingTime:.3f} seconds\n"
         f"Final loss:          {bestNetwork.loss.item():.4f}\n"
         f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
