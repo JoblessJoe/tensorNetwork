@@ -42,7 +42,7 @@ def visualize(xBounds: tuple[float, float], yBounds: tuple[float, float], pixelC
 
 if __name__ == "__main__":
     trainingData = generateTrainingData(inCircle, (1.5, 2.5), (0.5, 1.5), 5000)
-    trainingIterations = 5000
+    trainingIterations = 15000
     populationSize = 300
     circle = ((2.0, 1.0), 0.4)
     xBounds=(1.5, 2.5)
