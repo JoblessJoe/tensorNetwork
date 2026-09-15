@@ -5,7 +5,7 @@ import torch
 
 
 if torch.cuda.is_available():
-    DEVICE = "cuda:0"
+    DEVICE = "cuda:1"
 elif torch.backends.mps.is_available():
     DEVICE = "mps"
 else:
