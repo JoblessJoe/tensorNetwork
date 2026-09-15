@@ -88,8 +88,8 @@ def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torc
 def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutationRate: float) -> list[Network]:
     '''Takes a tensor of the 'to breed-/parent'-networks and randomly chooses edges and biases from them and returns a list of 'child'-networks.
     '''
-    newGen = []
 
+    newGen = []
     for i in range(0, len(selection[0].layers)):
         selWeights = torch.stack([n.layers[i][0] for n in selection]) # gets the weights for layer 'i' of all the selection networks and makes them into a tensor
         selBiases = torch.stack([n.layers[i][1] for n in selection])
@@ -165,11 +165,13 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     evalTime = 0.0
     popTime = 0.0
     bestTime = 0.0
+    evalLoopTime = 0.0
     with tqdm(total=iterations, desc=networkName, unit="gen") as pbar:
         while loopCount < iterations:
             start = time.perf_counter()
             loopCount += 1
             # evaluating each network on the trainingdata
+            evalLoopStart=time.perf_counter()
             for i in range(0, populationSize):
                 evalStart = time.perf_counter()
                 evaluation = evaluateNetwork(currPopulation[i], trainingData[0], trainingData[1])
@@ -179,6 +181,8 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
                 accuracy = evaluation[1]
                 currPopulation[i].loss = loss
                 currPopulation[i].accuracy = accuracy
+            torch.cuda.synchronize()
+            evalLoopTime += time.perf_counter()- evalLoopStart
 
             # store only the best performers
             bestStart = time.perf_counter()
@@ -202,6 +206,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
     popTime = popTime/loopCount
     evalTime = evalTime/loopCount
     bestTime = bestTime/loopCount
+    evalLoopTime = evalLoopTime/loopCount
     print(
         f"\n{'=' * 44}\n"
         f"{networkName:^44}\n"
@@ -215,6 +220,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Avg. EvalTime:       {evalTime:.3f} seconds\n"
         f"Avg. PopTime:        {popTime:.3f} seconds\n"
         f"Avg BestTime:        {bestTime:.3f} seconds\n"
+        f"Avg EvalLoop time per Population: {evalLoopTime:.3f}\n"
         f"Training time:       {totalTrainingTime:.3f} seconds\n"
         f"Final loss:          {bestNetwork.loss.item():.4f}\n"
         f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
