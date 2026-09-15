@@ -109,7 +109,7 @@ def buildPopulation(populationSize: int, selection: list[Network], sigma: float,
 
     while currPopCount < populationSize:
         currPopCount += 1
-        parents = pickRandomParents(selection)
+        parents = pickRandomParents(selection,populationSize, eliteCount)
         child = breed(parents[0], parents[1], sigma, mutationRate)
         newPopulation.append(child)
 

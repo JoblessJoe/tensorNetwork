@@ -64,4 +64,4 @@ if __name__ == "__main__":
     hidden2 = [20]
     NetworkTwo = trainingLoop(trainingIterations, populationSize, 0.1, 0.05, 3, 0.1, trainingData,
                               inputSize=in2, hiddenSizes=hidden2, outputSize=out2, networkName="Network #2")
-    visualize(xBounds, yBounds, pixelCount, circle, NetworkTwo)
+    visualize(xBounds, yBounds, pixelCount, circle, NetworkTwo) 
