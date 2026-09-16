@@ -198,7 +198,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
             pbar.set_postfix(loss=f"{best[0].loss:.4f}", acc=f"{best[0].accuracy:.2%}")
             pbar.update(1)
-            accuracyLog+= [torch.stack([n.accuracy for n in best]).mean().item]
+            accuracyLog+= [torch.stack([n.accuracy for n in best]).mean().item()]
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]

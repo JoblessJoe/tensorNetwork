@@ -75,6 +75,7 @@ if __name__ == "__main__":
     frogLoverTuple = trainingLoop(iterations, populationSizeLover, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
     frogLover = frogLoverTuple[0]
     frogLoverLog = frogLoverTuple[1]
+    torch.save(frogLoverLog, f"visualizations/frogLoverLog_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.pt")
     plt.plot(frogLoverLog, label="FrogLover")
     plt.legend()
 
