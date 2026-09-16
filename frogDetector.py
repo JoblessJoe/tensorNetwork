@@ -1,11 +1,8 @@
 from torchvision.datasets import CIFAR10
 from torchvision.transforms.functional import to_tensor
-from datetime import datetime
 import torch
-from network import Network, buildNetwork, DEVICE
+from network import buildNetwork, DEVICE
 from training import trainingLoop
-import math
-import matplotlib.pyplot as plt
 
 '''
 Plan here:
@@ -65,6 +62,7 @@ if __name__ == "__main__":
     untrainedFrogLover = buildNetwork(inSize, hiddenSizesLover, outputSize)
 
     frogHunter = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogHunter, inSize, hiddenSizesHunter, outputSize, "FrogHunter")
+    torch.cuda.empty_cache()
     frogLover = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
      
 
