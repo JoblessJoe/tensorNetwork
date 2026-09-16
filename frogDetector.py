@@ -75,11 +75,11 @@ if __name__ == "__main__":
     frogLoverTuple = trainingLoop(iterations, populationSizeLover, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
     frogLover = frogLoverTuple[0]
     frogLoverLog = frogLoverTuple[1]
-    torch.save(frogLoverLog, f"visualizations/frogLoverLog_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.pt")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    torch.save(frogLoverLog, f"visualizations/frogLoverLog_{timestamp}.pt")
     plt.plot(frogLoverLog, label="FrogLover")
     plt.legend()
 
     os.makedirs('visualizations', exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     plt.savefig(f"visualizations/frog_accuracy_{timestamp}.png")
     
