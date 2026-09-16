@@ -38,6 +38,7 @@ def crossEntropyLoss(target: torch.Tensor, prediction: torch.Tensor) -> float:
     loss = -(target * torch.log(pred) + (1 - target) * torch.log(1 - pred))
     return loss.mean()
 
+
 def getAccuracy(predictions: torch.Tensor, target: torch.Tensor) -> float:
     '''
     Returns the Accuracy of a networks predictions as a float between 0.0 and 1.0.
@@ -138,7 +139,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
                 keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
                 networkName: str = "network") -> Network:
-    '''Runs the training of a network fora given amount of 'iterations'.
+    '''Runs the training of a network for a given amount of 'iterations'.
     \n It handles:
         * population generation
         * evaluation
@@ -199,7 +200,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
-    totalTrainingTime = time.perf_counter()-functionStart
+    totalTrainingTime = time.perf_counter() - functionStart
     popTime = popTime/loopCount
     evalTime = evalTime/loopCount
     sortTime = sortTime/loopCount

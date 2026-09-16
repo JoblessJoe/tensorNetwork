@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 import torch
-from network import Network, DEVICE
+from network import Network, DEVICE, buildNetwork
 from training import generateTrainingData, trainingLoop
 import math
 import matplotlib.pyplot as plt
