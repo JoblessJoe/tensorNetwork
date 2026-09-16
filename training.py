@@ -148,6 +148,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         * mutation
     And when training is finished it returns the trained network.
     '''
+    accuracyLog = []
     functionStart = time.perf_counter()
     print("Start of training loop!")
     print("Generating first population...")
@@ -197,6 +198,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
 
             pbar.set_postfix(loss=f"{best[0].loss:.4f}", acc=f"{best[0].accuracy:.2%}")
             pbar.update(1)
+            accuracyLog += [best[0].accuracy.item()]
 
     avgIterTime = avgIterTime / loopCount
     bestNetwork = selection(currPopulation, 1.0)[0]
@@ -222,4 +224,4 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
         f"Accuracy:            {bestNetwork.accuracy.item():.2%}\n"
         f"{'=' * 44}\n"
     )
-    return bestNetwork  # returns the fittest network after all iterations are done
+    return bestNetwork, accuracyLog  # returns the fittest network after all iterations are done, and the accuracy Log

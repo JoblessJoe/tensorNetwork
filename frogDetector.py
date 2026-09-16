@@ -1,8 +1,12 @@
+from matplotlib import pyplot as plt
 from torchvision.datasets import CIFAR10
 from torchvision.transforms.functional import to_tensor
 import torch
 from network import buildNetwork, DEVICE
 from training import trainingLoop
+import os
+from datetime import datetime
+
 
 '''
 Plan here:
@@ -45,12 +49,12 @@ if __name__ == "__main__":
     pixelCount = 32 * 32
     perPixelVal = 3
     inSize = pixelCount * perPixelVal  # == 3072 input neurons
-    hiddenSizesHunter = [2000, 1000, 750, 500, 250, 100, 50, 10]
-    hiddenSizesLover = [2500, 2000, 2000, 500, 250, 50]
+    hiddenSizesHunter = [256, 256, 128, 64, 32]
+    hiddenSizesLover = [256, 256, 256, 256, 256]
     outputSize = 1
 
-    iterations = 10000
-    populationSize = 50
+    iterations = 1000
+    populationSize = 500
     populationSizeLover = 25  # FrogLover has ~1.9x FrogHunter's parameter count, scaled down for memory headroom
     mutationRate = 0.05
     sigma = 0.1
@@ -59,12 +63,22 @@ if __name__ == "__main__":
     trainingData = generateCifarTrainingData("frog", dataPointsPerClass=1000)
 
     # two different Networks with different architectures
-    # untrainedFrogHunter = buildNetwork(inSize, hiddenSizesHunter, outputSize)
+    untrainedFrogHunter = buildNetwork(inSize, hiddenSizesHunter, outputSize)
     untrainedFrogLover = buildNetwork(inSize, hiddenSizesLover, outputSize)
 
-    # frogHunter = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogHunter, inSize, hiddenSizesHunter, outputSize, "FrogHunter")
-    torch.cuda.empty_cache()
-    frogLover = trainingLoop(iterations, populationSizeLover, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
-     
+    #frogHunterT = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogHunter, inSize, hiddenSizesHunter, outputSize, "FrogHunter")
+    #frogHunter = frogHunterT[0]
+    #frogHunterLog = frogHunterT[1]
+    #plt.plot(frogHunterLog, label="FrogHunter")
 
+    torch.cuda.empty_cache()
+    frogLoverTuple = trainingLoop(iterations, populationSizeLover, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
+    frogLover = frogLoverTuple[0]
+    frogLoverLog = frogLoverTuple[1]
+    plt.plot(frogLoverLog, label="FrogLover")
+    plt.legend()
+
+    os.makedirs('visualizations', exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    plt.savefig(f"visualizations/frog_accuracy_{timestamp}.png")
     
