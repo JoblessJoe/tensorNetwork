@@ -51,6 +51,7 @@ if __name__ == "__main__":
 
     iterations = 500
     populationSize = 50
+    populationSizeLover = 25  # FrogLover has ~1.9x FrogHunter's parameter count, scaled down for memory headroom
     mutationRate = 0.05
     sigma = 0.1
     eliteCount = 3
@@ -58,12 +59,12 @@ if __name__ == "__main__":
     trainingData = generateCifarTrainingData("frog", dataPointsPerClass=1000)
 
     # two different Networks with different architectures
-    untrainedFrogHunter = buildNetwork(inSize, hiddenSizesHunter, outputSize)
+    # untrainedFrogHunter = buildNetwork(inSize, hiddenSizesHunter, outputSize)
     untrainedFrogLover = buildNetwork(inSize, hiddenSizesLover, outputSize)
 
-    frogHunter = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogHunter, inSize, hiddenSizesHunter, outputSize, "FrogHunter")
+    # frogHunter = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogHunter, inSize, hiddenSizesHunter, outputSize, "FrogHunter")
     torch.cuda.empty_cache()
-    frogLover = trainingLoop(iterations, populationSize, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
+    frogLover = trainingLoop(iterations, populationSizeLover, mutationRate, sigma, eliteCount, keepPart, trainingData, untrainedFrogLover, inSize, hiddenSizesLover, outputSize, "FrogLover")
      
 
     
