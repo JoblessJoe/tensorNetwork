@@ -53,7 +53,7 @@ if __name__ == "__main__":
     outputSize = 1
 
     iterations = 500
-    populationSize = 200
+    populationSize = 50
     mutationRate = 0.05
     sigma = 0.1
     eliteCount = 3
