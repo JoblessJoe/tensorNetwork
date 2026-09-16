@@ -53,7 +53,7 @@ if __name__ == "__main__":
     hiddenSizesLover = [256, 256, 256, 256, 256]
     outputSize = 1
 
-    iterations = 10000
+    iterations = 100000
     populationSize = 500
     populationSizeLover = 25  # FrogLover has ~1.9x FrogHunter's parameter count, scaled down for memory headroom
     mutationRate = 0.05
