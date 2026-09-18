@@ -8,17 +8,6 @@ import os
 from datetime import datetime
 
 
-'''
-Plan here:
-    - network gets a 32x32 image
-        ==> inputSize = 32*32*3 = 3072
-    - returns 1.0 for class Frog and 0.0 for everything else
-
-We need:
-
-'''
-
-
 def generateCifarTrainingData(targetClass: str, dataPointsPerClass: int = 1000, datasetRoot: str = "./data") -> tuple[torch.Tensor, torch.Tensor]:
     '''
     Builds a class-balanced binary training set from CIFAR-10: 'dataPointsPerClass' images of
@@ -55,7 +44,7 @@ if __name__ == "__main__":
 
     iterations = 100000
     populationSize = 500
-    populationSizeLover = 25  # FrogLover has ~1.9x FrogHunter's parameter count, scaled down for memory headroom
+    populationSizeLover = 500  # ~6x VRAM-multiplier estimate puts this comfortably under the 22GB ceiling for this architecture
     mutationRate = 0.05
     sigma = 0.1
     eliteCount = 3
@@ -76,10 +65,10 @@ if __name__ == "__main__":
     frogLover = frogLoverTuple[0]
     frogLoverLog = frogLoverTuple[1]
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    os.makedirs('visualizations', exist_ok=True)
     torch.save(frogLoverLog, f"visualizations/frogLoverLog_{timestamp}.pt")
     plt.plot(frogLoverLog, label="FrogLover")
     plt.legend()
 
-    os.makedirs('visualizations', exist_ok=True)
     plt.savefig(f"visualizations/frog_accuracy_{timestamp}.png")
     
