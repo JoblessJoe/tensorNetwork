@@ -1,8 +1,10 @@
 import os
 import sys
+import time
 import torch
 import asyncio
 from network import Network, DEVICE, buildNetwork
+from training import breed
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
 
@@ -47,19 +49,20 @@ async def runEnv(network: Network):
     return network
 
 
-async def runGeneration(populationSize: int, startNetwork: Network | None = None, inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None):
-    network = startNetwork or buildNetwork(inputSize, hiddenSizes, outputSize)
-    population = []
+async def evaluateNetwork(populationSize: int, network: Network, iterations: int = 5):
+    '''
+    Runs one network for a give number of iterations and 
+    returns its fitness, averaged over these number of runs.
+    '''
+    fitness = 0
+    for i in range(0, iterations):
+        res = await runEnv(network).score
+        fitness += [res]
 
-    # building the population of concurrent sprudelJump instances
-    for i in range(0, populationSize):
-        population += [runEnv(network)]
-    await population
-    return population
-        
+    return fitness / iterations
 
 
-async def sprudlerTrainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
+def sprudlerTrainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
                 networkName: str = "network") -> Network:
@@ -67,16 +70,42 @@ async def sprudlerTrainingLoop(iterations: int, populationSize: int, mutationRat
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
     '''
+    functionStart = time.perf_counter()
+    print("Start of training loop!")
+    print("Generating first population...")
     network = startNetwork
-    currGeneration = Network
-    # training loop
-    for i in range(0, iterations):
-        currGeneration = await runGeneration(populationSize, network, inputSize, hiddenSizes, outputSize)
+    # if no startNetwork is given generate a population of networks with completely random weights and biases
+    if inputSize is not None and outputSize is not None and hiddenSizes is not None:
+        currPopulation = []
+        for i in range(0, populationSize):
+            currPopulation.append(buildNetwork(inputSize, hiddenSizes, outputSize))
 
+    # if startNetwork is given build a population of slight variations of itself, through mutation
+    elif startNetwork is not None:
+        currPopulation = []
+        for i in range(0, populationSize):
+            network = breed(startNetwork, startNetwork, sigma, mutationRate)
+            currPopulation.append(network)
+    else:
+        raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
+
+    for i in range(0, iterations):
+        # - run a population of sprudelJump instances in parallel, (cpu parallel)
+        # - select the best
+        # - breed them
+        # - rerun the loop until iterations are done
+
+    
 ### current issues:
 # -  parallelizing sprudelJump instances.
 # -  how many different networks per generation?
-# -  
+# - 
+# 
+
+### idea:
+# - run idk 5-10 concurrent instances eacha different network. 
+#  and run each network for 5-10 times and then avg the fitness out over those runs.
+#  and then select on this avg fitness. not on one runs result alones
 
 
 if __name__ == "__main__":
