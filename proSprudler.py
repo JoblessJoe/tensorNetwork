@@ -11,6 +11,11 @@ from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
 
+# Tensors sent to pool workers go through shared memory. The Linux default ('file_descriptor') keeps one open
+# fd per tensor, which blows past the 1024-fd limit at ~200 networks ("Too many open files"). 'file_system'
+# uses named shared-memory files instead. (macOS already uses this by default.)
+torch.multiprocessing.set_sharing_strategy("file_system")
+
 LONG_GAME_REPORT_FRAMES = 1_000_000  # a game running longer than this prints a status line every this many frames
 LIVE_UPDATE_FRAMES = 5_000  # how often (in frames) a worker publishes its current game's score to liveStatus
 
