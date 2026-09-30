@@ -3,6 +3,7 @@ import sys
 import time
 import torch
 from functools import partial
+from tqdm import tqdm
 from multiprocessing import Pool
 from network import Network, buildNetwork, DEVICE
 from training import buildPopulation
@@ -88,16 +89,43 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     ## TRAININGLOOP
     # each loop runs one generation of networks, selects the best and breeds them, then the next
     # iteration does the same until the training is done.  
+    evalTime = 0.0
+    breedTime = 0.0
+    bestEver = float("-inf")
     with Pool(concInstances, initializer=torch.set_num_threads, initargs=(1,)) as p:
-        for i in range(0, generations):
-            evaluate = partial(evaluateNetwork, iterations=perNetworkIterations)
-            genResults = p.map(evaluate, currGen) # returns a list of game scores of the networks
-            # saving the score for every network
-            for j in range(0, len(genResults)):
-                currGen[j].score = genResults[j]
-            selection = SprudlerSelection(currGen, keepPartSelection)
-            currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount)
-    print (f"Training finished in {time.perf_counter() - start} seconds")
+        with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
+            for i in range(0, generations):
+                evalStart = time.perf_counter()
+                evaluate = partial(evaluateNetwork, iterations=perNetworkIterations)
+                genResults = p.map(evaluate, currGen) # returns a list of game scores of the networks
+                evalTime += time.perf_counter() - evalStart
+                # saving the score for every network
+                for j in range(0, len(genResults)):
+                    currGen[j].score = genResults[j]
+                selection = SprudlerSelection(currGen, keepPartSelection)
+                breedStart = time.perf_counter()
+                currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount)
+                breedTime += time.perf_counter() - breedStart
+
+                bestEver = max(bestEver, selection[0].score)
+                pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum(genResults) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
+                pbar.update(1)
+
+    totalTime = time.perf_counter() - start
+    print(
+        f"\n{'=' * 44}\n"
+        f"{networkName:^44}\n"
+        f"{'=' * 44}\n"
+        f"Population size:     {populationSize}\n"
+        f"Generations:         {generations}\n"
+        f"Games per network:   {perNetworkIterations}\n"
+        f"Worker processes:    {concInstances}\n"
+        f"Avg. EvalTime:       {evalTime / generations:.3f} seconds\n"
+        f"Avg. BreedTime:      {breedTime / generations:.3f} seconds\n"
+        f"Total time:          {totalTime:.1f} seconds\n"
+        f"Best avg. score:     {selection[0].score:.1f} (last generation)\n"
+        f"{'=' * 44}"
+    )
 
     return selection[0] # return the best network of the last trained generation
 
