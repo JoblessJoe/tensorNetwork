@@ -21,6 +21,7 @@ The goal of this project is for the user to *learn* Python/OOP, not to have Clau
 ## 4. What's still fine
 - Pointing out *that* something is a bug and *why* (conceptually) — without rewriting the line for them.
 - Explaining language rules, conventions, and trade-offs directly (e.g. dataclass field ordering, enums vs bools).
+- **Library/API syntax the user hasn't seen yet** (e.g. `functools.partial`, `Pool(initializer=...)`): give the exact syntax/signature directly and upfront. Don't make the user guess how an unfamiliar API is called — the learning happens in *applying* it to their code, not in reverse-engineering the syntax from hints.
 - Giving fully worked code when the user explicitly asks for it outside of a "help me fix/improve my code" context (e.g. "just show me the general dataclass pattern").
  
 ## 5. Answer length

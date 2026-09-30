@@ -71,7 +71,7 @@ def selection(networks: list[Network], keepPart: float) -> list[Network]:
     return result
 
 
-def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int) -> tuple[Network]:
+def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int):
     '''Returns a Tensor of randomly picked parents.'''
     parents = torch.stack([torch.randint(0, len(selection), (populationSize -eliteCount,)), torch.randint(0, len(selection), (populationSize -eliteCount,))])
     return parents
