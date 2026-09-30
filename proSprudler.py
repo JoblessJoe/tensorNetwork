@@ -96,15 +96,42 @@ def runEnv(network: Network):
 
 def evaluateNetwork(network: Network, iterations: int = 5):
     '''
-    Runs one network for a given number of iterations and 
-    returns its score, averaged over these number of runs.
+    Plays 'iterations' games with the network side by side (lockstep) and
+    returns its score, averaged over these games.
+    Every frame, the states of all still-running games are stacked into one
+    [numAlive, 23] batch, so the network does ONE forwardPass per frame instead
+    of one per game - for a network this small, torch's per-call overhead
+    dominates, so this is ~5x faster than playing the games one after another.
     '''
-    score = 0
-    for i in range(0, iterations):
-        res = runEnv(network)
-        score += res
+    targetDevice = network.layers[0][0].device
+    envs = [SprudelJumpEnv() for i in range(0, iterations)]
+    states = [env.reset() for env in envs]
+    scores = [0.0] * iterations
+    # indices of the games still running. Row k of the batch belongs to game alive[k] -
+    # that's how each output row gets back to the right game once some games have died.
+    alive = list(range(0, iterations))
+    frames = 0
 
-    return score / iterations
+    while alive:
+        batch = torch.tensor([states[g] for g in alive], device=targetDevice)  # [numAlive, 23]
+        actions = network.forwardPass(batch).tolist()  # [numAlive, 2], row k -> game alive[k]
+        stillAlive = []
+        for g, action in zip(alive, actions):
+            states[g], scores[g], done = envs[g].step(action)
+            if not done:
+                stillAlive.append(g)
+        alive = stillAlive
+        frames += 1
+
+        if liveStatus is not None and alive and frames % LIVE_UPDATE_FRAMES == 0:
+            liveStatus[os.getpid()] = (max(scores[g] for g in alive), frames)
+        # status line for unusually long games, so a run that seems stuck can be told apart from one that's still climbing
+        if alive and frames % LONG_GAME_REPORT_FRAMES == 0:
+            print(f"[worker {os.getpid()}] long game still running: {frames:,} frames, best live score {max(scores[g] for g in alive):,.0f}", flush=True)
+
+    if liveStatus is not None:
+        liveStatus.pop(os.getpid(), None)  # all games over, no longer a live run
+    return sum(scores) / iterations
 
 
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
