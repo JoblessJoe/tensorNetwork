@@ -76,7 +76,7 @@ def batchForwardPass(networks: list[Network], inputs: torch.Tensor) -> torch.Ten
     return torch.sigmoid(outputPrev @ popWeights.transpose(1, 2) + popBiases.unsqueeze(1))
 
 
-def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
+def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int, targetDevice: str=DEVICE):
     '''
     Receives the dimensions and returns the new Network as a list of tuples containing 
     edgeWeight- and Bias-tensors with randomly generated values.
@@ -84,20 +84,20 @@ def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int):
 
     # building input Layer
     newNetwork = list()
-    inputWeights = torch.empty([hiddenSizes[0],inputSize], device=DEVICE)
+    inputWeights = torch.empty([hiddenSizes[0],inputSize], device=targetDevice)
     torch.nn.init.kaiming_uniform_(inputWeights, nonlinearity='relu')
-    inputBiases = torch.zeros([hiddenSizes[0]], device=DEVICE)
+    inputBiases = torch.zeros([hiddenSizes[0]], device=targetDevice)
     newNetwork.append((inputWeights, inputBiases))
 
     # building hidden Layers
     for i in range(1,len(hiddenSizes)):
-        newWeights = torch.empty(hiddenSizes[i], hiddenSizes[i-1], device=DEVICE)
+        newWeights = torch.empty(hiddenSizes[i], hiddenSizes[i-1], device=targetDevice)
         torch.nn.init.kaiming_uniform_(newWeights, nonlinearity='relu')
-        newBiases = torch.zeros([hiddenSizes[i]], device=DEVICE)
+        newBiases = torch.zeros([hiddenSizes[i]], device=targetDevice)
         newNetwork.append((newWeights, newBiases))
 
     # building output layer
-    outputWeights = torch.empty([outputSize, hiddenSizes[-1]], device=DEVICE)
+    outputWeights = torch.empty([outputSize, hiddenSizes[-1]], device=targetDevice)
     torch.nn.init.xavier_uniform_(outputWeights)
-    newNetwork.append((outputWeights, torch.zeros([outputSize], device=DEVICE)))
+    newNetwork.append((outputWeights, torch.zeros([outputSize], device=targetDevice)))
     return Network(layers=newNetwork, loss=None)

@@ -79,24 +79,25 @@ def pickRandomParents(selection: list[Network], populationSize: int, eliteCount:
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     '''Builds a new tensor by picking each element from 'a' or 'b' with 50/50 chance.'''
-    fromA = torch.rand_like(a, device=DEVICE) < 0.5
+    fromA = torch.rand_like(a) < 0.5
     return torch.where(fromA, a, b)
 
 
 def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torch.Tensor:
     '''Each element has 'mutationRate' chance to get gaussian noise (std 'sigma') added to it.'''
-    mutate = torch.rand_like(value, device=DEVICE) < mutationRate
-    noise = torch.randn_like(value, device=DEVICE) * sigma
+    mutate = torch.rand_like(value) < mutationRate
+    noise = torch.randn_like(value) * sigma
     return value + noise * mutate
 
 
 def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutationRate: float) -> list[Network]:
-    '''Takes a tensor of the 'to breed-/parent'-networks and randomly chooses edges and biases from them and returns a list of 'child'-networks.
+    '''Takes a tensor of the 'to breed-/parent'-networks and randomly 
+       chooses edges and biases from them and returns a list of 'child'-networks.
     '''
 
     newGen = []
     for i in range(0, len(selection[0].layers)):
-        selWeights = torch.stack([n.layers[i][0] for n in selection]) # gets the weights for layer 'i' of all the selection networks and makes them into a tensor
+        selWeights = torch.stack([n.layers[i][0] for n in selection]) # gets the weights for layer 'i' of all the selection networks and turns them into a tensor
         selBiases = torch.stack([n.layers[i][1] for n in selection])
         parentsAW = selWeights[parents[0]] # extracting only the to breed networks for that layer and handing it to the crossoverTensor function 
         parentsABias = selBiases[parents[0]]
