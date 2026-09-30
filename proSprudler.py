@@ -198,7 +198,7 @@ if __name__ == "__main__":
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
     perNetworkIterations = 10
-    generations = 50
+    generations = 500
     popSize = 200
     mutRate = 0.1
     sigma = 0.1
