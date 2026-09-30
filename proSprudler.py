@@ -135,7 +135,7 @@ def evaluateNetwork(network: Network, iterations: int = 5):
 
 
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
-                keepPartSelection: float, startNetwork: Network | None = None,
+                keepPartSelection: float, crossover: bool = False, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
                 networkName: str = "network", targetDevice: str = "cpu") -> Network:
     '''
@@ -154,7 +154,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     # if startNetwork is given build a population of slight variations of itself, through mutation
     elif startNetwork is not None:
         selection = [startNetwork for i in range(0, populationSize)]
-        currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount)
+        currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
     else:
         raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
 
@@ -192,7 +192,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                     currGen[j].score = genResults[j]
                 selection = SprudlerSelection(currGen, keepPartSelection)
                 breedStart = time.perf_counter()
-                currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount)
+                currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
                 breedTime += time.perf_counter() - breedStart
 
                 bestEver = max(bestEver, selection[0].score)
@@ -209,6 +209,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         f"Population size:     {populationSize}\n"
         f"Generations:         {generations}\n"
         f"Games per network:   {perNetworkIterations}\n"
+        f"Crossover:           {crossover}\n"
         f"Worker processes:    {concInstances}\n"
         f"Avg. EvalTime:       {evalTime / generations:.3f} seconds\n"
         f"Avg. BreedTime:      {breedTime / generations:.3f} seconds\n"
@@ -224,12 +225,12 @@ if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    perNetworkIterations = 10
-    generations = 500
+    perNetworkIterations = 30
+    generations = 1000
     popSize = 200
     mutRate = 0.1
     sigma = 0.1
     eliteCount = 3
     keepPart = 0.25
-    concurrent = 18
+    concurrent = 20
     bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")

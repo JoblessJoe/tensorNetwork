@@ -71,10 +71,16 @@ def selection(networks: list[Network], keepPart: float) -> list[Network]:
     return result
 
 
-def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int):
-    '''Returns a Tensor of randomly picked parents.'''
-    parents = torch.stack([torch.randint(0, len(selection), (populationSize -eliteCount,)), torch.randint(0, len(selection), (populationSize -eliteCount,))])
-    return parents
+def pickRandomParents(selection: list[Network], populationSize: int, eliteCount: int, crossover: bool = True):
+    '''
+    Returns a [2, populationSize - eliteCount] Tensor of randomly picked parent indices into 'selection'
+    (row 0 = parent A, row 1 = parent B of each child).
+    With crossover=False, row 1 is a copy of row 0: every child has A == B, so crossoverTensor(A, A)
+    returns A unchanged and the child is just one parent + mutation.
+    '''
+    parentsA = torch.randint(0, len(selection), (populationSize - eliteCount,))
+    parentsB = torch.randint(0, len(selection), (populationSize - eliteCount,)) if crossover else parentsA.clone()
+    return torch.stack([parentsA, parentsB])
 
 
 def crossoverTensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
@@ -90,7 +96,7 @@ def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torc
     return value + noise * mutate
 
 
-def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutationRate: float) -> list[Network]:
+def breed(selection: list[Network], sigma: float, mutationRate: float, parents: torch.Tensor | None = None) -> list[Network]:
     '''Takes a tensor of the 'to breed-/parent'-networks and randomly 
        chooses edges and biases from them and returns a list of 'child'-networks.
     '''
@@ -99,13 +105,19 @@ def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutatio
     for i in range(0, len(selection[0].layers)):
         selWeights = torch.stack([n.layers[i][0] for n in selection]) # gets the weights for layer 'i' of all the selection networks and turns them into a tensor
         selBiases = torch.stack([n.layers[i][1] for n in selection])
-        parentsAW = selWeights[parents[0]] # extracting only the to breed networks for that layer and handing it to the crossoverTensor function 
-        parentsABias = selBiases[parents[0]]
-        parentsBW = selWeights[parents[1]]
-        parentsBBias = selBiases[parents[1]]
-        newLayerWeights = mutateTensor(crossoverTensor(parentsAW, parentsBW), sigma, mutationRate)
-        newLayerBiases = mutateTensor(crossoverTensor(parentsABias, parentsBBias), sigma, mutationRate)
-        newGen += [(newLayerWeights, newLayerBiases)]
+        if parents is not None:
+            parentsAW = selWeights[parents[0]] # extracting only the to breed networks for that layer and handing it to the crossoverTensor function 
+            parentsABias = selBiases[parents[0]]
+            parentsBW = selWeights[parents[1]]
+            parentsBBias = selBiases[parents[1]]
+            newLayerWeights = mutateTensor(crossoverTensor(parentsAW, parentsBW), sigma, mutationRate)
+            newLayerBiases = mutateTensor(crossoverTensor(parentsABias, parentsBBias), sigma, mutationRate)
+            newGen += [(newLayerWeights, newLayerBiases)]
+        else:
+            newLayerWeights = mutateTensor(selWeights, sigma, mutationRate)
+            newLayerBiases = mutateTensor(selBiases, sigma, mutationRate)
+            newGen += [(newLayerWeights, newLayerBiases)]
+        
 
     # Now rebuilding a list of networks out of the batched layered 'newGen' variable
     networks = []
@@ -123,11 +135,14 @@ def breed(selection: list[Network], parents: torch.Tensor, sigma: float, mutatio
     return networks
 
 
-def buildPopulation(populationSize: int, selection: list[Network], sigma: float, mutationRate: float, eliteCount: int = 3) -> list[Network]:
-    '''Builds a new generation of Networks breeded from the selection of the previous generation and returns it as a list.'''
+def buildPopulation(populationSize: int, selection: list[Network], sigma: float, mutationRate: float, eliteCount: int = 3, crossover: bool = True) -> list[Network]:
+    '''
+    Builds a new generation of Networks breeded from the selection of the previous generation and returns it as a list.
+    crossover=False -> mutation only (each child = one randomly picked parent + mutation).
+    '''
 
-    parents = pickRandomParents(selection, populationSize, eliteCount)
-    newPopulation = breed(selection, parents, sigma, mutationRate)
+    parents = pickRandomParents(selection, populationSize, eliteCount, crossover)
+    newPopulation = breed(selection, sigma, mutationRate, parents)
 
     # Saving elite individuals from mutation and breeding
     for i in range(0, eliteCount):
