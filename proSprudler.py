@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from datetime import datetime
 import torch
 from functools import partial
 from tqdm import tqdm
@@ -37,6 +38,24 @@ def SprudlerSelection(networks: list[Network], keepPart: float) -> list[Network]
     sel = torch.topk(scoreTensor, split)
     result = [networks[el] for el in sel.indices]
     return result
+
+
+def saveNetwork(network: Network, networkName: str) -> str:
+    '''
+    Saves the network's layers (weights + biases) and score to
+    'models/<networkName>_<timestamp>.pt' and returns that path.
+    '''
+    os.makedirs("models", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = f"models/{networkName}_{timestamp}.pt"
+    torch.save({"layers": network.layers, "score": network.score}, path)
+    return path
+
+
+def loadNetwork(path: str, targetDevice: str = "cpu") -> Network:
+    '''Loads a network saved by 'saveNetwork', e.g. to continue training via 'startNetwork'.'''
+    data = torch.load(path, map_location=targetDevice)
+    return Network(layers=data["layers"], score=data["score"])
 
 
 def runEnv(network: Network):
@@ -149,6 +168,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                 pbar.update(1)
 
     manager.shutdown()
+    savePath = saveNetwork(selection[0], networkName)
     totalTime = time.perf_counter() - start
     print(
         f"\n{'=' * 44}\n"
@@ -162,6 +182,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         f"Avg. BreedTime:      {breedTime / generations:.3f} seconds\n"
         f"Total time:          {totalTime:.1f} seconds\n"
         f"Best avg. score:     {selection[0].score:.1f} (last generation)\n"
+        f"Saved to:            {savePath}\n"
         f"{'=' * 44}"
     )
 
@@ -171,13 +192,12 @@ if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    sprudler = buildNetwork(inS, hiS, outS, "cpu") # build the network
     perNetworkIterations = 10
     generations = 50
-    popSize = 18
+    popSize = 200
     mutRate = 0.1
     sigma = 0.1
     eliteCount = 3
-    keepPart = 0.7
+    keepPart = 0.25
     concurrent = 18
-    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, startNetwork=sprudler, networkName="sprudler")
+    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")
