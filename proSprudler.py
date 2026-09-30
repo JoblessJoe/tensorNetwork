@@ -4,11 +4,23 @@ import time
 import torch
 from functools import partial
 from tqdm import tqdm
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager, TimeoutError
 from network import Network, buildNetwork, DEVICE
 from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
+
+LONG_GAME_REPORT_FRAMES = 1_000_000  # a game running longer than this prints a status line every this many frames
+LIVE_UPDATE_FRAMES = 5_000  # how often (in frames) a worker publishes its current game's score to liveStatus
+
+liveStatus = None  # per-worker shared dict {pid: (score, frames)}, set in each worker by workerInit
+
+
+def workerInit(sharedStatus):
+    '''Runs once in every pool worker when it starts.'''
+    global liveStatus
+    liveStatus = sharedStatus
+    torch.set_num_threads(1)
 
 
 def SprudlerSelection(networks: list[Network], keepPart: float) -> list[Network]:
@@ -40,12 +52,21 @@ def runEnv(network: Network):
     startAction = network.forwardPass(startTensor).squeeze(0).tolist()
     currState = env.step(startAction) # caclulating first game input
     alive = not (currState[2])
+    frames = 1
 
     while alive:
         action = torch.tensor(currState[0], device=targetDevice).unsqueeze(0) # transforming the action into a tensor for the NN
         nextAction = network.forwardPass(action).squeeze(0).tolist() #  calculated action by the NN
         currState = env.step(nextAction) # calculating the next State based on the prev action
         alive = not (currState[2])
+        frames += 1
+        if liveStatus is not None and frames % LIVE_UPDATE_FRAMES == 0:
+            liveStatus[os.getpid()] = (currState[1], frames)
+        # status line for unusually long games, so a run that seems stuck can be told apart from one that's still climbing
+        if frames % LONG_GAME_REPORT_FRAMES == 0:
+            print(f"[worker {os.getpid()}] long game still running: {frames:,} frames, score {currState[1]:,.0f}", flush=True)
+    if liveStatus is not None:
+        liveStatus.pop(os.getpid(), None)  # game over, no longer a live run
     return currState[1]
 
 
@@ -92,12 +113,28 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     evalTime = 0.0
     breedTime = 0.0
     bestEver = float("-inf")
-    with Pool(concInstances, initializer=torch.set_num_threads, initargs=(1,)) as p:
+    manager = Manager()
+    sharedStatus = manager.dict()
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
         with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
             for i in range(0, generations):
                 evalStart = time.perf_counter()
                 evaluate = partial(evaluateNetwork, iterations=perNetworkIterations)
-                genResults = p.map(evaluate, currGen) # returns a list of game scores of the networks
+                # imap instead of map: same results in the same order, but yields each one as soon as it's done,
+                # so the inner bar can show how many networks of this generation have finished.
+                # next(timeout=1) wakes up every second even if nothing finished, to refresh the live scores.
+                genResults = []
+                results = p.imap(evaluate, currGen)
+                with tqdm(total=len(currGen), desc=f"  gen {i + 1}", unit="net", leave=False) as genBar:
+                    while len(genResults) < len(currGen):
+                        try:
+                            genResults.append(results.next(timeout=1.0))
+                            genBar.update(1)
+                        except TimeoutError:
+                            pass
+                        live = sorted(sharedStatus.values(), reverse=True)  # [(score, frames), ...] best first
+                        top = "  ".join(f"{sc:,.0f}@{fr // 1000}k" for sc, fr in live[:5])
+                        genBar.set_postfix_str(f"live={len(live)}  top: {top}" if live else "")
                 evalTime += time.perf_counter() - evalStart
                 # saving the score for every network
                 for j in range(0, len(genResults)):
@@ -111,6 +148,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                 pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum(genResults) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
                 pbar.update(1)
 
+    manager.shutdown()
     totalTime = time.perf_counter() - start
     print(
         f"\n{'=' * 44}\n"
