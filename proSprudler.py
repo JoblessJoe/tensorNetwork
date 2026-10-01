@@ -16,7 +16,8 @@ from env import SprudelJumpEnv
 # uses named shared-memory files instead. (macOS already uses this by default.)
 torch.multiprocessing.set_sharing_strategy("file_system")
 
-LONG_GAME_REPORT_FRAMES = 1_000_000  # a game running longer than this prints a status line every this many frames
+LONG_GAME_REPORT_FRAMES = 25_000  # a game running longer than this prints a status line every this many frames
+MAX_FRAMES_PER_GAME = 100_000  # default hard cap per game, so a network that climbs forever can't stall a generation
 LIVE_UPDATE_FRAMES = 5_000  # how often (in frames) a worker publishes its current game's score to liveStatus
 
 liveStatus = None  # per-worker shared dict {pid: (score, frames)}, set in each worker by workerInit
@@ -94,7 +95,7 @@ def runEnv(network: Network):
     return currState[1]
 
 
-def evaluateNetwork(network: Network, iterations: int = 5):
+def evaluateNetwork(network: Network, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
     returns its score, averaged over these games.
@@ -102,6 +103,8 @@ def evaluateNetwork(network: Network, iterations: int = 5):
     [numAlive, 23] batch, so the network does ONE forwardPass per frame instead
     of one per game - for a network this small, torch's per-call overhead
     dominates, so this is ~5x faster than playing the games one after another.
+    Games still running after 'maxFrames' frames are stopped and count with
+    the score they reached by then.
     '''
     targetDevice = network.layers[0][0].device
     envs = [SprudelJumpEnv() for i in range(0, iterations)]
@@ -112,7 +115,7 @@ def evaluateNetwork(network: Network, iterations: int = 5):
     alive = list(range(0, iterations))
     frames = 0
 
-    while alive:
+    while alive and frames < maxFrames:
         batch = torch.tensor([states[g] for g in alive], device=targetDevice)  # [numAlive, 23]
         actions = network.forwardPass(batch).tolist()  # [numAlive, 2], row k -> game alive[k]
         stillAlive = []
@@ -135,7 +138,7 @@ def evaluateNetwork(network: Network, iterations: int = 5):
 
 
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
-                keepPartSelection: float, crossover: bool = False, startNetwork: Network | None = None,
+                keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
                 networkName: str = "network", targetDevice: str = "cpu") -> Network:
     '''
@@ -170,7 +173,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
             for i in range(0, generations):
                 evalStart = time.perf_counter()
-                evaluate = partial(evaluateNetwork, iterations=perNetworkIterations)
+                evaluate = partial(evaluateNetwork, iterations=perNetworkIterations, maxFrames=maxFramesPerGame)
                 # imap instead of map: same results in the same order, but yields each one as soon as it's done,
                 # so the inner bar can show how many networks of this generation have finished.
                 # next(timeout=1) wakes up every second even if nothing finished, to refresh the live scores.
@@ -209,6 +212,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         f"Population size:     {populationSize}\n"
         f"Generations:         {generations}\n"
         f"Games per network:   {perNetworkIterations}\n"
+        f"Max frames per game: {maxFramesPerGame:,}\n"
         f"Crossover:           {crossover}\n"
         f"Worker processes:    {concInstances}\n"
         f"Avg. EvalTime:       {evalTime / generations:.3f} seconds\n"
