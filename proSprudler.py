@@ -46,14 +46,16 @@ def SprudlerSelection(networks: list[Network], keepPart: float) -> list[Network]
     return result
 
 
-def saveNetwork(network: Network, networkName: str) -> str:
+def saveNetwork(network: Network, networkName: str, path: str | None = None) -> str:
     '''
     Saves the network's layers (weights + biases) and score to
-    'models/<networkName>_<timestamp>.pt' and returns that path.
+    'models/<networkName>_<timestamp>.pt' or optionally to a 
+    individually chosen path and returns that.
     '''
     os.makedirs("models", exist_ok=True)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = f"models/{networkName}_{timestamp}.pt"
+    if path is None:
+        path = f"models/{networkName}_{timestamp}.pt"
     torch.save({"layers": network.layers, "score": network.score}, path)
     return path
 
@@ -146,6 +148,9 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     amount of times. Then it returns the trained network and writes its weights into a file.
     '''
     start = time.perf_counter()
+    os.makedirs("models", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = f"models/{networkName}_{timestamp}.pt"
     print("Start of training loop!")
     print("Generating first population...")
     # if no startNetwork is given generate a population of networks with completely random weights and biases
@@ -190,6 +195,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                         top = "  ".join(f"{sc:,.0f}@{fr // 1000}k" for sc, fr in live[:5])
                         genBar.set_postfix_str(f"live={len(live)}  top: {top}" if live else "")
                 evalTime += time.perf_counter() - evalStart
+
                 # saving the score for every network
                 for j in range(0, len(genResults)):
                     currGen[j].score = genResults[j]
@@ -197,13 +203,16 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                 breedStart = time.perf_counter()
                 currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
                 breedTime += time.perf_counter() - breedStart
+                # saving a network every 50 iterations as a 'Checkpoint' if the run fails
+                if (i + 1) % 50 == 0:
+                    saveNetwork(selection[0], networkName, path)
 
                 bestEver = max(bestEver, selection[0].score)
                 pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum(genResults) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
                 pbar.update(1)
 
     manager.shutdown()
-    savePath = saveNetwork(selection[0], networkName)
+    savePath = saveNetwork(selection[0], networkName, path)
     totalTime = time.perf_counter() - start
     print(
         f"\n{'=' * 44}\n"
