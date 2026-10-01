@@ -228,9 +228,9 @@ if __name__ == "__main__":
     perNetworkIterations = 30
     generations = 1000
     popSize = 200
-    mutRate = 0.1
-    sigma = 0.1
+    mutRate = 1.0
+    sigma = 0.03
     eliteCount = 3
-    keepPart = 0.25
+    keepPart = 0.1
     concurrent = 20
     bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")
