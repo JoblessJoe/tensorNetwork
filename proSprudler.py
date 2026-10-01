@@ -229,12 +229,13 @@ if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    perNetworkIterations = 30
-    generations = 1000
+    startNet = loadNetwork("models/sprudler_2026-10-01_14-50-00.pt")
+    perNetworkIterations = 50
+    generations = 500
     popSize = 200
     mutRate = 1.0
     sigma = 0.03
     eliteCount = 3
     keepPart = 0.1
     concurrent = 20
-    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")
+    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, startNetwork=startNet, networkName="sprudler")
