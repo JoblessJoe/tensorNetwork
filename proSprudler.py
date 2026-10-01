@@ -60,7 +60,7 @@ def saveNetwork(network: Network, networkName: str) -> str:
 
 def loadNetwork(path: str, targetDevice: str = "cpu") -> Network:
     '''Loads a network saved by 'saveNetwork', e.g. to continue training via 'startNetwork'.'''
-    data = torch.load(path, map_location=targetDevice)
+    data = torch.load(path, map_location=targetDevice, weights_only=True)
     return Network(layers=data["layers"], score=data["score"])
 
 
