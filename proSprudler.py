@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import sys
@@ -29,22 +30,6 @@ def workerInit(sharedStatus):
     global liveStatus
     liveStatus = sharedStatus
     torch.set_num_threads(1)
-
-
-def SprudlerSelection(networks: list[Network], keepPart: float) -> list[Network]:
-    '''
-    Takes a list of Networks after training and keeps
-    only the networks with the best 'SprudelJump' score. 
-    Chosen by 'keepPart' and returns this elite selection as a _sorted_ list.
-    '''
-    score = []
-    for n in networks:
-        score += [n.score]
-    scoreTensor = torch.tensor(score, device="cpu")
-    split = int(len(networks) * keepPart)
-    sel = torch.topk(scoreTensor, split)
-    result = [networks[el] for el in sel.indices]
-    return result
 
 
 def saveNetwork(network: Network, networkName: str, path: str | None = None) -> str:
@@ -98,6 +83,17 @@ def runEnv(network: Network, maxStartHeight: int | None = None):
     return currState[1]
 
 
+def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: float) -> list[Network]:
+    '''
+    Takes a tensor of Networks evaluations after training and keeps
+    only the networks with the best 'SprudelJump' score. 
+    Chosen by 'keepPart' and returns this elite selection as a _sorted_ list.
+    '''
+    sel = ranks.topk(math.floor(len(networks) * keepPart), largest=False, sorted=True)
+    result = [networks[el] for el in sel.indices]
+    return result
+
+
 def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
@@ -137,7 +133,7 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
 
     if liveStatus is not None:
         liveStatus.pop(os.getpid(), None)  # all games over, no longer a live run
-    return sum(scores) / iterations
+    return scores
 
 
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
@@ -178,14 +174,13 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
         with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
             for i in range(0, generations):
+                ## EVALUATION
                 evalStart = time.perf_counter()
                 seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]
                 evaluate = partial(evaluateNetwork,seeds=seeds, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, maxStartHeight=maxStartHeight)
-                # imap instead of map: same results in the same order, but yields each one as soon as it's done,
-                # so the inner bar can show how many networks of this generation have finished.
-                # next(timeout=1) wakes up every second even if nothing finished, to refresh the live scores.
                 genResults = []
                 results = p.imap(evaluate, currGen)
+                # Progress bar
                 with tqdm(total=len(currGen), desc=f"  gen {i + 1}", unit="net", leave=False) as genBar:
                     while len(genResults) < len(currGen):
                         try:
@@ -200,17 +195,25 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
 
                 # saving the score for every network
                 for j in range(0, len(genResults)):
-                    currGen[j].score = genResults[j]
-                selection = SprudlerSelection(currGen, keepPartSelection)
+                    currGen[j].score = sum(genResults[j]) / perNetworkIterations
+
+                ## SELECTION
+                # turning the scores into a tensor and ranking it against the other networks then selecting based on those ranks
+                resultsTensor = torch.tensor(genResults)
+                ranks = resultsTensor.argsort(dim=0, descending=True).argsort(dim=0).float().mean(1)
+                selection = SprudlerSelection(currGen, ranks, keepPartSelection)
+
+                ## REPRODUCTION
                 breedStart = time.perf_counter()
                 currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
                 breedTime += time.perf_counter() - breedStart
+                
                 # saving a network every 50 iterations as a 'Checkpoint' if the run fails
                 if (i + 1) % 50 == 0:
                     saveNetwork(selection[0], networkName, path)
 
                 bestEver = max(bestEver, selection[0].score)
-                pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum(genResults) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
+                pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum([sum(el)/len(el) for el in genResults]) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
                 pbar.update(1)
 
     manager.shutdown()
@@ -241,13 +244,13 @@ if __name__ == "__main__":
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
     startNet = loadNetwork("models/sprudler_2026-10-02_07-58-49.pt")
-    perNetworkIterations = 50
+    perNetworkGames = 200
     generations = 200
     popSize = 200
     mutRate = 1.0
     sigma = 0.03
     eliteCount = 3
     keepPart = 0.1
-    concurrent = 23
+    concurrent = 24
     maxStartHeight = 30000
-    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=startNet, networkName="sprudler")
+    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkGames, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=startNet, networkName="sprudler")
