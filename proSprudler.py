@@ -66,7 +66,7 @@ def loadNetwork(path: str, targetDevice: str = "cpu") -> Network:
     return Network(layers=data["layers"], score=data["score"])
 
 
-def runEnv(network: Network):
+def runEnv(network: Network, startHeight: int | None = None):
     '''
     Runs the sprudelJump game steered by the given Neural Network.
     Loops through forwardPasses and returns them to the game as inputs as long as the player is alive.
@@ -74,7 +74,7 @@ def runEnv(network: Network):
     '''
     targetDevice = network.layers[0][0].device
     env = SprudelJumpEnv()  # initializing a new game instance
-    startState = env.reset()  # gameState in first iteration
+    startState = env.reset(startHeight)  # gameState in first iteration
     startTensor = torch.tensor(startState, device=targetDevice).unsqueeze(0)
     startAction = network.forwardPass(startTensor).squeeze(0).tolist()
     currState = env.step(startAction) # caclulating first game input
