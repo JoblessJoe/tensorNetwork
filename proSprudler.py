@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import time
 from datetime import datetime
@@ -97,7 +98,7 @@ def runEnv(network: Network, startHeight: int | None = None):
     return currState[1]
 
 
-def evaluateNetwork(network: Network, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, startHeight: int | None = None):
+def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, startHeight: int | None = None):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
     returns its score, averaged over these games.
@@ -110,7 +111,7 @@ def evaluateNetwork(network: Network, iterations: int = 5, maxFrames: int = MAX_
     '''
     targetDevice = network.layers[0][0].device
     envs = [SprudelJumpEnv() for i in range(0, iterations)]
-    states = [env.reset(startHeight) for env in envs]
+    states = [env.reset(startHeight, seed) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
     # indices of the games still running. Row k of the batch belongs to game alive[k] -
     # that's how each output row gets back to the right game once some games have died.
@@ -178,7 +179,8 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
             for i in range(0, generations):
                 evalStart = time.perf_counter()
-                evaluate = partial(evaluateNetwork, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, startHeight=startHeight)
+                seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]
+                evaluate = partial(evaluateNetwork,seeds=seeds, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, startHeight=startHeight)
                 # imap instead of map: same results in the same order, but yields each one as soon as it's done,
                 # so the inner bar can show how many networks of this generation have finished.
                 # next(timeout=1) wakes up every second even if nothing finished, to refresh the live scores.
