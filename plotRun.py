@@ -16,6 +16,7 @@ The y axis rescales itself on every redraw, so it zooms out as the scores grow.
 import argparse
 import glob
 import os
+import sys
 import time
 
 import numpy as np
@@ -81,7 +82,7 @@ def spread(positions, lo, hi, minGap):
 
 def draw(fig, path, theme, last=None, log=False, full=False):
     T = THEMES[theme]
-    meta, d = loadRun(path)
+    meta, d = loadRun(path) if os.path.exists(path) else ({}, {k: np.empty(0) for k in ("gen",)})
     fig.clear()
     fig.set_facecolor(T["surface"])
     if len(d["gen"]) == 0:
@@ -157,7 +158,7 @@ def draw(fig, path, theme, last=None, log=False, full=False):
     handles = [Line2D([0], [0], color=T["blue"], lw=2), Patch(facecolor=T["blue"], alpha=0.25),
                Line2D([0], [0], color=T["orange"], lw=1, alpha=0.75), Line2D([0], [0], color=T["aqua"], lw=2)]
     ax.legend(handles, ["population mean (trend)", "population 10-90%", "best of generation", "best ever"],
-              loc="upper left", frameon=False, fontsize=9, labelcolor=T["ink2"], ncol=2, handlelength=1.6)
+              loc="upper left", frameon=True, facecolor=T["surface"], framealpha=0.92, edgecolor="none", fontsize=9, labelcolor=T["ink2"], ncol=2, handlelength=1.6).set_zorder(20)
 
     # seconds per generation
     dt = np.diff(d["elapsed_s"], prepend=0.0)
@@ -176,12 +177,13 @@ def draw(fig, path, theme, last=None, log=False, full=False):
     fig.text(0.075, 0.955, name, color=T["ink"], fontsize=17, fontweight="bold", va="top")
     fig.text(0.075, 0.915, f"{prog}   |   elapsed {fmtTime(elapsed)}{eta}   |   {perGen:.1f} s/gen", color=T["ink2"], fontsize=10.5, va="top")
 
-    recent = max(1, min(100, done - 1))
-    gain = smooth[-1] - smooth[-1 - recent] if done > 1 else 0.0
-    base = max(smooth[-1 - recent], 1e-9)
     sinceRecord = done - int(gen[rec[-1]]) if len(rec) else done
-    facts = (f"trend now {smooth[-1]:,.0f}   ({gain:+,.0f} / {recent} gens, {100 * gain / base:+.0f}%)"
-             f"   |   best ever {bestEver[-1]:,.0f}, set {sinceRecord} gens ago   |   {len(rec)} records")
+    facts = f"trend now {smooth[-1]:,.0f}"
+    if len(gen) > 1:                                  # change over the last (up to) 100 generations needs a point to compare with
+        recent = min(100, len(gen) - 1)
+        gain = smooth[-1] - smooth[-1 - recent]
+        facts += f"   ({gain:+,.0f} / {recent} gens, {100 * gain / max(smooth[-1 - recent], 1e-9):+.0f}%)"
+    facts += f"   |   best ever {bestEver[-1]:,.0f}, set {sinceRecord} gens ago   |   {len(rec)} records"
     fig.text(0.075, 0.875, facts, color=T["ink2"], fontsize=10.5, va="top")
     cfg = (f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}"
@@ -214,7 +216,9 @@ def addHover(fig, state, theme):
                      f"p10-p90 {d['p10'][k]:,.0f}-{d['p90'][k]:,.0f}   best {d['best'][k]:,.0f}   best ever {state['bestEver'][k]:,.0f}")
         box.set_visible(True)
         fig.canvas.draw_idle()
-    fig.canvas.mpl_connect("motion_notify_event", onMove)
+    if getattr(fig, "_hoverCid", None) is not None:
+        fig.canvas.mpl_disconnect(fig._hoverCid)
+    fig._hoverCid = fig.canvas.mpl_connect("motion_notify_event", onMove)
 
 
 def newestCsv():
@@ -239,6 +243,10 @@ if __name__ == "__main__":
 
     if a.save:
         matplotlib.use("Agg")
+    elif matplotlib.get_backend().lower() == "agg":
+        raise SystemExit(f"matplotlib has no window backend in this Python ({sys.executable}).\n"
+                         "Use the project venv (source venv/bin/activate, or ./venv/bin/python plotRun.py ...), "
+                         "which has PyQt6, or write a PNG with --save out.png.")
     fig = plt.figure(figsize=(12.5, 7.6), dpi=110)
     state = draw(fig, path, theme, a.last, a.log, a.full)
     if a.save:
@@ -249,8 +257,16 @@ if __name__ == "__main__":
             addHover(fig, state, theme)
         plt.show(block=not a.live)
         while a.live and plt.fignum_exists(fig.number):
-            plt.pause(a.live)
-            state = draw(fig, path, theme, a.last, a.log, a.full)
-            if state:
-                addHover(fig, state, theme)
-            fig.canvas.draw_idle()
+            # wait inside the window's own event loop (keeps it responsive). NOT plt.pause(): that calls
+            # show() every cycle, which raises the window to the front and steals focus on every refresh.
+            fig.canvas.start_event_loop(a.live)
+            if not plt.fignum_exists(fig.number):
+                break
+            try:
+                state = draw(fig, path, theme, a.last, a.log, a.full)
+                if state:
+                    addHover(fig, state, theme)
+                fig.canvas.draw_idle()
+            except Exception:                         # a bad frame (e.g. half-written CSV line) must never close the window
+                import traceback
+                traceback.print_exc()

@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -153,7 +154,7 @@ def logGeneration(logPath: str, meta: str, row: list):
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
-                networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None) -> Network:
+                networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None, livePlot: bool = True) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -163,6 +164,10 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     path = f"models/{networkName}_{timestamp}.pt"
     print("Start of training loop!")
+    if livePlot:
+        # learning curve in its own process (own window, redraws every few seconds) - training never waits for it
+        subprocess.Popen([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "plotRun.py"),
+                          path.replace(".pt", ".csv"), "--live"])
     print("Generating first population...")
     # if no startNetwork is given generate a population of networks with completely random weights and biases
     if inputSize is not None and outputSize is not None and hiddenSizes is not None:
@@ -274,4 +279,4 @@ if __name__ == "__main__":
     keepPart = 0.1
     concurrent = 24
     maxStartHeight = None
-    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")
+    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler", livePlot=True)
