@@ -44,14 +44,35 @@ def saveNetwork(network: Network, networkName: str, path: str | None = None) -> 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     if path is None:
         path = f"models/{networkName}_{timestamp}.pt"
-    torch.save({"layers": network.layers, "score": network.score}, path)
+    torch.save({"layers": [(w.clone(), b.clone()) for w, b in network.layers], "score": network.score}, path)
     return path
+
+
+def poolPath(path: str) -> str:
+    '''models/x.pt -> models/x_pool.pt'''
+    return path[:-3] + "_pool.pt"
+
+
+def savePool(networks: list[Network], path: str) -> str:
+    '''
+    Saves a whole group of networks (the selected parents of the last generation, best first) to 'path',
+    so a later run can continue with the full gene pool instead of one single network.
+    Tensors are cloned: children are views into big stacked tensors and would drag those along into the file.
+    '''
+    torch.save({"pool": [{"layers": [(w.clone(), b.clone()) for w, b in n.layers], "score": n.score} for n in networks]}, path)
+    return path
+
+
+def loadPool(path: str, targetDevice: str = "cpu") -> list[Network]:
+    '''Loads a group saved by 'savePool' (best first), to pass as 'startNetwork' of sprudlerTrainingLoop.'''
+    data = torch.load(path, map_location=targetDevice, weights_only=True)
+    return [Network(layers=d["layers"], score=d["score"], source=path) for d in data["pool"]]
 
 
 def loadNetwork(path: str, targetDevice: str = "cpu") -> Network:
     '''Loads a network saved by 'saveNetwork', e.g. to continue training via 'startNetwork'.'''
     data = torch.load(path, map_location=targetDevice, weights_only=True)
-    return Network(layers=data["layers"], score=data["score"])
+    return Network(layers=data["layers"], score=data["score"], source=path)
 
 
 def runEnv(network: Network, maxStartHeight: int | None = None):
@@ -190,7 +211,7 @@ def averageRanks(scores: torch.Tensor) -> torch.Tensor:
 
 
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
-                keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
+                keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | list[Network] | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
                 networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None, livePlot: bool = True,
                 stage1Games: int | None = None, finalistFraction: float = 0.3) -> Network:
@@ -212,7 +233,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
     if livePlot:
         # learning curve in its own process (own window, redraws every few seconds) - training never waits for it
         subprocess.Popen([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "plotRun.py"),
-                          path.replace(".pt", ".csv"), "--live"])
+                          path.replace(".pt", ".csv"), "--live", "--chain"])
     print("Generating first population...")
     # if no startNetwork is given generate a population of networks with completely random weights and biases
     if inputSize is not None and outputSize is not None and hiddenSizes is not None:
@@ -222,7 +243,9 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
 
     # if startNetwork is given build a population of slight variations of itself, through mutation
     elif startNetwork is not None:
-        selection = [startNetwork for i in range(0, populationSize)]
+        # one network: all children are mutated copies of it. A pool (list, best first, see loadPool): children are bred
+        # from the whole group, the best 'eliteCount' of it stay unchanged - so the diversity of the last run survives.
+        selection = list(startNetwork) if isinstance(startNetwork, list) else [startNetwork for i in range(0, populationSize)]
         currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
     else:
         raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
@@ -277,6 +300,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                 # saving a network every 50 iterations as a 'Checkpoint' if the run fails
                 if (i + 1) % 50 == 0:
                     saveNetwork(selection[0], networkName, path)
+                    savePool(selection, poolPath(path))
 
                 bestEver = max(bestEver, selection[0].score)
                 # one CSV line per generation (see plotRun.py): mean score per network -> population statistics
@@ -284,6 +308,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                 q = torch.quantile(perNetwork, torch.tensor([0.1, 0.5, 0.9]))
                 logGeneration(path.replace(".pt", ".csv"),
                               f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
+                              f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                               f"stage1Games={stage1Games if twoStage else 'None'} "
                               f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} maxStartHeight={maxStartHeight}",
                               [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(),
@@ -293,6 +318,11 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
 
     manager.shutdown()
     savePath = saveNetwork(selection[0], networkName, path)
+    savePool(selection, poolPath(path))
+    csvPath = path.replace(".pt", ".csv")
+    if os.path.exists(csvPath):  # learning curve (whole lineage) as a PNG next to the model
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "plotRun.py"), csvPath, "--chain",
+                        "--save", path.replace(".pt", ".png")], check=False)
     totalTime = time.perf_counter() - start
     print(
         f"\n{'=' * 44}\n"
@@ -309,22 +339,25 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
         f"Total time:          {totalTime:.1f} seconds\n"
         f"Best avg. score:     {selection[0].score:.1f} (last generation)\n"
         f"Saved to:            {savePath}\n"
+        f"Pool (top {len(selection)}):      {poolPath(savePath)}\n"
         f"{'=' * 44}"
     )
 
     return selection[0] # return the best network of the last trained generation
 
+
 if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    gamesPerNetwork = 200
-    generations = 1000
+    gamesPerNetwork = 50
+    generations = 200
+    model = loadNetwork("models/sprudler_2026-10-02_17-00-59.pt")
     popSize = 200
-    mutRate = 1.0
-    sigma = 0.05
+    mutRate = 0.7
+    sigma = 0.02
     eliteCount = 3
     keepPart = 0.1
     concurrent = 24
     maxStartHeight = None
-    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler", livePlot=True, stage1Games=20, finalistFraction=0.3)
+    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=model, networkName="sprudler", livePlot=True, stage1Games=None, finalistFraction=0.3)

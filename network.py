@@ -34,6 +34,7 @@ class Network:
     loss: typing.Optional[float] = None
     accuracy: typing.Optional[float] = None
     score: typing.Optional[float] = None
+    source: typing.Optional[str] = None  # file this network was loaded from (set by loadNetwork), for run lineage
 
     @property
     def fitness(self):

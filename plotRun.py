@@ -4,6 +4,8 @@ Learning curve for a GA training run, read from the CSV that sprudlerTrainingLoo
 Runs in its own process, so it never slows the training down.
 
     python plotRun.py                      newest CSV in models/, one window
+    python plotRun.py --chain              join all runs of this model's lineage (follows 'startFrom' links)
+    python plotRun.py a.csv b.csv          join several runs by hand, oldest first
     python plotRun.py --live               same, redrawn every 5 s while the run is going
     python plotRun.py models/x.csv --save curve.png
     python plotRun.py --last 200           zoom into the last 200 generations
@@ -50,6 +52,65 @@ def loadRun(path):
     return meta, {n: data[:, k] for k, n in enumerate(names)}
 
 
+_warned = set()
+
+
+def loadMeta(path):
+    if not os.path.exists(path):          # live mode starts before the first generation has been written
+        return {}
+    with open(path) as f:
+        for line in f:
+            if line.startswith("#"):
+                return dict(kv.split("=", 1) for kv in line[1:].split() if "=" in kv)
+    return {}
+
+
+def resolveChain(path):
+    '''Follows the 'startFrom' links in the CSV headers back to the first run. Returns CSV paths, oldest first.'''
+    base = os.path.dirname(os.path.abspath(__file__))
+    chain, seen = [path], {os.path.abspath(path)}
+    while True:
+        src = loadMeta(chain[0]).get("startFrom", "None")
+        if src in ("None", ""):
+            break
+        csv = src[:-8] + ".csv" if src.endswith("_pool.pt") else src[:-3] + ".csv" if src.endswith(".pt") else src
+        csv = csv if os.path.isabs(csv) else os.path.join(base, csv)
+        if not os.path.exists(csv):
+            if csv not in _warned:
+                _warned.add(csv)
+                print(f"chain: no CSV for {src} (renamed, or trained before logging existed) - chain starts after it")
+            break
+        if os.path.abspath(csv) in seen:
+            break
+        seen.add(os.path.abspath(csv))
+        chain.insert(0, csv)
+    return chain
+
+
+def loadRuns(paths):
+    '''Joins several run CSVs (oldest first) into one long run: generation and time continue where the previous run ended.
+    Returns (meta of the last run, columns incl. per-generation seconds 'dt', [(first generation, label) of every run after the first], planned total generations).'''
+    cols = ["gen", "elapsed_s", "mean", "median", "p10", "p90", "best", "chosen", "dt"]
+    parts = {c: [] for c in cols}
+    bounds, genOff, timeOff, meta, total = [], 0, 0.0, {}, 0
+    for k, path in enumerate(paths):
+        m, d = loadRun(path)
+        if len(d["gen"]) == 0:
+            continue
+        d["dt"] = np.diff(d["elapsed_s"], prepend=0.0)
+        if parts["gen"]:
+            hi = m.get("maxStartHeight", "None")
+            bounds.append((genOff + 1, f"run {len(bounds) + 2}: sigma {m.get('sigma', '?')}, " + (f"starts 0-{int(hi) // 1000}k" if hi != "None" else "normal starts")))
+        for c in cols:
+            parts[c].append(d[c] + (genOff if c == "gen" else timeOff if c == "elapsed_s" else 0))
+        genOff += int(d["gen"][-1])
+        timeOff += d["elapsed_s"][-1]
+        meta = m
+        total = genOff - int(d["gen"][-1]) + int(m.get("generations", 0))
+    merged = {c: (np.concatenate(v) if v else np.empty(0)) for c, v in parts.items()}
+    return meta, merged, bounds, total
+
+
 def rolling(x, window):
     '''Centered-ish trailing moving average that is defined from the first point on.'''
     window = max(1, min(window, len(x)))
@@ -80,16 +141,21 @@ def spread(positions, lo, hi, minGap):
     return out
 
 
-def draw(fig, path, theme, last=None, log=False, full=False):
+def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     T = THEMES[theme]
-    meta, d = loadRun(path) if os.path.exists(path) else ({}, {k: np.empty(0) for k in ("gen",)})
+    if chain and len(paths) == 1:
+        paths = resolveChain(paths[0])          # no-op while the CSV does not exist yet
+    if os.path.exists(paths[-1]):
+        meta, d, bounds, totalGens = loadRuns(paths)
+    else:
+        meta, d, bounds, totalGens = {}, {"gen": np.empty(0)}, [], 0
     fig.clear()
     fig.set_facecolor(T["surface"])
     if len(d["gen"]) == 0:
         fig.text(0.5, 0.5, "waiting for the first generation...", color=T["ink2"], ha="center", va="center", fontsize=14)
         return None
 
-    total = int(meta.get("generations", 0)) or None
+    total = totalGens or None
     gen = d["gen"]
     sel = slice(-last, None) if last else slice(None)
     bestEver = np.maximum.accumulate(d["best"])
@@ -119,6 +185,10 @@ def draw(fig, path, theme, last=None, log=False, full=False):
     rec = np.flatnonzero(np.diff(bestEver, prepend=-np.inf) > 0)
     ax.scatter(gen[rec], bestEver[rec], s=34, color=T["aqua"], edgecolor=T["surface"], linewidth=2, zorder=7)
 
+    for g, label in bounds:
+        ax.axvline(g - 0.5, color=T["muted"], linewidth=1, linestyle=(0, (4, 3)), zorder=1)
+        ax.annotate(label, xy=(g - 0.5, 0), xycoords=("data", "axes fraction"), xytext=(4, 6), textcoords="offset points",
+                    color=T["muted"], fontsize=8.5, va="bottom", ha="left", rotation=90, annotation_clip=False)
     # y scale: zooms to what is visible; linear starts at 0 unless zoomed into a late window
     vis = lambda k: d[k][sel]
     top = max(vis("best").max(), bestEver[sel].max())
@@ -161,7 +231,7 @@ def draw(fig, path, theme, last=None, log=False, full=False):
               loc="upper left", frameon=True, facecolor=T["surface"], framealpha=0.92, edgecolor="none", fontsize=9, labelcolor=T["ink2"], ncol=2, handlelength=1.6).set_zorder(20)
 
     # seconds per generation
-    dt = np.diff(d["elapsed_s"], prepend=0.0)
+    dt = d["dt"]
     axT.bar(gen, dt, width=1.0, color=T["muted"], alpha=0.55, linewidth=0, zorder=2)
     axT.set_ylabel("sec / gen", color=T["ink2"], fontsize=10)
     axT.set_xlabel("generation", color=T["ink2"], fontsize=10)
@@ -173,9 +243,10 @@ def draw(fig, path, theme, last=None, log=False, full=False):
     done = int(gen[-1])
     eta = f"   ETA {fmtTime((total - done) * perGen)}" if total and done < total else ("   finished" if total else "")
     prog = f"generation {done}" + (f" / {total}" if total else "")
-    name = meta.get("name", os.path.basename(path))
+    name = meta.get("name", os.path.basename(paths[-1]))
     fig.text(0.075, 0.955, name, color=T["ink"], fontsize=17, fontweight="bold", va="top")
-    fig.text(0.075, 0.915, f"{prog}   |   elapsed {fmtTime(elapsed)}{eta}   |   {perGen:.1f} s/gen", color=T["ink2"], fontsize=10.5, va="top")
+    chained = f"   |   {len(bounds) + 1} runs chained" if bounds else ""
+    fig.text(0.075, 0.915, f"{prog}   |   elapsed {fmtTime(elapsed)}{eta}   |   {perGen:.1f} s/gen{chained}", color=T["ink2"], fontsize=10.5, va="top")
 
     sinceRecord = done - int(gen[rec[-1]]) if len(rec) else done
     facts = f"trend now {smooth[-1]:,.0f}"
@@ -230,7 +301,8 @@ def newestCsv():
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Learning curve of a GA training run")
-    ap.add_argument("csv", nargs="?", help="run CSV (default: newest in models/)")
+    ap.add_argument("csv", nargs="*", help="run CSV(s), oldest first (default: newest in models/)")
+    ap.add_argument("--chain", action="store_true", help="follow the startFrom links back and join all runs of this model lineage")
     ap.add_argument("--live", nargs="?", const=5.0, type=float, metavar="SECONDS", help="redraw every N seconds (default 5)")
     ap.add_argument("--save", metavar="PNG", help="write a PNG instead of opening a window")
     ap.add_argument("--last", type=int, metavar="N", help="zoom into the last N generations")
@@ -239,7 +311,7 @@ if __name__ == "__main__":
     ap.add_argument("--light", action="store_true", help="light theme")
     a = ap.parse_args()
     theme = "light" if a.light else "dark"
-    path = a.csv or newestCsv()
+    paths = a.csv or [newestCsv()]
 
     if a.save:
         matplotlib.use("Agg")
@@ -248,7 +320,7 @@ if __name__ == "__main__":
                          "Use the project venv (source venv/bin/activate, or ./venv/bin/python plotRun.py ...), "
                          "which has PyQt6, or write a PNG with --save out.png.")
     fig = plt.figure(figsize=(12.5, 7.6), dpi=110)
-    state = draw(fig, path, theme, a.last, a.log, a.full)
+    state = draw(fig, paths, theme, a.last, a.log, a.full, a.chain)
     if a.save:
         fig.savefig(a.save, facecolor=fig.get_facecolor())
         print("saved", a.save)
@@ -263,7 +335,7 @@ if __name__ == "__main__":
             if not plt.fignum_exists(fig.number):
                 break
             try:
-                state = draw(fig, path, theme, a.last, a.log, a.full)
+                state = draw(fig, paths, theme, a.last, a.log, a.full, a.chain)
                 if state:
                     addHover(fig, state, theme)
                 fig.canvas.draw_idle()
