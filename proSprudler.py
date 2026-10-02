@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+import numpy as np
 import torch
 from functools import partial
 from tqdm import tqdm
@@ -84,13 +85,14 @@ def runEnv(network: Network, maxStartHeight: int | None = None):
     return currState[1]
 
 
-def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: float) -> list[Network]:
+def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: float, count: int | None = None) -> list[Network]:
     '''
-    Takes a tensor of Networks evaluations after training and keeps
-    only the networks with the best 'SprudelJump' score. 
-    Chosen by 'keepPart' and returns this elite selection as a _sorted_ list.
+    Takes the networks and one average rank per network (low = good) and keeps the best ones:
+    'count' of them, or - if not given - the 'keepPart' fraction of 'networks'.
+    Returns this elite selection as a _sorted_ list, best first.
     '''
-    sel = ranks.topk(math.floor(len(networks) * keepPart), largest=False, sorted=True)
+    keep = count if count is not None else math.floor(len(networks) * keepPart)
+    sel = ranks.topk(keep, largest=False, sorted=True)
     result = [networks[el] for el in sel.indices]
     return result
 
@@ -106,7 +108,9 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     Games still running after 'maxFrames' frames are stopped and count with
     the score they reached by then.
     '''
-    targetDevice = network.layers[0][0].device
+    # the network as plain numpy arrays: for batches this small torch's per-call overhead dominates.
+    # same computation as Network.forwardPass (ReLU hidden layers, sigmoid output), same float32 results.
+    layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
     envs = [SprudelJumpEnv() for i in range(0, iterations)]
     states = [env.reset(maxStartHeight, seed) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
@@ -116,8 +120,15 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     frames = 0
 
     while alive and frames < maxFrames:
-        batch = torch.tensor([states[g] for g in alive], device=targetDevice)  # [numAlive, 23]
-        actions = network.forwardPass(batch).tolist()  # [numAlive, 2], row k -> game alive[k]
+        x = np.array([states[g] for g in alive], dtype=np.float32)  # [numAlive, 23]
+        for L, (wT, b) in enumerate(layers):
+            x = x @ wT + b
+            if L < len(layers) - 1:
+                x = np.maximum(x, 0)
+            else:
+                with np.errstate(over="ignore"):  # exp overflow -> inf -> sigmoid 0.0, as in torch
+                    x = 1 / (1 + np.exp(-x))
+        actions = x.tolist()  # [numAlive, 2], row k -> game alive[k]
         stillAlive = []
         for g, action in zip(alive, actions):
             states[g], scores[g], done = envs[g].step(action)
@@ -151,13 +162,47 @@ def logGeneration(logPath: str, meta: str, row: list):
         f.write(",".join(f"{x:.2f}" if isinstance(x, float) else str(x) for x in row) + "\n")
 
 
+def evaluatePopulation(p, networks: list[Network], seeds: list, maxFrames: int, maxStartHeight: int | None,
+                       sharedStatus, desc: str) -> list[list[float]]:
+    '''
+    Plays every network in 'networks' on the same 'seeds' (one game per seed) using the worker pool 'p'.
+    Returns one list of per-game scores per network, in the same order as 'networks'.
+    '''
+    evaluate = partial(evaluateNetwork, seeds=seeds, iterations=len(seeds), maxFrames=maxFrames, maxStartHeight=maxStartHeight)
+    results = p.imap(evaluate, networks)  # yields each network's result as soon as it is done, in order
+    scores = []
+    with tqdm(total=len(networks), desc=desc, unit="net", leave=False) as bar:
+        while len(scores) < len(networks):
+            try:
+                scores.append(results.next(timeout=1.0))
+                bar.update(1)
+            except TimeoutError:
+                pass
+            live = sorted(sharedStatus.values(), reverse=True)  # [(score, frames), ...] best first
+            top = "  ".join(f"{sc:,.0f}@{fr // 1000}k" for sc, fr in live[:5])
+            bar.set_postfix_str(f"live={len(live)}  top: {top}" if live else "")
+    return scores
+
+
+def averageRanks(scores: torch.Tensor) -> torch.Tensor:
+    '''[networks, games] scores -> one average rank per network (0 = best), ranking all networks against each other in every game.'''
+    return scores.argsort(dim=0, descending=True).argsort(dim=0).float().mean(1)
+
+
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
-                networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None, livePlot: bool = True) -> Network:
+                networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None, livePlot: bool = True,
+                stage1Games: int | None = None, finalistFraction: float = 0.3) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
+
+    Evaluation: every network plays 'perNetworkIterations' games on the generation's shared seeds.
+    Two-stage option ('stage1Games' set, smaller than perNetworkIterations): ALL networks play only the first
+    'stage1Games' games; the best 'finalistFraction' of them (by average rank) then play the remaining games,
+    and the selection is made among these finalists using all games. Networks that were clearly bad after
+    stage 1 never use up the rest of the games, which saves most of the evaluation time.
     '''
     start = time.perf_counter()
     os.makedirs("models", exist_ok=True)
@@ -195,32 +240,34 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
             for i in range(0, generations):
                 ## EVALUATION
                 evalStart = time.perf_counter()
-                seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]
-                evaluate = partial(evaluateNetwork,seeds=seeds, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, maxStartHeight=maxStartHeight)
-                genResults = []
-                results = p.imap(evaluate, currGen)
-                # Progress bar
-                with tqdm(total=len(currGen), desc=f"  gen {i + 1}", unit="net", leave=False) as genBar:
-                    while len(genResults) < len(currGen):
-                        try:
-                            genResults.append(results.next(timeout=1.0))
-                            genBar.update(1)
-                        except TimeoutError:
-                            pass
-                        live = sorted(sharedStatus.values(), reverse=True)  # [(score, frames), ...] best first
-                        top = "  ".join(f"{sc:,.0f}@{fr // 1000}k" for sc, fr in live[:5])
-                        genBar.set_postfix_str(f"live={len(live)}  top: {top}" if live else "")
+                seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]  # shared by all networks this generation
+                keepCount = math.floor(populationSize * keepPartSelection)
+                twoStage = stage1Games is not None and 0 < stage1Games < perNetworkIterations
+
+                if not twoStage:
+                    resultsTensor = torch.tensor(evaluatePopulation(p, currGen, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}"))
+                    popScores = resultsTensor                           # [population, games]: everyone, all games
+                    candidates, candidateScores = currGen, resultsTensor
+                else:
+                    # stage 1: everyone, only the first few games
+                    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1"))
+                    finalistCount = max(keepCount, math.ceil(populationSize * finalistFraction))
+                    finalistIdx = averageRanks(popScores).topk(finalistCount, largest=False).indices
+                    candidates = [currGen[k] for k in finalistIdx]
+                    # stage 2: only the finalists play the remaining games; selection sees ALL games of each finalist
+                    stage2 = torch.tensor(evaluatePopulation(p, candidates, seeds[stage1Games:], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 2"))
+                    candidateScores = torch.cat([popScores[finalistIdx], stage2], dim=1)   # [finalists, all games]
                 evalTime += time.perf_counter() - evalStart
 
-                # saving the score for every network
-                for j in range(0, len(genResults)):
-                    currGen[j].score = sum(genResults[j]) / perNetworkIterations
+                # saving the score (mean points per game) for every network that was selection-relevant
+                for j, net in enumerate(currGen):
+                    net.score = popScores[j].mean().item()               # stage-1 / all-games mean for everyone ...
+                for j, net in enumerate(candidates):
+                    net.score = candidateScores[j].mean().item()         # ... overwritten by the all-games mean for the candidates
 
                 ## SELECTION
-                # turning the scores into a tensor and ranking it against the other networks then selecting based on those ranks
-                resultsTensor = torch.tensor(genResults)
-                ranks = resultsTensor.argsort(dim=0, descending=True).argsort(dim=0).float().mean(1)
-                selection = SprudlerSelection(currGen, ranks, keepPartSelection)
+                # rank the candidates against each other in every game, average the ranks, keep the best ones
+                selection = SprudlerSelection(candidates, averageRanks(candidateScores), keepPartSelection, count=keepCount)
 
                 ## REPRODUCTION
                 breedStart = time.perf_counter()
@@ -233,14 +280,15 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
 
                 bestEver = max(bestEver, selection[0].score)
                 # one CSV line per generation (see plotRun.py): mean score per network -> population statistics
-                perNetwork = resultsTensor.mean(dim=1)
+                perNetwork = popScores.mean(dim=1)
                 q = torch.quantile(perNetwork, torch.tensor([0.1, 0.5, 0.9]))
                 logGeneration(path.replace(".pt", ".csv"),
                               f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
+                              f"stage1Games={stage1Games if twoStage else 'None'} "
                               f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} maxStartHeight={maxStartHeight}",
                               [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(),
-                               perNetwork.max().item(), selection[0].score])
-                pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum([sum(el)/len(el) for el in genResults]) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
+                               candidateScores.mean(dim=1).max().item(), selection[0].score])
+                pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}")
                 pbar.update(1)
 
     manager.shutdown()
@@ -279,4 +327,4 @@ if __name__ == "__main__":
     keepPart = 0.1
     concurrent = 24
     maxStartHeight = None
-    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler", livePlot=True)
+    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler", livePlot=True, stage1Games=20, finalistFraction=0.3)
