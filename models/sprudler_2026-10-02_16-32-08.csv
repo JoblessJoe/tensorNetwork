@@ -1,0 +1,5 @@
+# name=sprudler generations=1000 population=200 games=200 mutationRate=1.0 sigma=0.05 elites=3 keepPart=0.1 maxStartHeight=None
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,6.80,217.06,214.90,175.11,268.61,292.86,276.96
+2,15.77,271.06,278.09,232.57,301.64,312.41,305.04
+3,25.18,244.84,244.84,218.80,265.08,281.22,260.30
