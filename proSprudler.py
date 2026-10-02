@@ -244,7 +244,7 @@ if __name__ == "__main__":
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
     startNet = loadNetwork("models/sprudler_2026-10-02_07-58-49.pt")
-    perNetworkGames = 200
+    perNetworkGames = 50
     generations = 200
     popSize = 200
     mutRate = 1.0
