@@ -248,6 +248,6 @@ if __name__ == "__main__":
     sigma = 0.03
     eliteCount = 3
     keepPart = 0.1
-    concurrent = 20
+    concurrent = 23
     startHeight = 20000
     bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, startHeight=startHeight, startNetwork=startNet, networkName="sprudler")
