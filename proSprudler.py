@@ -67,7 +67,7 @@ def loadNetwork(path: str, targetDevice: str = "cpu") -> Network:
     return Network(layers=data["layers"], score=data["score"])
 
 
-def runEnv(network: Network, startHeight: int | None = None):
+def runEnv(network: Network, maxStartHeight: int | None = None):
     '''
     Runs the sprudelJump game steered by the given Neural Network.
     Loops through forwardPasses and returns them to the game as inputs as long as the player is alive.
@@ -75,7 +75,7 @@ def runEnv(network: Network, startHeight: int | None = None):
     '''
     targetDevice = network.layers[0][0].device
     env = SprudelJumpEnv()  # initializing a new game instance
-    startState = env.reset(startHeight)  # gameState in first iteration
+    startState = env.reset(maxStartHeight)  # gameState in first iteration
     startTensor = torch.tensor(startState, device=targetDevice).unsqueeze(0)
     startAction = network.forwardPass(startTensor).squeeze(0).tolist()
     currState = env.step(startAction) # caclulating first game input
@@ -98,7 +98,7 @@ def runEnv(network: Network, startHeight: int | None = None):
     return currState[1]
 
 
-def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, startHeight: int | None = None):
+def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
     returns its score, averaged over these games.
@@ -111,7 +111,7 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     '''
     targetDevice = network.layers[0][0].device
     envs = [SprudelJumpEnv() for i in range(0, iterations)]
-    states = [env.reset(startHeight, seed) for env, seed in zip(envs, seeds)]
+    states = [env.reset(maxStartHeight, seed) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
     # indices of the games still running. Row k of the batch belongs to game alive[k] -
     # that's how each output row gets back to the right game once some games have died.
@@ -143,7 +143,7 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
-                networkName: str = "network", targetDevice: str = "cpu", startHeight: int |None = None) -> Network:
+                networkName: str = "network", targetDevice: str = "cpu", maxStartHeight: int |None = None) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -180,7 +180,7 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
             for i in range(0, generations):
                 evalStart = time.perf_counter()
                 seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]
-                evaluate = partial(evaluateNetwork,seeds=seeds, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, startHeight=startHeight)
+                evaluate = partial(evaluateNetwork,seeds=seeds, iterations=perNetworkIterations, maxFrames=maxFramesPerGame, maxStartHeight=maxStartHeight)
                 # imap instead of map: same results in the same order, but yields each one as soon as it's done,
                 # so the inner bar can show how many networks of this generation have finished.
                 # next(timeout=1) wakes up every second even if nothing finished, to refresh the live scores.
@@ -249,5 +249,5 @@ if __name__ == "__main__":
     eliteCount = 3
     keepPart = 0.1
     concurrent = 23
-    startHeight = 20000
-    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, startHeight=startHeight, startNetwork=startNet, networkName="sprudler")
+    maxStartHeight = 30000
+    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkIterations, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=startNet, networkName="sprudler")
