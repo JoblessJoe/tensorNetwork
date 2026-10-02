@@ -240,7 +240,7 @@ if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    startNet = loadNetwork("models/sprudler_2026-10-01_19-16-47.pt")
+    startNet = loadNetwork("models/sprudler_2026-10-02_07-58-49.pt")
     perNetworkIterations = 50
     generations = 200
     popSize = 200
