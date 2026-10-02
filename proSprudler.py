@@ -136,6 +136,20 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     return scores
 
 
+def logGeneration(logPath: str, meta: str, row: list):
+    '''
+    Appends one generation's statistics as a line to the run's CSV file (created with a
+    '# key=value ...' metadata line + a header on the first call), for plotRun.py.
+    Costs microseconds per generation - the plot runs in a separate process.
+    '''
+    newFile = not os.path.exists(logPath)
+    with open(logPath, "a") as f:
+        if newFile:
+            f.write(f"# {meta}\n")
+            f.write("gen,elapsed_s,mean,median,p10,p90,best,chosen\n")
+        f.write(",".join(f"{x:.2f}" if isinstance(x, float) else str(x) for x in row) + "\n")
+
+
 def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, crossover: bool = False, maxFramesPerGame: int = MAX_FRAMES_PER_GAME, startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
@@ -213,6 +227,14 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
                     saveNetwork(selection[0], networkName, path)
 
                 bestEver = max(bestEver, selection[0].score)
+                # one CSV line per generation (see plotRun.py): mean score per network -> population statistics
+                perNetwork = resultsTensor.mean(dim=1)
+                q = torch.quantile(perNetwork, torch.tensor([0.1, 0.5, 0.9]))
+                logGeneration(path.replace(".pt", ".csv"),
+                              f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
+                              f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} maxStartHeight={maxStartHeight}",
+                              [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(),
+                               perNetwork.max().item(), selection[0].score])
                 pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{sum([sum(el)/len(el) for el in genResults]) / len(genResults):.0f}", bestEver=f"{bestEver:.0f}")
                 pbar.update(1)
 
@@ -243,14 +265,13 @@ if __name__ == "__main__":
     inS = 23  # inputs: 
     hiS = [23, 23, 23]
     outS = 2 # [steer, shoot]
-    startNet = loadNetwork("models/sprudler_2026-10-02_07-58-49.pt")
-    perNetworkGames = 50
-    generations = 200
+    gamesPerNetwork = 200
+    generations = 1000
     popSize = 200
     mutRate = 1.0
-    sigma = 0.03
+    sigma = 0.05
     eliteCount = 3
     keepPart = 0.1
     concurrent = 24
-    maxStartHeight = 30000
-    bestSprudler = sprudlerTrainingLoop(concurrent, perNetworkGames, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=startNet, networkName="sprudler")
+    maxStartHeight = None
+    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, inputSize=inS, hiddenSizes=hiS, outputSize=outS, networkName="sprudler")
