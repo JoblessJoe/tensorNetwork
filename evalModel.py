@@ -47,23 +47,25 @@ if __name__ == "__main__":
     ap.add_argument("--games", type=int, default=200, help="games per column, multiple of 50 (default 200)")
     ap.add_argument("--mixed", type=int, default=30000, help="max start height of the random-start column (default 30000)")
     ap.add_argument("--min-start", type=int, default=0, help="minimum start height of the random-start column (e.g. 20000 = only hard starts)")
+    ap.add_argument("--ranges", nargs="+", metavar="MIN:MAX", help="start-height ranges as columns after 'start 0', e.g. 20000:30000 0:30000 (overrides --min-start/--mixed)")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
-    modes = [("start 0", None), (f"random {a.min_start // 1000}-{a.mixed // 1000}k", a.mixed)]
+    ranges = [tuple(int(x) for x in r.split(":")) for r in a.ranges] if a.ranges else [(a.min_start, a.mixed)]
+    modes = [("start 0", None, 0)] + [(f"random {lo // 1000}-{hi // 1000}k", hi, lo) for lo, hi in ranges]   # (label, max start, min start)
 
-    jobs = [(m, s, h, a.min_start) for m in a.models for _, h in modes for s in sets]
+    jobs = [(m, s, h, lo) for m in a.models for _, h, lo in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 
     k = len(sets)
     width = max(len(os.path.basename(m)) for m in a.models)
     print(f"\n{len(sets) * SET_SIZE} games per column ({len(sets)} seed sets x {SET_SIZE}), fixed seeds\n")
-    print(f"{'model':{width}}  " + "  ".join(f"{label:>34}" for label, _ in modes))
+    print(f"{'model':{width}}  " + "  ".join(f"{label:>34}" for label, _, _ in modes))
     i = 0
     for m in a.models:
         cells = []
-        for _ in modes:
+        for _m in modes:
             v = out[i:i + k]
             i += k
             cells.append(f"{st.mean(v):7,.0f}  per set {[round(x) for x in v]}".rjust(34) if k <= 4 else f"{st.mean(v):7,.0f}  (sd {st.pstdev(v):,.0f})".rjust(34))

@@ -132,7 +132,8 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     # the network as plain numpy arrays: for batches this small torch's per-call overhead dominates.
     # same computation as Network.forwardPass (ReLU hidden layers, sigmoid output), same float32 results.
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
-    envs = [SprudelJumpEnv() for i in range(0, iterations)]
+    # a network with 24 inputs gets the state with the extra difficulty input, one with 23 the classic state
+    envs = [SprudelJumpEnv(difficultyInput=network.layers[0][0].shape[1] == 24) for i in range(0, iterations)]
     states = [env.reset(maxStartHeight, seed, minStartHeight) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
     # indices of the games still running. Row k of the batch belongs to game alive[k] -
@@ -361,8 +362,8 @@ def sprudlerTrainingLoop(concInstances: int, perNetworkIterations: int, generati
 
 
 if __name__ == "__main__":
-    inS = 23  # inputs: 
-    hiS = [23, 23, 23]
+    inS = 24  # inputs: 
+    hiS = [24, 24, 24]
     outS = 2 # [steer, shoot]
     gamesPerNetwork = 200
     generations = 5000
@@ -372,7 +373,7 @@ if __name__ == "__main__":
     sigma = 0.02
     eliteCount = 3
     keepPart = 0.1
-    concurrent = 24
+    concurrent = 23
     maxStartHeight = 30000
     maxHours = 16
     bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, startNetwork=model, networkName="sprudler", livePlot=True, stage1Games=20, finalistFraction=0.3, maxHours=maxHours)
