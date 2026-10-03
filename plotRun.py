@@ -100,7 +100,7 @@ def loadRuns(paths):
         d["dt"] = np.diff(d["elapsed_s"], prepend=0.0)
         if parts["gen"]:
             hi, lo = m.get("maxStartHeight", "None"), int(m.get("minStartHeight", 0))
-            bounds.append((genOff + 1, f"run {len(bounds) + 2}: sigma {m.get('sigma', '?')}, " + (f"starts {lo // 1000}-{int(hi) // 1000}k" if hi != "None" else "normal starts")))
+            bounds.append((genOff + 1, f"run {len(bounds) + 2}: sigma {m.get('sigma', '?')}, " + (f"starts {lo // 1000}-{int(hi) // 1000}k" + (f" + {int(float(m.get('zeroFraction', 0)) * 100)}% at 0" if float(m.get("zeroFraction", 0)) else "") if hi != "None" else "normal starts")))
         for c in cols:
             parts[c].append(d[c] + (genOff if c == "gen" else timeOff if c == "elapsed_s" else 0))
         genOff += int(d["gen"][-1])

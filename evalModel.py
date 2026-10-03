@@ -36,9 +36,9 @@ def seedSets(games: int):
 
 
 def job(args):
-    path, seeds, maxStart, minStart = args
+    path, seeds, maxStart, minStart, zero = args
     net = ps.loadNetwork(path)
-    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart)) / len(seeds)
+    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero)) / len(seeds)
 
 
 if __name__ == "__main__":
@@ -47,21 +47,24 @@ if __name__ == "__main__":
     ap.add_argument("--games", type=int, default=200, help="games per column, multiple of 50 (default 200)")
     ap.add_argument("--mixed", type=int, default=30000, help="max start height of the random-start column (default 30000)")
     ap.add_argument("--min-start", type=int, default=0, help="minimum start height of the random-start column (e.g. 20000 = only hard starts)")
-    ap.add_argument("--ranges", nargs="+", metavar="MIN:MAX", help="start-height ranges as columns after 'start 0', e.g. 20000:30000 0:30000 (overrides --min-start/--mixed)")
+    ap.add_argument("--ranges", nargs="+", metavar="MIN:MAX", help="start-height ranges as columns after 'start 0': MIN:MAX or MIN:MAX:ZEROSHARE, e.g. 20000:30000 20000:30000:0.5 (overrides --min-start/--mixed)")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
-    ranges = [tuple(int(x) for x in r.split(":")) for r in a.ranges] if a.ranges else [(a.min_start, a.mixed)]
-    modes = [("start 0", None, 0)] + [(f"random {lo // 1000}-{hi // 1000}k", hi, lo) for lo, hi in ranges]   # (label, max start, min start)
+    ranges = []                          # (min start, max start, share of games that start at 0)
+    for r in (a.ranges or [f"{a.min_start}:{a.mixed}"]):
+        p = r.split(":")
+        ranges.append((int(p[0]), int(p[1]), float(p[2]) if len(p) > 2 else 0.0))
+    modes = [("start 0", None, 0, 0.0)] + [(f"random {lo // 1000}-{hi // 1000}k" + (f" +{int(z * 100)}%@0" if z else ""), hi, lo, z) for lo, hi, z in ranges]   # (label, max, min, zero share)
 
-    jobs = [(m, s, h, lo) for m in a.models for _, h, lo in modes for s in sets]
+    jobs = [(m, s, h, lo, z) for m in a.models for _, h, lo, z in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 
     k = len(sets)
     width = max(len(os.path.basename(m)) for m in a.models)
     print(f"\n{len(sets) * SET_SIZE} games per column ({len(sets)} seed sets x {SET_SIZE}), fixed seeds\n")
-    print(f"{'model':{width}}  " + "  ".join(f"{label:>34}" for label, _, _ in modes))
+    print(f"{'model':{width}}  " + "  ".join(f"{label:>34}" for label, _, _, _ in modes))
     i = 0
     for m in a.models:
         cells = []
