@@ -9,7 +9,7 @@ models/night_benchmark.txt. A crash in one phase does not stop the others (a pha
     python nightRun.py --smoke         tiny version to check that everything works (~1 minute)
 
 Current experiment: does the SHAPE of the network matter? Four from-scratch runs with the recipe of the 23-input model 17-00-59
-(normal starts, 1,000 gens): a replicate of [23,23,23] (noise check), [32,32,32], [48,48,48] and [23,23,23,23].
+(normal starts, generations proportional to the number of weights): a replicate of [23,23,23] (noise check), [32,32,32], [48,48,48] and [23,23,23,23].
 Compare their benchmark columns with 17-00-59 (2,084 / 328 / 600 on start 0 / hard 20-30k / mixed 0-30k); identical runs differ by ~15%.
 '''
 import argparse
@@ -26,11 +26,12 @@ BASELINE = "models/sprudler_2026-10-02_17-00-59.pt"   # 23-input from-scratch mo
 
 # start: model file | None (+ 'after': name of an earlier phase | None -> new network of 'inputs' inputs)
 PHASES = [
-    # same recipe as the 23-input model 17-00-59 (from scratch, normal starts, 1,000 gens, sigma 0.05, mutRate 1.0) - only the shape differs
+    # recipe of the 23-input model 17-00-59 (from scratch, normal starts, sigma 0.05, mutRate 1.0); generations scale with the number of
+    # weights (1,704 / 2,256 / 2,946 / 5,954) so a bigger network gets proportionally more search; 'hours' are only safety caps.
     dict(name="shapeReplicate", start=None, after=None, inputs=23, hidden=[23, 23, 23],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
-    dict(name="shapeW32",       start=None, after=None, inputs=23, hidden=[32, 32, 32],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
-    dict(name="shapeW48",       start=None, after=None, inputs=23, hidden=[48, 48, 48],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
-    dict(name="shapeD4",        start=None, after=None, inputs=23, hidden=[23, 23, 23, 23], gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeW32",       start=None, after=None, inputs=23, hidden=[32, 32, 32],     gens=1700, hours=5.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeW48",       start=None, after=None, inputs=23, hidden=[48, 48, 48],     gens=3500, hours=8.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeD4",        start=None, after=None, inputs=23, hidden=[23, 23, 23, 23], gens=1300, hours=4.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
 ]
 RANGES = ["20000:30000", "0:30000"]    # benchmark columns after 'start 0': hard starts, mixed starts
 
