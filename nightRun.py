@@ -38,6 +38,7 @@ RANGES = ["20000:30000", "0:30000"]    # benchmark columns after 'start 0': hard
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
+    ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
     a = ap.parse_args()
     here = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,8 @@ if __name__ == "__main__":
     workers, pop, games, stage1, elites, keep, frac = (4, 12, 6, 3, 1, 0.25, 0.5) if a.smoke else (24, 200, 200, 20, 3, 0.1, 0.3)
     outputs = {}     # phase name -> best-network file
     note(f"run start: {[p['name'] for p in PHASES]}")
+    if not a.smoke and not a.no_plot:    # ONE live window for the whole night: follows the newest run, chained to its parent runs
+        subprocess.Popen([sys.executable, "plotRun.py", "--live", "--chain", "--latest"])
     for ph in PHASES:
         gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
         hours = 0.0004 if a.smoke else ph["hours"] * a.scale

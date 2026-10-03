@@ -306,6 +306,7 @@ if __name__ == "__main__":
     ap.add_argument("--live", nargs="?", const=5.0, type=float, metavar="SECONDS", help="redraw every N seconds (default 5)")
     ap.add_argument("--save", metavar="PNG", help="write a PNG instead of opening a window")
     ap.add_argument("--last", type=int, metavar="N", help="zoom into the last N generations")
+    ap.add_argument("--latest", action="store_true", help="with --live: always follow the newest CSV in models/ (switches by itself when a new run/phase starts)")
     ap.add_argument("--full", action="store_true", help="x axis spans the whole planned run, not just the finished generations")
     ap.add_argument("--log", action="store_true", help="logarithmic y axis")
     ap.add_argument("--light", action="store_true", help="light theme")
@@ -334,6 +335,14 @@ if __name__ == "__main__":
             fig.canvas.start_event_loop(a.live)
             if not plt.fignum_exists(fig.number):
                 break
+            if a.latest:
+                try:
+                    newest = newestCsv()
+                    if newest != paths[-1]:
+                        print("following", newest, flush=True)
+                        paths = [newest]
+                except SystemExit:
+                    pass
             try:
                 state = draw(fig, paths, theme, a.last, a.log, a.full, a.chain)
                 if state:
