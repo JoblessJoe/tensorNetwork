@@ -8,12 +8,9 @@ models/night_benchmark.txt. A crash in one phase does not stop the others (a pha
     python nightRun.py --scale 0.5     every phase's hours/generations x 0.5
     python nightRun.py --smoke         tiny version to check that everything works (~1 minute)
 
-Current experiment: does an extra input - the difficulty t (24th float of the observation) - help one network to
-play both regimes (early game + maximum difficulty) without forgetting?
-  diffScratch  24-input network from scratch, normal starts, 1,000 gens          (same recipe as the 23-input model 17-00-59)
-  diffMixed    continues diffScratch's best network, starts 0-30k, big mutations
-  ctrlMixed    CONTROL: the 23-input model 17-00-59 with exactly the same mixed phase
-diffMixed vs ctrlMixed isolates the effect of the difficulty input; diffScratch vs 17-00-59 shows its effect at normal starts.
+Current experiment: does the SHAPE of the network matter? Four from-scratch runs with the recipe of the 23-input model 17-00-59
+(normal starts, 1,000 gens): a replicate of [23,23,23] (noise check), [32,32,32], [48,48,48] and [23,23,23,23].
+Compare their benchmark columns with 17-00-59 (2,084 / 328 / 600 on start 0 / hard 20-30k / mixed 0-30k); identical runs differ by ~15%.
 '''
 import argparse
 import glob
@@ -29,9 +26,11 @@ BASELINE = "models/sprudler_2026-10-02_17-00-59.pt"   # 23-input from-scratch mo
 
 # start: model file | None (+ 'after': name of an earlier phase | None -> new network of 'inputs' inputs)
 PHASES = [
-    dict(name="diffScratch", start=None,     after=None,          inputs=24, gens=1000,   hours=3.0, minStart=0, maxStart=None,  sigma=0.05, mutRate=1.0),
-    dict(name="diffMixed",   start=None,     after="diffScratch", inputs=24, gens=100000, hours=4.0, minStart=0, maxStart=30000, sigma=0.05, mutRate=1.0),
-    dict(name="ctrlMixed",   start=BASELINE, after=None,          inputs=23, gens=100000, hours=4.0, minStart=0, maxStart=30000, sigma=0.05, mutRate=1.0),
+    # same recipe as the 23-input model 17-00-59 (from scratch, normal starts, 1,000 gens, sigma 0.05, mutRate 1.0) - only the shape differs
+    dict(name="shapeReplicate", start=None, after=None, inputs=23, hidden=[23, 23, 23],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeW32",       start=None, after=None, inputs=23, hidden=[32, 32, 32],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeW48",       start=None, after=None, inputs=23, hidden=[48, 48, 48],     gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
+    dict(name="shapeD4",        start=None, after=None, inputs=23, hidden=[23, 23, 23, 23], gens=1000, hours=3.0, minStart=0, maxStart=None, sigma=0.05, mutRate=1.0),
 ]
 RANGES = ["20000:30000", "0:30000"]    # benchmark columns after 'start 0': hard starts, mixed starts
 
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     for ph in PHASES:
         gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
         hours = 0.0004 if a.smoke else ph["hours"] * a.scale
-        note(f"phase {ph['name']}: {ph['inputs']} inputs, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
+        note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph.get('hidden', [23, 23, 23])}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
              f"mutRate {ph['mutRate']}, up to {gens} gens / {hours:.2f} h")
         try:
             kw = {}
@@ -71,7 +70,7 @@ if __name__ == "__main__":
             elif ph["start"]:
                 kw["startNetwork"] = ps.loadNetwork(ph["start"])
             else:
-                kw.update(inputSize=ph["inputs"], hiddenSizes=[23, 23, 23], outputSize=2)
+                kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=2)
             ps.sprudlerTrainingLoop(workers, games, gens, pop, ph["mutRate"], ph["sigma"], elites, keep, networkName=ph["name"], livePlot=False,
                                     minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"],
                                     stage1Games=stage1, finalistFraction=frac, maxHours=hours, **kw)
