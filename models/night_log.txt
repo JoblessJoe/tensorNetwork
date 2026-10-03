@@ -17,3 +17,78 @@ hardCareful_2026-10-03_00-32-59.pt      757  per set [835, 750, 695, 747]    1,2
 normalSafe_2026-10-03_04-59-45.pt     4,993  per set [5521, 4913, 4763, 4773]      937  per set [921, 933, 981, 915]
 
 [2026-10-03 09:26:37] night run done
+[2026-10-03 10:53:11] run start: ['diffScratch', 'diffMixed', 'ctrlMixed']
+[2026-10-03 10:53:11] phase diffScratch: 24 inputs, starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 3.00 h
+[2026-10-03 10:53:59] phase diffScratch finished -> models/diffScratch_2026-10-03_10-53-11.pt
+[2026-10-03 10:53:59] phase diffMixed: 24 inputs, starts 0-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 4.00 h
+[2026-10-03 10:54:01] phase diffMixed FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 72, in <module>
+    kw["startNetwork"] = ps.loadNetwork(ph["start"])
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 288, in sprudlerTrainingLoop
+    stage2 = torch.tensor(evaluatePopulation(p, candidates, seeds[stage1Games:], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 2", minStartHeight))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 200, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-03 10:54:01] phase ctrlMixed: 23 inputs, starts 0-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 4.00 h
+[2026-10-03 10:54:01] phase ctrlMixed FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 72, in <module>
+    kw["startNetwork"] = ps.loadNetwork(ph["start"])
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 283, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 200, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-03 10:54:01] benchmarking ...
+[2026-10-03 10:54:51] run start: ['diffScratch', 'diffMixed', 'ctrlMixed']
+[2026-10-03 10:54:51] phase diffScratch: 24 inputs, starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 3.00 h
+[2026-10-03 12:23:56] phase diffScratch finished -> models/diffScratch_2026-10-03_10-54-51.pt
+[2026-10-03 12:23:56] phase diffMixed: 24 inputs, starts 0-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 4.00 h
+[2026-10-03 16:48:46] phase diffMixed finished -> models/diffMixed_2026-10-03_12-23-56.pt
+[2026-10-03 16:48:46] phase ctrlMixed: 23 inputs, starts 0-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 4.00 h
+[2026-10-03 21:11:49] phase ctrlMixed finished -> models/ctrlMixed_2026-10-03_16-48-46.pt
+[2026-10-03 21:11:49] benchmarking ...
+[2026-10-03 21:11:51] benchmark written to models/night_benchmark.txt
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k
+sprudler_2026-10-02_17-00-59.pt       2,084  per set [2003, 2412, 2001, 1918]      328  per set [357, 310, 278, 369]      600  per set [517, 724, 522, 637]
+diffScratch_2026-10-03_10-54-51.pt    1,473  per set [1334, 1258, 1546, 1753]      191  per set [217, 170, 189, 189]      398  per set [358, 387, 418, 430]
+diffMixed_2026-10-03_12-23-56.pt      1,040  per set [970, 755, 1168, 1268]      305  per set [296, 289, 308, 325]      481  per set [404, 527, 520, 473]
+ctrlMixed_2026-10-03_16-48-46.pt      1,500  per set [1678, 1060, 1563, 1701]      813  per set [913, 836, 816, 686]    1,047  per set [936, 945, 1180, 1125]
+
+[2026-10-03 21:11:51] run done
