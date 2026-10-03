@@ -1,0 +1,19 @@
+[2026-10-02 20:07:55] night run start: 3 phases x 4.0 h from models/sprudler_2026-10-02_15-27-39.pt
+[2026-10-02 20:07:55] phase hardExplore: starts 20000-30000, sigma 0.05, mutRate 1.0
+[2026-10-03 00:32:59] phase hardExplore finished -> models/hardExplore_2026-10-02_20-07-55.pt
+[2026-10-03 00:32:59] phase hardCareful: starts 20000-30000, sigma 0.02, mutRate 0.7
+[2026-10-03 04:59:45] phase hardCareful finished -> models/hardCareful_2026-10-03_00-32-59.pt
+[2026-10-03 04:59:45] phase normalSafe: starts 0-None, sigma 0.02, mutRate 0.7
+[2026-10-03 09:26:34] phase normalSafe finished -> models/normalSafe_2026-10-03_04-59-45.pt
+[2026-10-03 09:26:34] benchmarking all results against the start model ...
+[2026-10-03 09:26:37] benchmark written to models/night_benchmark.txt
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k
+sprudler_2026-10-02_15-27-39.pt       4,321  per set [4989, 4038, 4645, 3612]      833  per set [823, 716, 905, 889]
+hardExplore_2026-10-02_20-07-55.pt    2,916  per set [2426, 2970, 3072, 3194]    2,339  per set [2468, 2775, 2042, 2071]
+hardCareful_2026-10-03_00-32-59.pt      757  per set [835, 750, 695, 747]    1,206  per set [1367, 1139, 1126, 1191]
+normalSafe_2026-10-03_04-59-45.pt     4,993  per set [5521, 4913, 4763, 4773]      937  per set [921, 933, 981, 915]
+
+[2026-10-03 09:26:37] night run done

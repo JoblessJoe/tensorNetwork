@@ -99,8 +99,8 @@ def loadRuns(paths):
             continue
         d["dt"] = np.diff(d["elapsed_s"], prepend=0.0)
         if parts["gen"]:
-            hi = m.get("maxStartHeight", "None")
-            bounds.append((genOff + 1, f"run {len(bounds) + 2}: sigma {m.get('sigma', '?')}, " + (f"starts 0-{int(hi) // 1000}k" if hi != "None" else "normal starts")))
+            hi, lo = m.get("maxStartHeight", "None"), int(m.get("minStartHeight", 0))
+            bounds.append((genOff + 1, f"run {len(bounds) + 2}: sigma {m.get('sigma', '?')}, " + (f"starts {lo // 1000}-{int(hi) // 1000}k" if hi != "None" else "normal starts")))
         for c in cols:
             parts[c].append(d[c] + (genOff if c == "gen" else timeOff if c == "elapsed_s" else 0))
         genOff += int(d["gen"][-1])
@@ -258,7 +258,7 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     fig.text(0.075, 0.875, facts, color=T["ink2"], fontsize=10.5, va="top")
     cfg = (f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}"
-           f"  start heights 0-{meta.get('maxStartHeight')}" if meta.get("maxStartHeight", "None") != "None" else
+           f"  start heights {meta.get('minStartHeight', 0)}-{meta.get('maxStartHeight')}" if meta.get("maxStartHeight", "None") != "None" else
            f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}  normal start")
     fig.text(0.075, 0.838, cfg, color=T["muted"], fontsize=9.5, va="top")

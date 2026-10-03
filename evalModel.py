@@ -36,9 +36,9 @@ def seedSets(games: int):
 
 
 def job(args):
-    path, seeds, maxStart = args
+    path, seeds, maxStart, minStart = args
     net = ps.loadNetwork(path)
-    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart)) / len(seeds)
+    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart)) / len(seeds)
 
 
 if __name__ == "__main__":
@@ -46,12 +46,13 @@ if __name__ == "__main__":
     ap.add_argument("models", nargs="+", help="model files (.pt)")
     ap.add_argument("--games", type=int, default=200, help="games per column, multiple of 50 (default 200)")
     ap.add_argument("--mixed", type=int, default=30000, help="max start height of the random-start column (default 30000)")
+    ap.add_argument("--min-start", type=int, default=0, help="minimum start height of the random-start column (e.g. 20000 = only hard starts)")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
-    modes = [("start 0", None), (f"random 0-{a.mixed // 1000}k", a.mixed)]
+    modes = [("start 0", None), (f"random {a.min_start // 1000}-{a.mixed // 1000}k", a.mixed)]
 
-    jobs = [(m, s, h) for m in a.models for _, h in modes for s in sets]
+    jobs = [(m, s, h, a.min_start) for m in a.models for _, h in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 
