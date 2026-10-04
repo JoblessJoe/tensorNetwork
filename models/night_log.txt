@@ -92,3 +92,25 @@ diffMixed_2026-10-03_12-23-56.pt      1,040  per set [970, 755, 1168, 1268]     
 ctrlMixed_2026-10-03_16-48-46.pt      1,500  per set [1678, 1060, 1563, 1701]      813  per set [913, 836, 816, 686]    1,047  per set [936, 945, 1180, 1125]
 
 [2026-10-03 21:11:51] run done
+[2026-10-03 22:27:26] run start: ['zeroStart', 'shapeReplicate', 'shapeW48']
+[2026-10-03 22:27:26] phase zeroStart: 23 inputs, hidden [23, 23, 23], starts 20000-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 3.50 h
+[2026-10-04 02:18:38] phase zeroStart finished -> models/zeroStart_2026-10-03_22-27-26.pt
+[2026-10-04 02:18:38] phase shapeReplicate: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 3.00 h
+[2026-10-04 03:28:41] phase shapeReplicate finished -> models/shapeReplicate_2026-10-04_02-18-38.pt
+[2026-10-04 03:28:41] phase shapeW48: 23 inputs, hidden [48, 48, 48], starts 0-None, sigma 0.05, mutRate 1.0, up to 3500 gens / 8.00 h
+[2026-10-04 07:59:40] phase shapeW48 finished -> models/shapeW48_2026-10-04_03-28-41.pt
+[2026-10-04 07:59:40] benchmarking ...
+[2026-10-04 07:59:43] benchmark written to models/night_benchmark.txt
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0
+sprudler_2026-10-02_17-00-59.pt          2,084  per set [2003, 2412, 2001, 1918]      328  per set [357, 310, 278, 369]      600  per set [517, 724, 522, 637]    1,213  per set [844, 1266, 1338, 1404]
+hardExplore_2026-10-02_20-07-55.pt       2,916  per set [2426, 2970, 3072, 3194]    2,339  per set [2468, 2775, 2042, 2071]    2,517  per set [2143, 2561, 3291, 2073]    2,546  per set [2847, 2435, 2422, 2483]
+zeroStart_2026-10-03_22-27-26.pt         5,976  per set [6372, 5241, 6375, 5918]    2,177  per set [2247, 2135, 2322, 2002]    3,100  per set [2494, 3424, 3492, 2988]    3,848  per set [2893, 4640, 3980, 3879]
+shapeReplicate_2026-10-04_02-18-38.pt      515  per set [501, 439, 494, 626]      251  per set [258, 231, 221, 295]      327  per set [286, 332, 359, 330]      417  per set [402, 404, 430, 433]
+shapeW48_2026-10-04_03-28-41.pt            554  per set [556, 476, 569, 616]      289  per set [283, 290, 229, 355]      382  per set [331, 399, 360, 438]      494  per set [509, 463, 495, 507]
+shapeW48_2026-10-04_03-28-41_g1000.pt      552  per set [605, 433, 565, 604]      293  per set [338, 227, 297, 310]      387  per set [347, 365, 474, 363]      448  per set [363, 428, 514, 486]
+shapeW48_2026-10-04_03-28-41_g2000.pt      577  per set [690, 398, 592, 629]      290  per set [278, 285, 284, 315]      329  per set [280, 370, 335, 332]      456  per set [449, 437, 431, 507]
+
+[2026-10-04 07:59:43] run done
