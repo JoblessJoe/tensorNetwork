@@ -36,9 +36,9 @@ def seedSets(games: int):
 
 
 def job(args):
-    path, seeds, maxStart, minStart, zero, smooth = args
+    path, seeds, maxStart, minStart, zero, smooth, stable = args
     net = ps.loadNetwork(path)
-    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth)) / len(seeds)
+    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth, stableSlots=stable)) / len(seeds)
 
 
 if __name__ == "__main__":
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     ap.add_argument("--min-start", type=int, default=0, help="minimum start height of the random-start column (e.g. 20000 = only hard starts)")
     ap.add_argument("--ranges", nargs="+", metavar="MIN:MAX", help="start-height ranges as columns after 'start 0': MIN:MAX or MIN:MAX:ZEROSHARE, e.g. 20000:30000 20000:30000:0.5 (overrides --min-start/--mixed)")
     ap.add_argument("--smoothing", type=float, default=1.0, help="steer smoothing the models were trained with (1 = none)")
+    ap.add_argument("--stable", action="store_true", help="models were trained with stableSlots=True")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         ranges.append((int(p[0]), int(p[1]), float(p[2]) if len(p) > 2 else 0.0))
     modes = [("start 0", None, 0, 0.0)] + [(f"random {lo // 1000}-{hi // 1000}k" + (f" +{int(z * 100)}%@0" if z else ""), hi, lo, z) for lo, hi, z in ranges]   # (label, max, min, zero share)
 
-    jobs = [(m, s, h, lo, z, a.smoothing) for m in a.models for _, h, lo, z in modes for s in sets]
+    jobs = [(m, s, h, lo, z, a.smoothing, a.stable) for m in a.models for _, h, lo, z in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 
