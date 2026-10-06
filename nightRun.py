@@ -8,11 +8,10 @@ models/night_benchmark.txt. A crash in one phase does not stop the others (a pha
     python nightRun.py --scale 0.5     every phase's hours/generations x 0.5
     python nightRun.py --smoke         tiny version to check that everything works (~1 minute)
 
-Current experiment:
-  zeroStart       from the hardExplore pool, half of the games start at 0, half at 20-30k (explore settings): does the early game come back?
-  shapeReplicate  [23,23,23] from scratch, 1,000 gens (noise check; the existing baseline is 17-00-59: 2,084 / 328 / 600)
-  shapeW48        [48,48,48] from scratch, 3,500 gens (3.5x the weights -> 3.5x the generations); snapshots at 1,000 and 2,000 gens
-Benchmark columns: start 0 | hard 20-30k | mixed 0-30k | half at 0 + half hard; references 17-00-59 and hardExplore are included.
+Current experiment (both from the 'target' pool, target-mode net: 25 inputs / 7 outputs, stable slots, steer smoothing 0.5):
+  careful   careful mutations only (sigma 0.02, mutRate 0.7), 5 h - the polish step alone
+  monster   the same + monster practice (30% of the games with 2x the monster spawn chance), 5 h
+Benchmark columns: start 0 | hard 20-30k | mixed 0-30k | half at 0 + half hard | hard with 2x monsters; reference: the target model itself.
 '''
 import argparse
 import glob
@@ -33,23 +32,30 @@ HARDEXPLORE = "models/hardExplore_2026-10-02_20-07-55.pt"
 
 # start: model file | pool: pool file | after: earlier phase | none of them -> new network of 'inputs' inputs and 'hidden' layers
 # zero: share of the games that always start at 0 (the rest draws from minStart..maxStart); snap: generations at which a snapshot is saved
+TARGET_POOL = "models/target_2026-10-05_10-07-53_pool.pt"   # explore run: 6,326 / 2,760 / 3,966 / 4,812 (start 0 / hard / mixed / training mix)
+TARGET = "models/target_2026-10-05_10-07-53.pt"
+# smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier)
+COMMON = dict(pool=TARGET_POOL, inputs=25, minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, smooth=0.5, stable=True, gens=100000, hours=5.0)
 PHASES = [
-    # 1) can early-game games pull start 0 back up while the hard skill stays? (explore settings, which learned the hard regime)
-    dict(name="zeroStart", pool=HARDEXPLORE_POOL, inputs=23, gens=100000, hours=3.5, minStart=20000, maxStart=30000, zero=0.5, sigma=0.05, mutRate=1.0),
-    # 2) shape: recipe of the 23-input model 17-00-59 (scratch, normal starts, sigma 0.05, mutRate 1.0); gens scale with the number of weights
-    #    (1,704 / 5,954); snapshots at 1,000 / 2,000 gens allow a comparison at equal generations as well as at equal weight budget
-    dict(name="shapeReplicate", inputs=23, hidden=[23, 23, 23], gens=1000, hours=3.0, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0),
-    dict(name="shapeW48",       inputs=23, hidden=[48, 48, 48], gens=3500, hours=8.0, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, snap=(1000, 2000)),
+    dict(COMMON, name="careful"),
+    dict(COMMON, name="monster", monster=0.3, monsterMult=2.0),
+    dict(COMMON, name="monsterExplore", monster=0.3, monsterMult=2.0, sigma=0.05, mutRate=1.0),   # monster practice alone (the explore settings of the target run)
 ]
-REFERENCES = [BASELINE, HARDEXPLORE]    # benchmarked as well, for comparison
+REFERENCES = [TARGET]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]    # benchmark columns after 'start 0': hard, mixed, and the zeroStart objective (half at 0, half hard)
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
+    ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
     a = ap.parse_args()
+    if a.phases:
+        names = a.phases.split(",")
+        PHASES[:] = [ph for ph in PHASES if ph["name"] in names]
+    elif not a.smoke:
+        PHASES[:] = [ph for ph in PHASES if ph["name"] != "monsterExplore"]    # queued separately
     here = os.path.dirname(os.path.abspath(__file__))
     os.chdir(here)
     log = os.path.join("models", "night_log.txt")
@@ -87,6 +93,8 @@ if __name__ == "__main__":
             ps.sprudlerTrainingLoop(workers, games, gens, pop, ph["mutRate"], ph["sigma"], elites, keep, networkName=ph["name"], livePlot=False,
                                     minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
                                     snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
+                                    steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
+                                    monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
                                     stage1Games=stage1, finalistFraction=frac, maxHours=hours, **kw)
             files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]
             outputs[ph["name"]] = max(files, key=os.path.getmtime)
@@ -97,12 +105,12 @@ if __name__ == "__main__":
     if outputs:
         note("benchmarking ...")
         snaps = sorted(f for name in outputs for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > t0)
-        cmd = [sys.executable, "evalModel.py"] + REFERENCES + list(outputs.values()) + snaps + ["--ranges"] + RANGES
+        cmd = [sys.executable, "evalModel.py"] + REFERENCES + list(outputs.values()) + snaps + ["--stable", "--smoothing", "0.5", "--monster-column", "2", "--ranges"] + RANGES
         if a.smoke:
             cmd += ["--games", "50", "--workers", "4"]
         out = subprocess.run(cmd, capture_output=True, text=True)
         text = out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
-        with open(os.path.join("models", "night_benchmark.txt"), "w") as f:
+        with open(os.path.join("models", f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt"), "w") as f:
             f.write(text)
-        note("benchmark written to models/night_benchmark.txt\n" + text)
+        note("benchmark written\n" + text)
     note("run done")

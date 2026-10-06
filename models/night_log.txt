@@ -114,3 +114,45 @@ shapeW48_2026-10-04_03-28-41_g1000.pt      552  per set [605, 433, 565, 604]    
 shapeW48_2026-10-04_03-28-41_g2000.pt      577  per set [690, 398, 592, 629]      290  per set [278, 285, 284, 315]      329  per set [280, 370, 335, 332]      456  per set [449, 437, 431, 507]
 
 [2026-10-04 07:59:43] run done
+[2026-10-05 18:43:51] run start: ['careful', 'monster']
+[2026-10-05 18:43:51] phase careful: 25 inputs, hidden [23, 23, 23], starts 20000-30000, sigma 0.02, mutRate 0.7, up to 100000 gens / 5.00 h
+[2026-10-05 18:45:44] run start: ['monsterExplore']
+[2026-10-05 18:45:44] phase monsterExplore: 25 inputs, hidden [23, 23, 23], starts 20000-30000, sigma 0.05, mutRate 1.0, up to 12 gens / 0.00 h
+[2026-10-05 18:45:52] phase monsterExplore finished -> models/monsterExplore_2026-10-05_18-45-44.pt
+[2026-10-05 18:45:52] benchmarking ...
+[2026-10-05 18:45:57] benchmark written
+
+50 games per column (1 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt                       5,984  per set [5984]               2,647  per set [2647]               4,101  per set [4101]               4,934  per set [4934]               2,074  per set [2074]
+monsterExplore_2026-10-05_18-45-44.pt               6,081  per set [6081]               3,336  per set [3336]               3,745  per set [3745]               4,689  per set [4689]               2,155  per set [2155]
+
+[2026-10-05 18:45:57] run done
+[2026-10-06 00:13:06] phase careful finished -> models/careful_2026-10-05_18-43-51.pt
+[2026-10-06 00:13:06] phase monster: 25 inputs, hidden [23, 23, 23], starts 20000-30000, sigma 0.02, mutRate 0.7, up to 100000 gens / 5.00 h
+[2026-10-06 05:46:34] phase monster finished -> models/monster_2026-10-06_00-13-06.pt
+[2026-10-06 05:46:34] benchmarking ...
+[2026-10-06 05:46:38] benchmark written to models/night_benchmark.txt
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                      start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt     6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+careful_2026-10-05_18-43-51.pt    7,485  per set [8144, 6824, 7817, 7155]    3,106  per set [3320, 3189, 3248, 2666]    4,502  per set [3736, 5347, 5269, 3657]    4,968  per set [4497, 5044, 4371, 5958]    2,188  per set [2342, 2287, 1691, 2432]
+monster_2026-10-06_00-13-06.pt    6,804  per set [7261, 7047, 6831, 6075]    3,009  per set [2806, 2608, 3316, 3307]    4,066  per set [4026, 4339, 4199, 3699]    4,784  per set [4957, 4617, 4523, 5037]    2,027  per set [1696, 2386, 2029, 1997]
+
+[2026-10-06 05:46:38] run done
+[2026-10-06 05:47:08] run start: ['monsterExplore']
+[2026-10-06 05:47:08] phase monsterExplore: 25 inputs, hidden [23, 23, 23], starts 20000-30000, sigma 0.05, mutRate 1.0, up to 100000 gens / 5.00 h
+[2026-10-06 11:16:11] phase monsterExplore finished -> models/monsterExplore_2026-10-06_05-47-08.pt
+[2026-10-06 11:16:11] benchmarking ...
+[2026-10-06 11:16:15] benchmark written
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt            6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+monsterExplore_2026-10-06_05-47-08.pt    6,562  per set [6906, 6144, 6927, 6272]    2,737  per set [2684, 2849, 2873, 2543]    4,093  per set [3877, 4359, 4351, 3785]    4,798  per set [5004, 5078, 4263, 4845]    1,933  per set [2105, 1855, 1902, 1870]
+
+[2026-10-06 11:16:15] run done

@@ -1,0 +1,6 @@
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt            6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+monsterExplore_2026-10-06_05-47-08.pt    6,562  per set [6906, 6144, 6927, 6272]    2,737  per set [2684, 2849, 2873, 2543]    4,093  per set [3877, 4359, 4351, 3785]    4,798  per set [5004, 5078, 4263, 4845]    1,933  per set [2105, 1855, 1902, 1870]

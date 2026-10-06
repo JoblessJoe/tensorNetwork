@@ -1,0 +1,7 @@
+# name=target generations=2000 population=200 games=200 startFrom=models/smooth_2026-10-05_00-11-42_pool.pt stage1Games=20 mutationRate=1.0 sigma=0.05 elites=3 keepPart=0.1 minStartHeight=20000 maxStartHeight=30000 zeroFraction=0.5 steerSmoothing=0.5 stableSlots=True
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,4.03,223.78,222.32,205.85,243.84,208.75,208.75
+2,8.01,182.12,179.60,162.04,204.95,197.98,184.43
+3,12.03,171.45,173.53,152.54,187.28,205.83,201.19
+4,15.92,192.01,189.45,174.65,217.01,215.09,215.09
+5,19.93,195.28,195.96,169.17,220.17,228.11,212.35
