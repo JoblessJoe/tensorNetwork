@@ -37,7 +37,13 @@ Reference length (roughly this size per message):
 
 **Why:** the user wants to actually absorb each piece before getting the next one, not scroll through a wall of text.
 
-## 6. Scope
+## 6. Big edits need a question first (added 2026-10-06)
+The user wants to write the code in this project themselves - it is a learning project, and that includes the training/tooling code, not just the network classes. Earlier delegations ("can you build that for me") covered that one task only; they do not become a standing permission.
+- Before any large edit (a new module, a rewrite, a change touching several files, e.g. the numba env port), **ask first**: say what you would build and why, and let the user decide whether to write it themselves, get a skeleton, or delegate it.
+- Small mechanical fixes that were requested are fine.
+- After a big delegated edit, do not just report results: offer to walk through the code in small chunks (the user wants to be able to use and change it).
+
+## 7. Scope
 Applies to this Project's conversations only.
  
 ---
