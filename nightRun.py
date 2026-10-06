@@ -1,18 +1,19 @@
 '''
 Unattended multi-phase run: training phases one after another, each limited by generations and/or hours.
-A phase starts from scratch, from a model file, or from the result of an earlier phase ('after').
 At the end every result is benchmarked (evalModel.py, fixed seeds) and the table is written to
-models/night_benchmark.txt. A crash in one phase does not stop the others (a phase whose 'after' phase failed is skipped).
+models/night_benchmark.txt. A crash in one phase does not stop the others.
 
-    python nightRun.py                 all phases (see PHASES), then the benchmark
-    python nightRun.py --scale 0.5     every phase's hours/generations x 0.5
-    python nightRun.py --smoke         tiny version to check that everything works (~1 minute)
+    python nightRun.py                          all phases (see PHASES), then the benchmark
+    python nightRun.py --phases a,b             only these phases (benchmark goes to night_benchmark_a_b.txt)
+    python nightRun.py --scale 0.5              every phase's hours / generations x 0.5
+    python nightRun.py --smoke                  tiny version to check that everything works (~1 minute)
+    python nightRun.py --no-plot                no live learning-curve window
 
-Current experiment: target mode TRAINED FROM SCRATCH (25 inputs / 7 outputs, stable slots, steer smoothing 0.5), two replicates
-(from-scratch runs differ ~4x in when the take-off happens, so one run says little). Recipe of the old scratch baseline 17-00-59:
-normal starts, sigma 0.05, mutRate 1.0, 200 games, two-stage eval. Question: does a network that learns WITH the target input rely on it
-(the continued `careful` model barely does: ablating the target inputs cost only 2-3%)?
-Benchmark columns: start 0 | hard 20-30k | mixed 0-30k | half at 0 + half hard | hard with 2x monsters; references: target, careful.
+To plan a new experiment, edit section 2 (PHASES). Section 1 holds the building blocks, section 3 the machinery.
+
+A phase is a dict (see RECIPE for all keys and their defaults). Where its network comes from:
+    'start': model file | 'pool': pool file | 'after': name of an earlier phase | none of them: a new random network
+    (inputs / hidden / outputs).
 '''
 import argparse
 import glob
@@ -25,102 +26,184 @@ import traceback
 
 import proSprudler as ps
 
-BASELINE = "models/sprudler_2026-10-02_17-00-59.pt"   # 23-input from-scratch model (1,000 gens, normal starts)
+# =============================================================================================================
+# 1. Building blocks
+# =============================================================================================================
 
-# start: model file | None (+ 'after': name of an earlier phase | None -> new network of 'inputs' inputs)
-HARDEXPLORE_POOL = "models/hardExplore_2026-10-02_20-07-55_pool.pt"   # hard 2,339 / start 0 2,916; its pool keeps the diversity of the run
-HARDEXPLORE = "models/hardExplore_2026-10-02_20-07-55.pt"
+# The from-scratch recipe. Keys of a phase (every phase = RECIPE + its own changes):
+#   inputs / hidden / outputs   network shape (inputs 25 + outputs 7 = target mode, 23 + 2 = plain)
+#   minStart / maxStart / zero  start heights: random in minStart..maxStart (maxStart None = always 0); 'zero' = share of games that start at 0 anyway
+#   sigma / mutRate             mutation size / share of mutated weights
+#   smooth                      steer smoothing (1 = off)
+#   stable                      stable slot observation: False = classic, True = 3/2/1/2 slots, or a tuple (platformsBelow, platformsAbove, monstersBelow, monstersAbove)
+#   monster / monsterMult       monster practice: share of games with monsterMult x the normal monster spawn chance
+#   gens / hours                limits of the phase (whichever comes first)
+#   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
+RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
+              smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
 
-# start: model file | pool: pool file | after: earlier phase | none of them -> new network of 'inputs' inputs and 'hidden' layers
-# zero: share of the games that always start at 0 (the rest draws from minStart..maxStart); snap: generations at which a snapshot is saved
+# Population / evaluation settings: (full run, smoke test)
+SETTINGS = dict(
+    workers=(24, 4), population=(200, 12), games=(200, 6), stage1Games=(20, 3), elites=(3, 1), keepPart=(0.1, 0.25), finalistFraction=(0.3, 0.5))
+
+# Models that are always benchmarked as a comparison (they use stableSlots + smoothing 0.5)
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
-# smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier), outputs: output neurons
-SCRATCH = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
-# slot experiments (2026-10-06): SCRATCH without target mode (23-wide hidden layers kept), only the observation's slot counts change.
-# layout = (platformsBelow, platformsAbove, monstersBelow, monstersAbove); inputs = 2 + 3 * platforms + 2 * monsters. Baseline (3, 2, 1, 2) = 23 inputs.
-# Comparison: slotBase (same setup, 4 replicates) + the earlier noTarget1/2 and tgtScratchA / tgtFastB/C/D.
-def slotPhase(name, layout):
-    return dict(SCRATCH, name=name, stable=layout, inputs=2 + 3 * (layout[0] + layout[1]) + 2 * (layout[2] + layout[3]), outputs=2)
-SLOT_LAYOUTS = dict(slotBase=(3, 2, 1, 2), slotPlat43=(4, 3, 1, 2), slotPlat64=(6, 4, 1, 2), slotMon23=(3, 2, 2, 3))
-PHASES = [slotPhase(f"{n}{r}", lay) for r in "12" for n, lay in SLOT_LAYOUTS.items()] + [slotPhase(f"slotBase{r}", (3, 2, 1, 2)) for r in "34"]
-REFERENCES = [TARGET, CAREFUL]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
-RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]    # benchmark columns after 'start 0': hard, mixed, and the zeroStart objective (half at 0, half hard)
+REFERENCES = [TARGET, CAREFUL]
+CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*"]    # replicates of the 344-gen control recipes
 
-if __name__ == "__main__":
+# Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
+RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
+
+
+def weights(inputs, hidden, outputs):
+    '''Number of weights + biases of a network.'''
+    sizes = [inputs] + hidden + [outputs]
+    return sum(a * b + b for a, b in zip(sizes, sizes[1:]))
+
+
+def scaledGens(inputs, hidden, outputs, controlWeights, baseGens=344):
+    '''Generations for a network with more weights: baseGens x (its weights / the control's weights).'''
+    return round(baseGens * weights(inputs, hidden, outputs) / controlWeights)
+
+
+def slotPhase(name, layout, controlWeights):
+    '''A no-target network for a slot layout (platformsBelow, platformsAbove, monstersBelow, monstersAbove).
+    inputs = 2 + 3 * platforms + 2 * monsters; hidden width = input size, so the first layer is no bottleneck;
+    generations are scaled with the weight count relative to the control.'''
+    n = 2 + 3 * (layout[0] + layout[1]) + 2 * (layout[2] + layout[3])
+    hidden = [n, n, n]
+    return dict(RECIPE, name=name, stable=layout, inputs=n, outputs=2, hidden=hidden, gens=scaledGens(n, hidden, 2, controlWeights))
+
+
+# =============================================================================================================
+# 2. The experiment (edit this)
+# =============================================================================================================
+# Round 2 (2026-10-06): generations = 344 x (weights / the matching control's weights).
+#  - wide25: target-mode net (25 in / 7 out) with hidden [25,25,25] vs the control tgtScratchA / tgtFastB/C/D (hidden [23,23,23])
+#  - slot variants (custom slots cannot use target mode): vs the control noTarget1/2 + slotBase1/2 (23 in / 2 out / [23,23,23])
+CONTROL_TARGET = weights(25, [23] * 3, 7)    # 1,870 weights
+CONTROL_SLOTS = weights(23, [23] * 3, 2)     # 1,704 weights
+
+PHASES = [
+    dict(RECIPE, name=f"wide25_{r}", hidden=[25, 25, 25], gens=scaledGens(25, [25] * 3, 7, CONTROL_TARGET)) for r in "12"
+] + [
+    slotPhase("slotPlat43x_1", (4, 3, 1, 2), CONTROL_SLOTS),
+    slotPhase("slotPlat43x_2", (4, 3, 1, 2), CONTROL_SLOTS),
+    slotPhase("slotPlat64x_1", (6, 4, 1, 2), CONTROL_SLOTS),    # the widest layout only once: most expensive, least promising
+    slotPhase("slotMon23x_1", (3, 2, 2, 3), CONTROL_SLOTS),
+    slotPhase("slotMon23x_2", (3, 2, 2, 3), CONTROL_SLOTS),
+]
+
+
+# =============================================================================================================
+# 3. Machinery
+# =============================================================================================================
+
+def isFinalModel(path):
+    '''A phase's result file, not its pool (_pool.pt) or a snapshot (_g<gen>.pt).'''
+    return not path.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", path)
+
+
+def startNetworkArgs(ph, results):
+    '''How the phase gets its network: keyword arguments for sprudlerTrainingLoop.'''
+    if ph.get("after"):
+        if ph["after"] not in results:
+            raise RuntimeError(f"phase '{ph['after']}' has no result - skipping")
+        return dict(startNetwork=ps.loadNetwork(results[ph["after"]]))
+    if ph.get("pool"):
+        return dict(startNetwork=ps.loadPool(ph["pool"]))
+    if ph.get("start"):
+        return dict(startNetwork=ps.loadNetwork(ph["start"]))
+    return dict(inputSize=ph["inputs"], hiddenSizes=ph["hidden"], outputSize=ph["outputs"])
+
+
+def runPhase(ph, cfg, a, results, note):
+    '''Trains one phase; on success stores its result file in results[name].'''
+    gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
+    hours = 0.0004 if a.smoke else ph["hours"] * a.scale
+    note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
+         f"mutRate {ph['mutRate']}, up to {gens} gens / {hours:.2f} h")
+    try:
+        ps.sprudlerTrainingLoop(
+            cfg["workers"], cfg["games"], gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
+            networkName=ph["name"], livePlot=False,
+            minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
+            snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
+            steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
+            monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
+            fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1),
+            stage1Games=cfg["stage1Games"], finalistFraction=cfg["finalistFraction"], maxHours=hours,
+            **startNetworkArgs(ph, results))
+        files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if isFinalModel(f)]
+        results[ph["name"]] = max(files, key=os.path.getmtime)
+        note(f"phase {ph['name']} finished -> {results[ph['name']]}")
+    except BaseException:    # includes Ctrl-C inside a phase before its first generation ends
+        note(f"phase {ph['name']} FAILED:\n{traceback.format_exc()}")
+
+
+def slotsArgs(stable):
+    '''evalModel arguments for a 'stable' setting.'''
+    if isinstance(stable, tuple):
+        return ["--slots", ",".join(map(str, stable))]
+    return ["--stable"] if stable else []
+
+
+def benchmark(phases, results, startTime, smoke):
+    '''Benchmarks references, control models and all phase results; returns the text.
+    evalModel applies ONE smoothing/slots setting to all its models, so models are benchmarked in groups of equal (smoothing, stable).'''
+    snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
+    controls = sorted(f for pattern in CONTROL_GLOBS for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
+    groups = {(0.5, True): REFERENCES + controls + snapshots}
+    for ph in phases:
+        if ph["name"] in results:
+            groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(results[ph["name"]])
+    text = ""
+    for (smooth, stable), models in groups.items():
+        cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--ranges"] + RANGES + slotsArgs(stable)
+        if smoke:
+            cmd += ["--games", "50", "--workers", "4"]
+        out = subprocess.run(cmd, capture_output=True, text=True)
+        text += f"\n=== smoothing {smooth}, stableSlots {stable} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
+    return text
+
+
+def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
     a = ap.parse_args()
-    if a.phases:
-        names = a.phases.split(",")
-        PHASES[:] = [ph for ph in PHASES if ph["name"] in names]
-    here = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(here)
-    log = os.path.join("models", "night_log.txt")
+
+    phases = [ph for ph in PHASES if not a.phases or ph["name"] in a.phases.split(",")]
+    cfg = {key: values[1 if a.smoke else 0] for key, values in SETTINGS.items()}
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.makedirs("models", exist_ok=True)
 
     def note(msg):
         line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
         print(line, flush=True)
-        with open(log, "a") as f:
+        with open(os.path.join("models", "night_log.txt"), "a") as f:
             f.write(line + "\n")
 
-    workers, pop, games, stage1, elites, keep, frac = (4, 12, 6, 3, 1, 0.25, 0.5) if a.smoke else (24, 200, 200, 20, 3, 0.1, 0.3)
-    outputs = {}     # phase name -> best-network file
-    t0 = time.time()
-    note(f"run start: {[p['name'] for p in PHASES]}")
+    results = {}     # phase name -> best-network file
+    startTime = time.time()
+    note(f"run start: {[p['name'] for p in phases]}")
     if not a.smoke and not a.no_plot:    # ONE live window for the whole night: follows the newest run, chained to its parent runs
         subprocess.Popen([sys.executable, "plotRun.py", "--live", "--chain", "--latest"])
-    for ph in PHASES:
-        gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
-        hours = 0.0004 if a.smoke else ph["hours"] * a.scale
-        note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph.get('hidden', [23, 23, 23])}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-             f"mutRate {ph['mutRate']}, up to {gens} gens / {hours:.2f} h")
-        try:
-            kw = {}
-            if ph.get("after"):
-                if ph["after"] not in outputs:
-                    raise RuntimeError(f"phase '{ph['after']}' has no result - skipping")
-                kw["startNetwork"] = ps.loadNetwork(outputs[ph["after"]])
-            elif ph.get("pool"):
-                kw["startNetwork"] = ps.loadPool(ph["pool"])
-            elif ph.get("start"):
-                kw["startNetwork"] = ps.loadNetwork(ph["start"])
-            else:
-                kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
-            ps.sprudlerTrainingLoop(workers, games, gens, pop, ph["mutRate"], ph["sigma"], elites, keep, networkName=ph["name"], livePlot=False,
-                                    minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
-                                    snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                                    steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
-                                    monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
-                                    fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1),
-                                    stage1Games=stage1, finalistFraction=frac, maxHours=hours, **kw)
-            files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]
-            outputs[ph["name"]] = max(files, key=os.path.getmtime)
-            note(f"phase {ph['name']} finished -> {outputs[ph['name']]}")
-        except BaseException:                       # includes Ctrl-C inside a phase before its first generation ends
-            note(f"phase {ph['name']} FAILED:\n{traceback.format_exc()}")
+    for ph in phases:
+        runPhase(ph, cfg, a, results, note)
 
-    if outputs:
+    if results:
         note("benchmarking ...")
-        snaps = sorted(f for name in outputs for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > t0)
-        refs = REFERENCES + [f for f in sorted(glob.glob("models/tgtScratchA_*.pt") + glob.glob("models/tgtFast[BCD]_*.pt") + glob.glob("models/noTarget[12]_*.pt")) if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]       # baseline replicates (same recipe, nothing ablated)
-        # evalModel applies ONE smoothing/stable setting to all its models, so benchmark per (smooth, stable) group
-        groups = {(0.5, True): refs + snaps}
-        for ph in PHASES:
-            if ph["name"] in outputs:
-                groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(outputs[ph["name"]])
-        text = ""
-        for (smooth, stable), models in groups.items():
-            cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--ranges"] + RANGES + (["--slots", ",".join(map(str, stable))] if isinstance(stable, tuple) else (["--stable"] if stable else []))
-            if a.smoke:
-                cmd += ["--games", "50", "--workers", "4"]
-            out = subprocess.run(cmd, capture_output=True, text=True)
-            text += f"\n=== smoothing {smooth}, stableSlots {stable} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
-        with open(os.path.join("models", f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt"), "w") as f:
+        text = benchmark(phases, results, startTime, a.smoke)
+        fileName = f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt"
+        with open(os.path.join("models", fileName), "w") as f:
             f.write(text)
         note("benchmark written\n" + text)
     note("run done")
+
+
+if __name__ == "__main__":
+    main()

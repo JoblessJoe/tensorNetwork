@@ -269,3 +269,412 @@ classicSlots1_2026-10-06_16-16-02.pt    1,562  per set [1823, 1397, 1521, 1508] 
 classicSlots2_2026-10-06_16-51-54.pt    1,957  per set [2006, 1567, 2182, 2073]      531  per set [522, 458, 494, 649]      787  per set [665, 867, 803, 813]    1,173  per set [1115, 1223, 1080, 1276]      377  per set [463, 315, 366, 361]
 
 [2026-10-06 16:58:19] run done
+[2026-10-06 17:12:13] run start: ['slotBase1', 'slotPlat431', 'slotPlat641', 'slotMon231', 'slotBase2', 'slotPlat432', 'slotPlat642', 'slotMon232', 'slotBase3', 'slotBase4']
+[2026-10-06 17:12:13] phase slotBase1: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:28:13] phase slotBase1 finished -> models/slotBase1_2026-10-06_17-12-13.pt
+[2026-10-06 17:28:13] phase slotPlat431: 29 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:42:02] phase slotPlat431 finished -> models/slotPlat431_2026-10-06_17-28-13.pt
+[2026-10-06 17:42:02] phase slotPlat641: 38 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:54:38] phase slotPlat641 finished -> models/slotPlat641_2026-10-06_17-42-02.pt
+[2026-10-06 17:54:38] phase slotMon231: 27 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:30] phase slotMon231 finished -> models/slotMon231_2026-10-06_17-54-38.pt
+[2026-10-06 17:55:30] phase slotBase2: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:30] phase slotBase2 FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 301, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 17:55:30] phase slotPlat432: 29 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:31] phase slotPlat432 FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 301, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 372, in sprudlerTrainingLoop
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 17:55:31] phase slotPlat642: 38 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:31] phase slotPlat642 FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 301, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 17:55:31] phase slotMon232: 27 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:31] phase slotMon232 FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 301, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 372, in sprudlerTrainingLoop
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 17:55:31] phase slotBase3: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:32] phase slotBase3 FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 305, in evaluatePopulation
+    live = sorted(sharedStatus.values(), reverse=True)  # [(score, frames), ...] best first
+                  ^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in values
+  File "/usr/lib/python3.12/multiprocessing/managers.py", line 821, in _callmethod
+    kind, result = conn.recv()
+                   ^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 250, in recv
+    buf = self._recv_bytes()
+          ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 437, in _recv_bytes
+    return self._recv(size)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 395, in _recv
+    chunk = read(handle, remaining)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 372, in sprudlerTrainingLoop
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 695, in _terminate_pool
+    cls._help_stuff_finish(inqueue, task_handler, len(pool))
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 675, in _help_stuff_finish
+    inqueue._rlock.acquire()
+KeyboardInterrupt
+
+[2026-10-06 17:55:32] phase slotBase4: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 17:55:33] phase slotBase4 FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 94, in <module>
+    kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 301, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 17:55:33] benchmarking ...
+[2026-10-06 17:56:32] run start: ['slotPlat431', 'slotPlat641', 'slotMon231', 'slotBase2', 'slotPlat432', 'slotPlat642', 'slotMon232']
+[2026-10-06 17:56:32] phase slotPlat431: 29 inputs, hidden [29, 29, 29], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 18:11:02] phase slotPlat431 finished -> models/slotPlat431_2026-10-06_17-56-32.pt
+[2026-10-06 18:11:02] phase slotPlat641: 38 inputs, hidden [38, 38, 38], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 18:23:39] phase slotPlat641 finished -> models/slotPlat641_2026-10-06_18-11-02.pt
+[2026-10-06 18:23:39] phase slotMon231: 27 inputs, hidden [27, 27, 27], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 18:36:05] phase slotMon231 finished -> models/slotMon231_2026-10-06_18-23-39.pt
+[2026-10-06 18:36:05] phase slotBase2: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 18:51:55] phase slotBase2 finished -> models/slotBase2_2026-10-06_18-36-05.pt
+[2026-10-06 18:51:55] phase slotPlat432: 29 inputs, hidden [29, 29, 29], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 19:05:52] phase slotPlat432 finished -> models/slotPlat432_2026-10-06_18-51-55.pt
+[2026-10-06 19:05:52] phase slotPlat642: 38 inputs, hidden [38, 38, 38], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 19:18:39] phase slotPlat642 finished -> models/slotPlat642_2026-10-06_19-05-52.pt
+[2026-10-06 19:18:39] phase slotMon232: 27 inputs, hidden [27, 27, 27], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 19:32:40] phase slotMon232 finished -> models/slotMon232_2026-10-06_19-18-39.pt
+[2026-10-06 19:32:40] benchmarking ...
+[2026-10-06 19:32:51] benchmark written
+
+=== smoothing 0.5, stableSlots True ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt         6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+careful_2026-10-05_18-43-51.pt        7,485  per set [8144, 6824, 7817, 7155]    3,106  per set [3320, 3189, 3248, 2666]    4,502  per set [3736, 5347, 5269, 3657]    4,968  per set [4497, 5044, 4371, 5958]    2,188  per set [2342, 2287, 1691, 2432]
+noTarget1_2026-10-06_15-45-59.pt      6,678  per set [7449, 7271, 6276, 5715]    2,337  per set [2847, 2378, 1748, 2373]    3,484  per set [3324, 3788, 3789, 3034]    4,762  per set [3813, 5322, 4710, 5204]    1,577  per set [1468, 1586, 1794, 1459]
+noTarget2_2026-10-06_16-21-23.pt      5,984  per set [5780, 6530, 6248, 5380]    2,235  per set [2408, 2627, 1904, 1999]    3,587  per set [3334, 3627, 3860, 3528]    4,244  per set [4033, 4607, 3890, 4445]    1,709  per set [1749, 1638, 1714, 1736]
+tgtFastB_2026-10-06_14-05-37.pt       6,971  per set [7525, 5932, 7421, 7006]    2,458  per set [2482, 2667, 2235, 2448]    3,647  per set [3711, 3600, 3872, 3407]    4,249  per set [4036, 5091, 3522, 4348]    1,810  per set [2063, 1896, 1608, 1674]
+tgtFastC_2026-10-06_14-21-47.pt         296  per set [285, 334, 265, 298]      216  per set [228, 228, 204, 205]      253  per set [258, 252, 256, 246]      263  per set [276, 267, 256, 252]      249  per set [217, 268, 249, 262]
+tgtFastC_2026-10-06_14-22-58.pt       7,054  per set [6984, 6588, 7227, 7417]    2,811  per set [3062, 2699, 2841, 2643]    4,136  per set [4487, 3908, 4269, 3880]    4,663  per set [4688, 4514, 3983, 5468]    1,967  per set [1742, 2105, 1779, 2242]
+tgtFastD_2026-10-06_14-39-16.pt       6,404  per set [5987, 6666, 7417, 5547]    2,169  per set [2934, 1814, 1966, 1962]    3,018  per set [2713, 3095, 3291, 2975]    3,893  per set [3215, 4139, 3540, 4677]    1,567  per set [1541, 1753, 1456, 1520]
+tgtScratchA_2026-10-06_11-42-54.pt    6,401  per set [5955, 6157, 7388, 6106]    2,389  per set [3162, 2002, 2498, 1896]    3,597  per set [3507, 3344, 4002, 3537]    4,030  per set [3706, 4215, 3918, 4281]    1,649  per set [1470, 1797, 1798, 1534]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt                     32 /  14 /  25 /  29                37 /  34 /  16 /  12                46 /  22 /  14 /  18                28 /  24 /  26 /  23                46 /  32 /  12 /  10
+careful_2026-10-05_18-43-51.pt                    38 /  18 /  22 /  22                50 /  27 /  16 /   6                46 /  22 /  20 /  12                38 /  21 /  23 /  18                52 /  30 /  10 /   8
+noTarget1_2026-10-06_15-45-59.pt                  38 /  12 /  28 /  23                28 /  22 /  33 /  16                36 /  13 /  32 /  19                32 /  18 /  30 /  21                40 /  25 /  24 /  11
+noTarget2_2026-10-06_16-21-23.pt                  32 /  14 /  35 /  20                43 /  23 /  23 /  11                43 /  20 /  26 /  12                33 /  14 /  33 /  20                38 /  28 /  24 /  10
+tgtFastB_2026-10-06_14-05-37.pt                   38 /  14 /  24 /  24                30 /  20 /  26 /  24                44 /  24 /  14 /  18                30 /  16 /  27 /  28                38 /  20 /  15 /  26
+tgtFastC_2026-10-06_14-21-47.pt                    0 /   0 /  59 /  41                 0 /   0 /  67 /  32                 0 /   0 /  65 /  35                 0 /   0 /  58 /  42                 1 /   0 /  74 /  26
+tgtFastC_2026-10-06_14-22-58.pt                   48 /  16 /  19 /  18                52 /  22 /  20 /   6                48 /  22 /  22 /   8                44 /  19 /  22 /  15                58 /  22 /  13 /   7
+tgtFastD_2026-10-06_14-39-16.pt                   34 /  14 /  30 /  22                35 /  14 /  38 /  12                36 /  20 /  35 /  10                27 /  16 /  38 /  19                46 /  22 /  24 /   9
+tgtScratchA_2026-10-06_11-42-54.pt                36 /  12 /  28 /  24                36 /  20 /  21 /  24                47 /  14 /  22 /  16                40 /  14 /  23 /  23                44 /  15 /  17 /  24
+
+=== smoothing 0.5, stableSlots (4, 3, 1, 2) ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotPlat431_2026-10-06_17-56-32.pt    6,081  per set [6868, 4697, 7027, 5732]    1,985  per set [1819, 1665, 2044, 2411]    3,359  per set [3247, 3761, 2992, 3437]    3,959  per set [3519, 4280, 3987, 4048]    1,444  per set [1626, 1498, 1282, 1370]
+slotPlat432_2026-10-06_18-51-55.pt    6,047  per set [5984, 5806, 6333, 6065]    1,803  per set [1772, 1520, 1910, 2009]    2,633  per set [2853, 3263, 2198, 2218]    4,117  per set [3438, 4655, 3901, 4473]    1,355  per set [1411, 1716, 1033, 1261]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotPlat431_2026-10-06_17-56-32.pt                38 /  14 /  29 /  20                32 /  16 /  30 /  22                38 /  16 /  28 /  18                38 /  13 /  27 /  22                46 /  18 /  14 /  22
+slotPlat432_2026-10-06_18-51-55.pt                28 /  24 /  22 /  27                27 /  20 /  21 /  32                30 /  16 /  24 /  30                26 /  19 /  30 /  24                29 /  16 /  20 /  35
+
+=== smoothing 0.5, stableSlots (6, 4, 1, 2) ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotPlat641_2026-10-06_18-11-02.pt    6,171  per set [5820, 6199, 6283, 6382]    2,022  per set [2002, 2205, 2011, 1871]    3,095  per set [3218, 3577, 2684, 2901]    3,902  per set [3965, 4391, 3081, 4173]    1,541  per set [1342, 1707, 1505, 1608]
+slotPlat642_2026-10-06_19-05-52.pt    6,169  per set [5863, 5524, 7295, 5994]    1,719  per set [1516, 1552, 1998, 1809]    2,873  per set [3017, 3317, 2770, 2389]    4,233  per set [2848, 4537, 4405, 5142]    1,343  per set [1159, 1541, 1425, 1247]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotPlat641_2026-10-06_18-11-02.pt                36 /  14 /  32 /  18                30 /  20 /  31 /  18                35 /  16 /  31 /  18                32 /  17 /  36 /  15                31 /  20 /  31 /  18
+slotPlat642_2026-10-06_19-05-52.pt                37 /  14 /  28 /  22                35 /  14 /  24 /  26                36 /  20 /  20 /  24                32 /  14 /  28 /  26                40 /  24 /  18 /  18
+
+=== smoothing 0.5, stableSlots (3, 2, 2, 3) ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotMon231_2026-10-06_18-23-39.pt    5,704  per set [6057, 5125, 5610, 6026]    1,945  per set [2103, 1904, 1780, 1993]    3,081  per set [2959, 3445, 2826, 3092]    4,065  per set [3634, 4180, 3803, 4641]    1,397  per set [1117, 1595, 1334, 1541]
+slotMon232_2026-10-06_19-18-39.pt    6,263  per set [6706, 6129, 6702, 5514]    2,182  per set [1893, 2380, 1950, 2505]    3,464  per set [2939, 3581, 3475, 3862]    4,651  per set [4470, 4779, 4432, 4925]    1,510  per set [1381, 1638, 1617, 1405]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotMon231_2026-10-06_18-23-39.pt                28 /  14 /  30 /  29                24 /  20 /  34 /  22                28 /  20 /  32 /  19                22 /  18 /  40 /  22                23 /  19 /  32 /  26
+slotMon232_2026-10-06_19-18-39.pt                32 /  15 /  24 /  30                34 /  14 /  26 /  27                32 /  18 /  26 /  25                28 /  12 /  32 /  28                31 /  18 /  28 /  24
+
+=== smoothing 0.5, stableSlots (3, 2, 1, 2) ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                        start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotBase2_2026-10-06_18-36-05.pt    7,160  per set [7247, 7337, 7808, 6246]    2,776  per set [2869, 2485, 2835, 2916]    4,058  per set [4241, 4410, 3612, 3968]    5,161  per set [4614, 5550, 4854, 5626]    1,728  per set [1611, 2001, 1628, 1672]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                        start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+slotBase2_2026-10-06_18-36-05.pt                42 /  15 /  23 /  20                46 /  18 /  24 /  12                53 /  17 /  20 /  10                41 /  24 /  20 /  16                44 /  18 /  19 /  18
+
+[2026-10-06 19:32:51] run done
+[2026-10-06 19:54:42] run start: ['longPlat43_1', 'longPlat43_2', 'longMon23_1', 'longMon23_2', 'longPlat64_1']
+[2026-10-06 19:54:42] phase longPlat43_1: 29 inputs, hidden [29, 29, 29], starts 0-None, sigma 0.05, mutRate 1.0, up to 1570 gens / 4.50 h
+[2026-10-06 20:46:11] run start: ['wide25_1', 'wide25_2', 'slotPlat43x_1', 'slotPlat43x_2', 'slotPlat64x_1', 'slotMon23x_1', 'slotMon23x_2']
+[2026-10-06 20:46:11] phase wide25_1: 25 inputs, hidden [25, 25, 25], starts 0-None, sigma 0.05, mutRate 1.0, up to 392 gens / 2.00 h
+[2026-10-06 20:46:11] phase wide25_1 FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 298, in evaluatePopulation
+    with tqdm(total=len(networks), desc=desc, unit="net", leave=False) as bar:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1103, in __init__
+    self.refresh(lock_args=self.lock_args)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1354, in refresh
+    self.display()
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1501, in display
+    self.moveto(pos)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1450, in moveto
+    self.fp.write('\n' * n + _term_move_up() * -n)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/utils.py", line 179, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 128, in runPhase
+    ps.sprudlerTrainingLoop(
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 373, in sprudlerTrainingLoop
+    with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1146, in __exit__
+    self.close()
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1309, in close
+    self.display(pos=0)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1502, in display
+    self.sp(self.__str__() if msg is None else msg)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 457, in print_status
+    fp_write('\r' + s + (' ' * max(last_len[0] - len_s, 0)))
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 450, in fp_write
+    fp.write(str(s))
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/utils.py", line 179, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 20:46:11] phase wide25_2: 25 inputs, hidden [25, 25, 25], starts 0-None, sigma 0.05, mutRate 1.0, up to 392 gens / 2.00 h
+[2026-10-06 20:46:12] phase wide25_2 FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 387, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 298, in evaluatePopulation
+    with tqdm(total=len(networks), desc=desc, unit="net", leave=False) as bar:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1103, in __init__
+    self.refresh(lock_args=self.lock_args)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1354, in refresh
+    self.display()
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1501, in display
+    self.moveto(pos)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1450, in moveto
+    self.fp.write('\n' * n + _term_move_up() * -n)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/utils.py", line 179, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 128, in runPhase
+    ps.sprudlerTrainingLoop(
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 373, in sprudlerTrainingLoop
+    with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1146, in __exit__
+    self.close()
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1309, in close
+    self.display(pos=0)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 1502, in display
+    self.sp(self.__str__() if msg is None else msg)
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 457, in print_status
+    fp_write('\r' + s + (' ' * max(last_len[0] - len_s, 0)))
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/std.py", line 450, in fp_write
+    fp.write(str(s))
+  File "/home/jtebbert/projects/tensorNetwork/venv/lib/python3.12/site-packages/tqdm/utils.py", line 179, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 20:46:12] phase slotPlat43x_1: 29 inputs, hidden [29, 29, 29], starts 0-None, sigma 0.05, mutRate 1.0, up to 539 gens / 2.00 h
