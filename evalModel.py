@@ -36,9 +36,9 @@ def seedSets(games: int):
 
 
 def job(args):
-    path, seeds, maxStart, minStart, zero, smooth, stable, mFrac, mMult = args
+    path, seeds, maxStart, minStart, zero, smooth, stable, mFrac, mMult, fast, repeat = args
     net = ps.loadNetwork(path)
-    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth, stableSlots=stable, monsterFraction=mFrac, monsterMult=mMult)) / len(seeds)
+    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth, stableSlots=stable, monsterFraction=mFrac, monsterMult=mMult, fast=fast, actionRepeat=repeat)) / len(seeds)
 
 
 if __name__ == "__main__":
@@ -51,6 +51,8 @@ if __name__ == "__main__":
     ap.add_argument("--smoothing", type=float, default=1.0, help="steer smoothing the models were trained with (1 = none)")
     ap.add_argument("--stable", action="store_true", help="models were trained with stableSlots=True")
     ap.add_argument("--monster-column", type=float, default=None, metavar="MULT", help="adds a column: hard starts 20-30k where every game has MULT x the normal monster spawn chance (e.g. 2)")
+    ap.add_argument("--fast", action="store_true", help="numba-compiled env (identical scores, ~10x faster)")
+    ap.add_argument("--repeat", type=int, default=1, help="action repeat the models were trained with (needs --fast)")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     if a.monster_column:
         modes.append((f"hard 20-30k, monsters x{a.monster_column:g}", 30000, 20000, 0.0, 1.0, a.monster_column))
 
-    jobs = [(m, s, h, lo, z, a.smoothing, a.stable, mf, mm) for m in a.models for _, h, lo, z, mf, mm in modes for s in sets]
+    jobs = [(m, s, h, lo, z, a.smoothing, a.stable, mf, mm, a.fast or a.repeat > 1, a.repeat) for m in a.models for _, h, lo, z, mf, mm in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 

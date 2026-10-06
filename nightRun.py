@@ -8,10 +8,11 @@ models/night_benchmark.txt. A crash in one phase does not stop the others (a pha
     python nightRun.py --scale 0.5     every phase's hours/generations x 0.5
     python nightRun.py --smoke         tiny version to check that everything works (~1 minute)
 
-Current experiment (both from the 'target' pool, target-mode net: 25 inputs / 7 outputs, stable slots, steer smoothing 0.5):
-  careful   careful mutations only (sigma 0.02, mutRate 0.7), 5 h - the polish step alone
-  monster   the same + monster practice (30% of the games with 2x the monster spawn chance), 5 h
-Benchmark columns: start 0 | hard 20-30k | mixed 0-30k | half at 0 + half hard | hard with 2x monsters; reference: the target model itself.
+Current experiment: target mode TRAINED FROM SCRATCH (25 inputs / 7 outputs, stable slots, steer smoothing 0.5), two replicates
+(from-scratch runs differ ~4x in when the take-off happens, so one run says little). Recipe of the old scratch baseline 17-00-59:
+normal starts, sigma 0.05, mutRate 1.0, 200 games, two-stage eval. Question: does a network that learns WITH the target input rely on it
+(the continued `careful` model barely does: ablating the target inputs cost only 2-3%)?
+Benchmark columns: start 0 | hard 20-30k | mixed 0-30k | half at 0 + half hard | hard with 2x monsters; references: target, careful.
 '''
 import argparse
 import glob
@@ -32,16 +33,15 @@ HARDEXPLORE = "models/hardExplore_2026-10-02_20-07-55.pt"
 
 # start: model file | pool: pool file | after: earlier phase | none of them -> new network of 'inputs' inputs and 'hidden' layers
 # zero: share of the games that always start at 0 (the rest draws from minStart..maxStart); snap: generations at which a snapshot is saved
-TARGET_POOL = "models/target_2026-10-05_10-07-53_pool.pt"   # explore run: 6,326 / 2,760 / 3,966 / 4,812 (start 0 / hard / mixed / training mix)
 TARGET = "models/target_2026-10-05_10-07-53.pt"
-# smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier)
-COMMON = dict(pool=TARGET_POOL, inputs=25, minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, smooth=0.5, stable=True, gens=100000, hours=5.0)
+CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
+# smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier), outputs: output neurons
+SCRATCH = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, smooth=0.5, stable=True, gens=1000, hours=2.0)
 PHASES = [
-    dict(COMMON, name="careful"),
-    dict(COMMON, name="monster", monster=0.3, monsterMult=2.0),
-    dict(COMMON, name="monsterExplore", monster=0.3, monsterMult=2.0, sigma=0.05, mutRate=1.0),   # monster practice alone (the explore settings of the target run)
+    dict(SCRATCH, name="tgtScratchA"),
+    dict(SCRATCH, name="tgtScratchB"),
 ]
-REFERENCES = [TARGET]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
+REFERENCES = [TARGET, CAREFUL]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]    # benchmark columns after 'start 0': hard, mixed, and the zeroStart objective (half at 0, half hard)
 
 if __name__ == "__main__":
@@ -54,8 +54,6 @@ if __name__ == "__main__":
     if a.phases:
         names = a.phases.split(",")
         PHASES[:] = [ph for ph in PHASES if ph["name"] in names]
-    elif not a.smoke:
-        PHASES[:] = [ph for ph in PHASES if ph["name"] != "monsterExplore"]    # queued separately
     here = os.path.dirname(os.path.abspath(__file__))
     os.chdir(here)
     log = os.path.join("models", "night_log.txt")
@@ -89,12 +87,13 @@ if __name__ == "__main__":
             elif ph.get("start"):
                 kw["startNetwork"] = ps.loadNetwork(ph["start"])
             else:
-                kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=2)
+                kw.update(inputSize=ph["inputs"], hiddenSizes=ph.get("hidden", [23, 23, 23]), outputSize=ph.get("outputs", 2))
             ps.sprudlerTrainingLoop(workers, games, gens, pop, ph["mutRate"], ph["sigma"], elites, keep, networkName=ph["name"], livePlot=False,
                                     minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
                                     snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
                                     steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
                                     monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
+                                    fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1),
                                     stage1Games=stage1, finalistFraction=frac, maxHours=hours, **kw)
             files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]
             outputs[ph["name"]] = max(files, key=os.path.getmtime)
