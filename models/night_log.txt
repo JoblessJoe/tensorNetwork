@@ -156,3 +156,71 @@ target_2026-10-05_10-07-53.pt            6,326  per set [5984, 6737, 6272, 6309]
 monsterExplore_2026-10-06_05-47-08.pt    6,562  per set [6906, 6144, 6927, 6272]    2,737  per set [2684, 2849, 2873, 2543]    4,093  per set [3877, 4359, 4351, 3785]    4,798  per set [5004, 5078, 4263, 4845]    1,933  per set [2105, 1855, 1902, 1870]
 
 [2026-10-06 11:16:15] run done
+[2026-10-06 11:42:54] run start: ['tgtScratchA', 'tgtScratchB']
+[2026-10-06 11:42:54] phase tgtScratchA: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 2.00 h
+[2026-10-06 13:53:44] phase tgtScratchA finished -> models/tgtScratchA_2026-10-06_11-42-54.pt
+[2026-10-06 13:53:44] phase tgtScratchB: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 2.00 h
+[2026-10-06 13:58:47] phase tgtScratchB finished -> models/tgtScratchB_2026-10-06_13-53-44.pt
+[2026-10-06 13:58:47] benchmarking ...
+[2026-10-06 13:58:53] benchmark written
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt         6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+careful_2026-10-05_18-43-51.pt        7,485  per set [8144, 6824, 7817, 7155]    3,106  per set [3320, 3189, 3248, 2666]    4,502  per set [3736, 5347, 5269, 3657]    4,968  per set [4497, 5044, 4371, 5958]    2,188  per set [2342, 2287, 1691, 2432]
+tgtScratchA_2026-10-06_11-42-54.pt    6,401  per set [5955, 6157, 7388, 6106]    2,389  per set [3162, 2002, 2498, 1896]    3,597  per set [3507, 3344, 4002, 3537]    4,030  per set [3706, 4215, 3918, 4281]    1,649  per set [1470, 1797, 1798, 1534]
+tgtScratchB_2026-10-06_13-53-44.pt    2,433  per set [2459, 2628, 2036, 2610]      662  per set [719, 592, 634, 704]    1,020  per set [909, 1004, 1139, 1026]    1,434  per set [1158, 1595, 1526, 1457]      510  per set [456, 528, 579, 477]
+
+[2026-10-06 13:58:53] run done
+[2026-10-06 14:05:37] run start: ['tgtFastB', 'tgtFastC', 'tgtFastD']
+[2026-10-06 14:05:37] phase tgtFastB: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 2.00 h
+[2026-10-06 14:21:47] phase tgtFastB finished -> models/tgtFastB_2026-10-06_14-05-37.pt
+[2026-10-06 14:21:47] phase tgtFastC: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 2.00 h
+[2026-10-06 14:21:53] phase tgtFastC finished -> models/tgtFastC_2026-10-06_14-21-47.pt
+[2026-10-06 14:21:53] phase tgtFastD: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 1000 gens / 2.00 h
+[2026-10-06 14:21:53] phase tgtFastD FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 92, in <module>
+    ps.sprudlerTrainingLoop(workers, games, gens, pop, ph["mutRate"], ph["sigma"], elites, keep, networkName=ph["name"], livePlot=False,
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 381, in sprudlerTrainingLoop
+    popScores = torch.tensor(evaluatePopulation(p, currGen, seeds[:stage1Games], maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1} stage 1", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 295, in evaluatePopulation
+    scores.append(results.next(timeout=1.0))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-06 14:21:53] benchmarking ...
+[2026-10-06 14:22:58] run start: ['tgtFastC', 'tgtFastD']
+[2026-10-06 14:22:58] phase tgtFastC: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 14:39:16] phase tgtFastC finished -> models/tgtFastC_2026-10-06_14-22-58.pt
+[2026-10-06 14:39:16] phase tgtFastD: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 14:54:58] phase tgtFastD finished -> models/tgtFastD_2026-10-06_14-39-16.pt
+[2026-10-06 14:54:58] benchmarking ...
+[2026-10-06 14:55:01] benchmark written
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt         6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+careful_2026-10-05_18-43-51.pt        7,485  per set [8144, 6824, 7817, 7155]    3,106  per set [3320, 3189, 3248, 2666]    4,502  per set [3736, 5347, 5269, 3657]    4,968  per set [4497, 5044, 4371, 5958]    2,188  per set [2342, 2287, 1691, 2432]
+tgtScratchA_2026-10-06_11-42-54.pt    6,401  per set [5955, 6157, 7388, 6106]    2,389  per set [3162, 2002, 2498, 1896]    3,597  per set [3507, 3344, 4002, 3537]    4,030  per set [3706, 4215, 3918, 4281]    1,649  per set [1470, 1797, 1798, 1534]
+tgtScratchB_2026-10-06_13-53-44.pt    2,433  per set [2459, 2628, 2036, 2610]      662  per set [719, 592, 634, 704]    1,020  per set [909, 1004, 1139, 1026]    1,434  per set [1158, 1595, 1526, 1457]      510  per set [456, 528, 579, 477]
+tgtFastC_2026-10-06_14-22-58.pt       7,054  per set [6984, 6588, 7227, 7417]    2,811  per set [3062, 2699, 2841, 2643]    4,136  per set [4487, 3908, 4269, 3880]    4,663  per set [4688, 4514, 3983, 5468]    1,967  per set [1742, 2105, 1779, 2242]
+tgtFastD_2026-10-06_14-39-16.pt       6,404  per set [5987, 6666, 7417, 5547]    2,169  per set [2934, 1814, 1966, 1962]    3,018  per set [2713, 3095, 3291, 2975]    3,893  per set [3215, 4139, 3540, 4677]    1,567  per set [1541, 1753, 1456, 1520]
+
+[2026-10-06 14:55:01] run done

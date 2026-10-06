@@ -1,0 +1,4 @@
+# name=tgtFastC generations=1000 population=200 games=200 startFrom=None stage1Games=20 mutationRate=1.0 sigma=0.05 elites=3 keepPart=0.1 minStartHeight=0 maxStartHeight=None zeroFraction=0.0 steerSmoothing=0.5 stableSlots=True monsterFraction=0.0 monsterMult=1.0 fast=True actionRepeat=1
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,0.96,208.85,199.58,166.36,261.53,308.90,295.08
+2,1.59,255.55,254.65,214.53,301.53,290.72,280.28

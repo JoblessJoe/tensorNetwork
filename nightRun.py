@@ -36,10 +36,11 @@ HARDEXPLORE = "models/hardExplore_2026-10-02_20-07-55.pt"
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 # smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier), outputs: output neurons
-SCRATCH = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, smooth=0.5, stable=True, gens=1000, hours=2.0)
+SCRATCH = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
 PHASES = [
-    dict(SCRATCH, name="tgtScratchA"),
-    dict(SCRATCH, name="tgtScratchB"),
+    dict(SCRATCH, name="tgtFastB"),
+    dict(SCRATCH, name="tgtFastC"),
+    dict(SCRATCH, name="tgtFastD"),
 ]
 REFERENCES = [TARGET, CAREFUL]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]    # benchmark columns after 'start 0': hard, mixed, and the zeroStart objective (half at 0, half hard)
@@ -104,7 +105,8 @@ if __name__ == "__main__":
     if outputs:
         note("benchmarking ...")
         snaps = sorted(f for name in outputs for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > t0)
-        cmd = [sys.executable, "evalModel.py"] + REFERENCES + list(outputs.values()) + snaps + ["--stable", "--smoothing", "0.5", "--monster-column", "2", "--ranges"] + RANGES
+        refs = REFERENCES + [f for f in sorted(glob.glob("models/tgtScratch[AB]_*.pt")) if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]    # replicates A (and a partial B) were trained by the earlier, slower queue
+        cmd = [sys.executable, "evalModel.py"] + refs + list(outputs.values()) + snaps + ["--stable", "--smoothing", "0.5", "--monster-column", "2", "--fast", "--ranges"] + RANGES
         if a.smoke:
             cmd += ["--games", "50", "--workers", "4"]
         out = subprocess.run(cmd, capture_output=True, text=True)
