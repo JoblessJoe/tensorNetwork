@@ -79,11 +79,12 @@ def slotPhase(name, layout, controlWeights):
 # =============================================================================================================
 # 2. The experiment (edit this)
 # =============================================================================================================
-# Overnight (2026-10-07): ONE long polish run, exactly the recipe that produced `careful` (+29% hard, +9% start 0 over the explore run):
-# continue the careful POOL with the 50/50 mix (half the games start at 0, half at 20-30k), careful mutations. Snapshots to see the progress.
-# (Earlier screening rounds - slot layouts, hidden widths - found nothing beating the default; see AGENTS.md 2p-2r.)
+# Overnight (2026-10-07): ONE long polish run on a model trained FROM SCRATCH in the current setup (stable slots 3/2/1/2, no target mode, smoothing 0.5):
+# the pool of slotBase2 (344 gens from scratch: 7,160 / 2,776, half-at-0 + half-hard 5,161 = the best of the from-scratch models on the training objective).
+# Same polish recipe that gave `careful` its +29% hard / +9% start 0: 50/50 mix (half the games start at 0, half at 20-30k), careful mutations.
+# Snapshots to see the progress. (Earlier screening rounds - slot layouts, hidden widths - found nothing beating the default; see AGENTS.md 2p-2r.)
 PHASES = [
-    dict(RECIPE, name="careful2", pool="models/careful_2026-10-05_18-43-51_pool.pt", minStart=20000, maxStart=30000, zero=0.5,
+    dict(RECIPE, name="polishBase", inputs=23, outputs=2, pool="models/slotBase2_2026-10-06_18-36-05_pool.pt", minStart=20000, maxStart=30000, zero=0.5,
          sigma=0.02, mutRate=0.7, gens=100000, hours=8.0, snap=(1000, 2500, 5000)),
 ]
 
