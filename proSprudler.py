@@ -143,7 +143,7 @@ def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: fl
     return result
 
 
-def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1):
+def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, stableSlots: bool | tuple = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, returnCauses: bool = False):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
     returns its score, averaged over these games.
@@ -162,19 +162,24 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     'fast': play with the numba-compiled env (fastEnv, needs numba; same rules, same levels, same scores for actionRepeat=1).
     'actionRepeat': the network decides every actionRepeat-th frame and its action is repeated in between (fast=True only).
     'monsterFraction'/'monsterMult': monster practice - that share of the games has monsterMult x the normal monster spawn chance.
-    'stableSlots': observation with fixed slot meanings (3 platforms below, 2 above; see SprudelJumpEnv).
+    'stableSlots': observation with fixed slot meanings (3 platforms below, 2 above; see SprudelJumpEnv). A tuple (platformsBelow, platformsAbove,
+    monstersBelow, monstersAbove) uses other slot counts (the network's input size must match; no difficulty input / target mode then).
+    'returnCauses' (fast=True only): return (scores, causes) instead of scores; causes[i] = how game i ended: 1 monster while rising, 2 monster otherwise,
+    3 fell, 4 no progress, 0 = still running (hit maxFrames).
     '''
     if fast:
-        return evaluateNetworkFast(network, seeds, maxFrames, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, actionRepeat)
+        return evaluateNetworkFast(network, seeds, maxFrames, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, actionRepeat, returnCauses)
+    assert not returnCauses, "returnCauses needs fast=True"
     assert actionRepeat == 1, "actionRepeat > 1 needs fast=True"
     # the network as plain numpy arrays: for batches this small torch's per-call overhead dominates.
     # same computation as Network.forwardPass (ReLU hidden layers, sigmoid output), same float32 results.
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
     # a network with 24 inputs gets the state with the extra difficulty input, one with 23 the classic state
     nIn = network.layers[0][0].shape[1]
-    targetMode = nIn == 25 and layers[-1][0].shape[1] == 7
+    customLayout = isinstance(stableSlots, tuple) and stableSlots != (3, 2, 1, 2)    # other slot counts: nIn says nothing about difficulty / target mode
+    targetMode = nIn == 25 and layers[-1][0].shape[1] == 7 and not customLayout
     targets = [None] * iterations    # committed target platform (the env's own platform list object) per game
-    envs = [SprudelJumpEnv(difficultyInput=nIn == 24, stableSlots=stableSlots) for i in range(0, iterations)]
+    envs = [SprudelJumpEnv(difficultyInput=nIn == 24 and not customLayout, stableSlots=stableSlots) for i in range(0, iterations)]
     states = [env.reset(maxStartHeight, seed, minStartHeight, zeroFraction, monsterFraction, monsterMult) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
     # indices of the games still running. Row k of the batch belongs to game alive[k] -
@@ -226,7 +231,7 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
 
 
 def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, stableSlots,
-                        monsterFraction, monsterMult, actionRepeat):
+                        monsterFraction, monsterMult, actionRepeat, returnCauses=False):
     '''
     Same as evaluateNetwork, but the games run in the numba-compiled env (fastEnv.FastBatch) and the network decides only every
     'actionRepeat' frames (its action is repeated in between). With actionRepeat=1 the scores are identical to evaluateNetwork's.
@@ -234,8 +239,9 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
     '''
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
     nIn, nOut = layers[0][0].shape[0], layers[-1][0].shape[1]
-    targetMode = nIn == 25 and nOut == 7
-    batch = FastBatch(seeds, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult, stable=stableSlots, difficulty=nIn == 24)
+    customLayout = isinstance(stableSlots, tuple) and stableSlots != (3, 2, 1, 2)
+    targetMode = nIn == 25 and nOut == 7 and not customLayout
+    batch = FastBatch(seeds, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult, stable=stableSlots, difficulty=nIn == 24 and not customLayout)
     alive = np.arange(len(seeds), dtype=np.int64)
     applied = np.full(len(seeds), 0.5)
     frames = 0
@@ -263,7 +269,7 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
             print(f"[worker {os.getpid()}] long game still running: {frames:,} frames, best live score {batch.scores()[alive].max():,.0f}", flush=True)
     if liveStatus is not None:
         liveStatus.pop(os.getpid(), None)
-    return batch.scores().tolist()
+    return (batch.scores().tolist(), batch.causes().tolist()) if returnCauses else batch.scores().tolist()
 
 
 def logGeneration(logPath: str, meta: str, row: list):
@@ -417,7 +423,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
                                   f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
                                   f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                                   f"stage1Games={stage1Games if twoStage else 'None'} "
-                                  f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={stableSlots} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
+                                  f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
                                   [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(),
                                    candidateScores.mean(dim=1).max().item(), selection[0].score])
                     pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}")

@@ -38,7 +38,9 @@ def seedSets(games: int):
 def job(args):
     path, seeds, maxStart, minStart, zero, smooth, stable, mFrac, mMult, fast, repeat = args
     net = ps.loadNetwork(path)
-    return sum(ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth, stableSlots=stable, monsterFraction=mFrac, monsterMult=mMult, fast=fast, actionRepeat=repeat)) / len(seeds)
+    r = ps.evaluateNetwork(net, seeds=seeds, iterations=len(seeds), maxStartHeight=maxStart, minStartHeight=minStart, zeroFraction=zero, steerSmoothing=smooth, stableSlots=stable, monsterFraction=mFrac, monsterMult=mMult, fast=fast, actionRepeat=repeat, returnCauses=fast)
+    scores, causes = r if fast else (r, [])
+    return sum(scores) / len(seeds), causes
 
 
 if __name__ == "__main__":
@@ -50,12 +52,14 @@ if __name__ == "__main__":
     ap.add_argument("--ranges", nargs="+", metavar="MIN:MAX", help="start-height ranges as columns after 'start 0': MIN:MAX or MIN:MAX:ZEROSHARE, e.g. 20000:30000 20000:30000:0.5 (overrides --min-start/--mixed)")
     ap.add_argument("--smoothing", type=float, default=1.0, help="steer smoothing the models were trained with (1 = none)")
     ap.add_argument("--stable", action="store_true", help="models were trained with stableSlots=True")
+    ap.add_argument("--slots", metavar="PB,PA,MB,MA", help="models were trained with other stable slot counts: platforms below, platforms above, monsters below, monsters above (e.g. 4,3,1,2); implies --stable")
     ap.add_argument("--monster-column", type=float, default=None, metavar="MULT", help="adds a column: hard starts 20-30k where every game has MULT x the normal monster spawn chance (e.g. 2)")
     ap.add_argument("--fast", action="store_true", help="numba-compiled env (identical scores, ~10x faster)")
     ap.add_argument("--repeat", type=int, default=1, help="action repeat the models were trained with (needs --fast)")
     ap.add_argument("--workers", type=int, default=24)
     a = ap.parse_args()
     sets = seedSets(a.games)
+    stable = tuple(int(x) for x in a.slots.split(",")) if a.slots else a.stable
     ranges = []                          # (min start, max start, share of games that start at 0)
     for r in (a.ranges or [f"{a.min_start}:{a.mixed}"]):
         p = r.split(":")
@@ -64,7 +68,7 @@ if __name__ == "__main__":
     if a.monster_column:
         modes.append((f"hard 20-30k, monsters x{a.monster_column:g}", 30000, 20000, 0.0, 1.0, a.monster_column))
 
-    jobs = [(m, s, h, lo, z, a.smoothing, a.stable, mf, mm, a.fast or a.repeat > 1, a.repeat) for m in a.models for _, h, lo, z, mf, mm in modes for s in sets]
+    jobs = [(m, s, h, lo, z, a.smoothing, stable, mf, mm, a.fast or a.repeat > 1, a.repeat) for m in a.models for _, h, lo, z, mf, mm in modes for s in sets]
     with Pool(a.workers, initializer=ps.workerInit, initargs=({},)) as p:
         out = p.map(job, jobs)
 
@@ -76,7 +80,20 @@ if __name__ == "__main__":
     for m in a.models:
         cells = []
         for _m in modes:
-            v = out[i:i + k]
+            v = [o[0] for o in out[i:i + k]]
             i += k
             cells.append(f"{st.mean(v):7,.0f}  per set {[round(x) for x in v]}".rjust(34) if k <= 4 else f"{st.mean(v):7,.0f}  (sd {st.pstdev(v):,.0f})".rjust(34))
         print(f"{os.path.basename(m):{width}}  " + "  ".join(cells))
+
+    if a.fast:    # why the games ended, % of all games of the column: monster hit while rising / monster otherwise / fell / no progress (stuck)
+        print(f"\ndeaths (% of games): monster-rising / monster-other / fell / stuck")
+        print(f"{'model':{width}}  " + "  ".join(f"{label:>34}" for label, *_ in modes))
+        i = 0
+        for m in a.models:
+            cells = []
+            for _m in modes:
+                causes = [c for o in out[i:i + k] for c in o[1]]
+                i += k
+                n = max(1, len(causes))
+                cells.append(" / ".join(f"{100 * causes.count(c) / n:3.0f}" for c in (1, 2, 3, 4)).rjust(34))
+            print(f"{os.path.basename(m):{width}}  " + "  ".join(cells))

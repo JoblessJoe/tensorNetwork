@@ -37,11 +37,13 @@ TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 # smooth: steer smoothing, stable: stableSlots observation, monster / monsterMult: monster practice (share of games, spawn chance multiplier), outputs: output neurons
 SCRATCH = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0, smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
-PHASES = [
-    dict(SCRATCH, name="tgtFastB"),
-    dict(SCRATCH, name="tgtFastC"),
-    dict(SCRATCH, name="tgtFastD"),
-]
+# slot experiments (2026-10-06): SCRATCH without target mode (23-wide hidden layers kept), only the observation's slot counts change.
+# layout = (platformsBelow, platformsAbove, monstersBelow, monstersAbove); inputs = 2 + 3 * platforms + 2 * monsters. Baseline (3, 2, 1, 2) = 23 inputs.
+# Comparison: slotBase (same setup, 4 replicates) + the earlier noTarget1/2 and tgtScratchA / tgtFastB/C/D.
+def slotPhase(name, layout):
+    return dict(SCRATCH, name=name, stable=layout, inputs=2 + 3 * (layout[0] + layout[1]) + 2 * (layout[2] + layout[3]), outputs=2)
+SLOT_LAYOUTS = dict(slotBase=(3, 2, 1, 2), slotPlat43=(4, 3, 1, 2), slotPlat64=(6, 4, 1, 2), slotMon23=(3, 2, 2, 3))
+PHASES = [slotPhase(f"{n}{r}", lay) for r in "12" for n, lay in SLOT_LAYOUTS.items()] + [slotPhase(f"slotBase{r}", (3, 2, 1, 2)) for r in "34"]
 REFERENCES = [TARGET, CAREFUL]    # benchmarked as well, for comparison (all models here use stableSlots + smoothing 0.5, which evalModel applies to every model)
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]    # benchmark columns after 'start 0': hard, mixed, and the zeroStart objective (half at 0, half hard)
 
@@ -105,12 +107,19 @@ if __name__ == "__main__":
     if outputs:
         note("benchmarking ...")
         snaps = sorted(f for name in outputs for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > t0)
-        refs = REFERENCES + [f for f in sorted(glob.glob("models/tgtScratch[AB]_*.pt")) if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]    # replicates A (and a partial B) were trained by the earlier, slower queue
-        cmd = [sys.executable, "evalModel.py"] + refs + list(outputs.values()) + snaps + ["--stable", "--smoothing", "0.5", "--monster-column", "2", "--fast", "--ranges"] + RANGES
-        if a.smoke:
-            cmd += ["--games", "50", "--workers", "4"]
-        out = subprocess.run(cmd, capture_output=True, text=True)
-        text = out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
+        refs = REFERENCES + [f for f in sorted(glob.glob("models/tgtScratchA_*.pt") + glob.glob("models/tgtFast[BCD]_*.pt") + glob.glob("models/noTarget[12]_*.pt")) if not f.endswith("_pool.pt") and not re.search(r"_g\d+\.pt$", f)]       # baseline replicates (same recipe, nothing ablated)
+        # evalModel applies ONE smoothing/stable setting to all its models, so benchmark per (smooth, stable) group
+        groups = {(0.5, True): refs + snaps}
+        for ph in PHASES:
+            if ph["name"] in outputs:
+                groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(outputs[ph["name"]])
+        text = ""
+        for (smooth, stable), models in groups.items():
+            cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--ranges"] + RANGES + (["--slots", ",".join(map(str, stable))] if isinstance(stable, tuple) else (["--stable"] if stable else []))
+            if a.smoke:
+                cmd += ["--games", "50", "--workers", "4"]
+            out = subprocess.run(cmd, capture_output=True, text=True)
+            text += f"\n=== smoothing {smooth}, stableSlots {stable} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
         with open(os.path.join("models", f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt"), "w") as f:
             f.write(text)
         note("benchmark written\n" + text)

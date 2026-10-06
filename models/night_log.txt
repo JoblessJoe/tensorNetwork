@@ -224,3 +224,48 @@ tgtFastC_2026-10-06_14-22-58.pt       7,054  per set [6984, 6588, 7227, 7417]   
 tgtFastD_2026-10-06_14-39-16.pt       6,404  per set [5987, 6666, 7417, 5547]    2,169  per set [2934, 1814, 1966, 1962]    3,018  per set [2713, 3095, 3291, 2975]    3,893  per set [3215, 4139, 3540, 4677]    1,567  per set [1541, 1753, 1456, 1520]
 
 [2026-10-06 14:55:01] run done
+[2026-10-06 15:45:59] run start: ['noTarget1', 'noSmooth1', 'classicSlots1', 'noTarget2', 'noSmooth2', 'classicSlots2']
+[2026-10-06 15:45:59] phase noTarget1: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 15:59:50] phase noTarget1 finished -> models/noTarget1_2026-10-06_15-45-59.pt
+[2026-10-06 15:59:50] phase noSmooth1: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 16:16:02] phase noSmooth1 finished -> models/noSmooth1_2026-10-06_15-59-50.pt
+[2026-10-06 16:16:02] phase classicSlots1: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 16:21:23] phase classicSlots1 finished -> models/classicSlots1_2026-10-06_16-16-02.pt
+[2026-10-06 16:21:23] phase noTarget2: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 16:34:38] phase noTarget2 finished -> models/noTarget2_2026-10-06_16-21-23.pt
+[2026-10-06 16:34:38] phase noSmooth2: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 16:51:54] phase noSmooth2 finished -> models/noSmooth2_2026-10-06_16-34-38.pt
+[2026-10-06 16:51:54] phase classicSlots2: 25 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 2.00 h
+[2026-10-06 16:58:12] phase classicSlots2 finished -> models/classicSlots2_2026-10-06_16-51-54.pt
+[2026-10-06 16:58:12] benchmarking ...
+[2026-10-06 16:58:19] benchmark written
+
+=== smoothing 0.5, stableSlots True ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+target_2026-10-05_10-07-53.pt         6,326  per set [5984, 6737, 6272, 6309]    2,760  per set [2647, 2919, 2970, 2505]    3,966  per set [4101, 4149, 4409, 3206]    4,812  per set [4934, 4756, 4481, 5077]    2,062  per set [2074, 2446, 1815, 1915]
+careful_2026-10-05_18-43-51.pt        7,485  per set [8144, 6824, 7817, 7155]    3,106  per set [3320, 3189, 3248, 2666]    4,502  per set [3736, 5347, 5269, 3657]    4,968  per set [4497, 5044, 4371, 5958]    2,188  per set [2342, 2287, 1691, 2432]
+tgtFastB_2026-10-06_14-05-37.pt       6,971  per set [7525, 5932, 7421, 7006]    2,458  per set [2482, 2667, 2235, 2448]    3,647  per set [3711, 3600, 3872, 3407]    4,249  per set [4036, 5091, 3522, 4348]    1,810  per set [2063, 1896, 1608, 1674]
+tgtFastC_2026-10-06_14-21-47.pt         296  per set [285, 334, 265, 298]      216  per set [228, 228, 204, 205]      253  per set [258, 252, 256, 246]      263  per set [276, 267, 256, 252]      249  per set [217, 268, 249, 262]
+tgtFastC_2026-10-06_14-22-58.pt       7,054  per set [6984, 6588, 7227, 7417]    2,811  per set [3062, 2699, 2841, 2643]    4,136  per set [4487, 3908, 4269, 3880]    4,663  per set [4688, 4514, 3983, 5468]    1,967  per set [1742, 2105, 1779, 2242]
+tgtFastD_2026-10-06_14-39-16.pt       6,404  per set [5987, 6666, 7417, 5547]    2,169  per set [2934, 1814, 1966, 1962]    3,018  per set [2713, 3095, 3291, 2975]    3,893  per set [3215, 4139, 3540, 4677]    1,567  per set [1541, 1753, 1456, 1520]
+tgtScratchA_2026-10-06_11-42-54.pt    6,401  per set [5955, 6157, 7388, 6106]    2,389  per set [3162, 2002, 2498, 1896]    3,597  per set [3507, 3344, 4002, 3537]    4,030  per set [3706, 4215, 3918, 4281]    1,649  per set [1470, 1797, 1798, 1534]
+noTarget1_2026-10-06_15-45-59.pt      6,678  per set [7449, 7271, 6276, 5715]    2,337  per set [2847, 2378, 1748, 2373]    3,484  per set [3324, 3788, 3789, 3034]    4,762  per set [3813, 5322, 4710, 5204]    1,577  per set [1468, 1586, 1794, 1459]
+noTarget2_2026-10-06_16-21-23.pt      5,984  per set [5780, 6530, 6248, 5380]    2,235  per set [2408, 2627, 1904, 1999]    3,587  per set [3334, 3627, 3860, 3528]    4,244  per set [4033, 4607, 3890, 4445]    1,709  per set [1749, 1638, 1714, 1736]
+
+=== smoothing 1.0, stableSlots True ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                        start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+noSmooth1_2026-10-06_15-59-50.pt    7,140  per set [7938, 6745, 7447, 6431]    2,635  per set [3134, 2332, 2742, 2331]    3,556  per set [3291, 3677, 3920, 3336]    4,697  per set [4436, 4839, 4593, 4921]    1,786  per set [1812, 1808, 1842, 1681]
+noSmooth2_2026-10-06_16-34-38.pt    7,423  per set [7723, 7577, 7610, 6782]    2,669  per set [3164, 2256, 3010, 2247]    4,148  per set [3844, 4798, 3805, 4144]    5,080  per set [4671, 5329, 4710, 5609]    1,995  per set [1977, 2198, 1989, 1816]
+
+=== smoothing 0.5, stableSlots False ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                            start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+classicSlots1_2026-10-06_16-16-02.pt    1,562  per set [1823, 1397, 1521, 1508]      306  per set [319, 274, 291, 340]      444  per set [351, 564, 455, 406]      927  per set [660, 1039, 987, 1023]      226  per set [246, 268, 182, 207]
+classicSlots2_2026-10-06_16-51-54.pt    1,957  per set [2006, 1567, 2182, 2073]      531  per set [522, 458, 494, 649]      787  per set [665, 867, 803, 813]    1,173  per set [1115, 1223, 1080, 1276]      377  per set [463, 315, 366, 361]
+
+[2026-10-06 16:58:19] run done
