@@ -79,20 +79,12 @@ def slotPhase(name, layout, controlWeights):
 # =============================================================================================================
 # 2. The experiment (edit this)
 # =============================================================================================================
-# Round 2 (2026-10-06): generations = 344 x (weights / the matching control's weights).
-#  - wide25: target-mode net (25 in / 7 out) with hidden [25,25,25] vs the control tgtScratchA / tgtFastB/C/D (hidden [23,23,23])
-#  - slot variants (custom slots cannot use target mode): vs the control noTarget1/2 + slotBase1/2 (23 in / 2 out / [23,23,23])
-CONTROL_TARGET = weights(25, [23] * 3, 7)    # 1,870 weights
-CONTROL_SLOTS = weights(23, [23] * 3, 2)     # 1,704 weights
-
+# Overnight (2026-10-07): ONE long polish run, exactly the recipe that produced `careful` (+29% hard, +9% start 0 over the explore run):
+# continue the careful POOL with the 50/50 mix (half the games start at 0, half at 20-30k), careful mutations. Snapshots to see the progress.
+# (Earlier screening rounds - slot layouts, hidden widths - found nothing beating the default; see AGENTS.md 2p-2r.)
 PHASES = [
-    dict(RECIPE, name=f"wide25_{r}", hidden=[25, 25, 25], gens=scaledGens(25, [25] * 3, 7, CONTROL_TARGET)) for r in "12"
-] + [
-    slotPhase("slotPlat43x_1", (4, 3, 1, 2), CONTROL_SLOTS),
-    slotPhase("slotPlat43x_2", (4, 3, 1, 2), CONTROL_SLOTS),
-    slotPhase("slotPlat64x_1", (6, 4, 1, 2), CONTROL_SLOTS),    # the widest layout only once: most expensive, least promising
-    slotPhase("slotMon23x_1", (3, 2, 2, 3), CONTROL_SLOTS),
-    slotPhase("slotMon23x_2", (3, 2, 2, 3), CONTROL_SLOTS),
+    dict(RECIPE, name="careful2", pool="models/careful_2026-10-05_18-43-51_pool.pt", minStart=20000, maxStart=30000, zero=0.5,
+         sigma=0.02, mutRate=0.7, gens=100000, hours=8.0, snap=(1000, 2500, 5000)),
 ]
 
 
@@ -198,7 +190,7 @@ def main():
     if results:
         note("benchmarking ...")
         text = benchmark(phases, results, startTime, a.smoke)
-        fileName = f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt"
+        fileName = "night_benchmark_smoke.txt" if a.smoke else (f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt")    # a smoke test must never overwrite real results
         with open(os.path.join("models", fileName), "w") as f:
             f.write(text)
         note("benchmark written\n" + text)
