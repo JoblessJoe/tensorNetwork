@@ -122,6 +122,42 @@ def rolling(x, window):
     return out
 
 
+_shapeCache = {}
+
+
+def networkInfo(csvPath, meta):
+    '''(layer sizes [inputs, hidden..., outputs], number of weights + biases) of the run's network: from the CSV header (newer runs) or, for older
+    runs, from the model file saved next to the CSV (same name, .pt). None if neither is available yet.'''
+    if "shape" in meta:
+        sizes = [int(n) for n in meta["shape"].split("-")]
+        return sizes, sum(a * b + b for a, b in zip(sizes, sizes[1:]))
+    pt = csvPath[:-4] + ".pt"
+    if pt not in _shapeCache and os.path.exists(pt):
+        try:
+            import torch
+            layers = torch.load(pt, map_location="cpu", weights_only=True)["layers"]
+            sizes = [int(layers[0][0].shape[1])] + [int(w.shape[0]) for w, _ in layers]
+            _shapeCache[pt] = (sizes, sum(int(w.numel() + b.numel()) for w, b in layers))
+        except Exception:
+            return None
+    return _shapeCache.get(pt)
+
+
+def describeSlots(text):
+    '''Human-readable observation layout from the CSV value of stableSlots.'''
+    if text in (None, "False"):
+        return "classic observation (5 platforms + 3 monsters sorted by distance)"
+    if text == "True":
+        return "slots 3/2/1/2 (platforms below/above, monsters below/above)"
+    nums = [int(n) for n in text.strip("()").split(",") if n.strip()]
+    out = "slots " + "/".join(str(n) for n in nums[:4])
+    if len(nums) > 4 and nums[4]:
+        out += " + occupied flag"
+    if len(nums) > 5 and nums[5]:
+        out += " + landing prediction"
+    return out
+
+
 def fmtTime(seconds):
     seconds = int(max(0, seconds))
     h, rem = divmod(seconds, 3600)
@@ -162,7 +198,7 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     window = max(5, len(gen) // 12)
     smooth = rolling(d["mean"], window)
 
-    gs = fig.add_gridspec(2, 1, height_ratios=[4.2, 1], hspace=0.08, left=0.075, right=0.82, top=0.80, bottom=0.09)
+    gs = fig.add_gridspec(2, 1, height_ratios=[4.2, 1], hspace=0.08, left=0.075, right=0.82, top=0.765, bottom=0.09)
     ax = fig.add_subplot(gs[0])
     axT = fig.add_subplot(gs[1], sharex=ax)
     for a in (ax, axT):
@@ -262,6 +298,22 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
            f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}  normal start")
     fig.text(0.075, 0.838, cfg, color=T["muted"], fontsize=9.5, va="top")
+    info = networkInfo(paths[-1], meta)
+    parts = []
+    if info:
+        sizes, nWeights = info
+        kind = "  (target mode)" if sizes[0] == 25 and sizes[-1] == 7 and meta.get("stableSlots") == "True" else ""
+        parts.append(f"network {' \u2192 '.join(str(n) for n in sizes)}{kind}   {nWeights:,} weights")
+    parts.append(describeSlots(meta.get("stableSlots")))
+    if meta.get("steerSmoothing") not in (None, "1.0", "1"):
+        parts.append(f"steer smoothing {meta['steerSmoothing']}")
+    if meta.get("zeroFraction") not in (None, "0.0", "0"):
+        parts.append(f"{100 * float(meta['zeroFraction']):.0f}% of the games start at 0")
+    if meta.get("startFrom") not in (None, "None"):
+        parts.append(f"continues {os.path.basename(meta['startFrom'])}")
+    else:
+        parts.append("from scratch")
+    fig.text(0.075, 0.803, "   |   ".join(parts), color=T["muted"], fontsize=9.5, va="top")
 
     return dict(ax=ax, gen=gen, d=d, smooth=smooth, bestEver=bestEver)
 
