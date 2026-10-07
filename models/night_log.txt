@@ -815,3 +815,5 @@ polishBase3_2026-10-07_15-48-06.pt                      32 /  20 /  21 /  26    
 [2026-10-07 17:59:43] run done
 [2026-10-07 20:46:50] run start: ['base0', 'polishA', 'polishB', 'polishC']
 [2026-10-07 20:46:50] phase base0: 23 inputs, hidden [23, 23, 23], starts 0-None, sigma 0.05, mutRate 1.0, up to 344 gens / 1.00 h
+[2026-10-07 21:03:58] run start: ['featOcc_1', 'featOcc_2', 'featLand_1', 'featLand_2', 'featBoth_1', 'featBoth_2', 'polishA', 'polishB', 'polishC']
+[2026-10-07 21:03:58] phase featOcc_1: 28 inputs, hidden [28, 28, 28], starts 0-None, sigma 0.05, mutRate 1.0, up to 503 gens / 2.00 h

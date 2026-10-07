@@ -3,13 +3,14 @@ Unattended multi-phase run: training phases one after another, each limited by g
 At the end every result is benchmarked (evalModel.py, fixed seeds) and the table is written to
 models/night_benchmark.txt. A crash in one phase does not stop the others.
 
-    python nightRun.py                          all phases (see PHASES), then the benchmark
+    python nightRun.py                          all phases of the default experiment (see EXPERIMENTS), then the benchmark
+    python nightRun.py --experiment features    another experiment
     python nightRun.py --phases a,b             only these phases (benchmark goes to night_benchmark_a_b.txt)
     python nightRun.py --scale 0.5              every phase's hours / generations x 0.5
     python nightRun.py --smoke                  tiny version to check that everything works (~1 minute)
     python nightRun.py --no-plot                no live learning-curve window
 
-To plan a new experiment, edit section 2 (PHASES). Section 1 holds the building blocks, section 3 the machinery.
+To plan a new experiment, edit section 2 (the phase lists in EXPERIMENTS). Section 1 holds the building blocks, section 3 the machinery.
 
 A phase is a dict (see RECIPE for all keys and their defaults). Where its network comes from:
     'start': model file | 'pool': pool file | 'after': name of an earlier phase (its best network) | 'afterPool': name of an earlier phase (its whole pool)
@@ -52,7 +53,7 @@ SETTINGS = dict(
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 REFERENCES = [TARGET, CAREFUL]
-CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*"]    # replicates of the 344-gen control recipes
+CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*", "base0_*"]    # replicates of the 344-gen control recipes
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -69,11 +70,18 @@ def scaledGens(inputs, hidden, outputs, controlWeights, baseGens=344):
     return round(baseGens * weights(inputs, hidden, outputs) / controlWeights)
 
 
+def obsSize(layout):
+    '''Number of network inputs for a stable-slot layout (platformsBelow, platformsAbove, monstersBelow, monstersAbove[, occupied, landing]).'''
+    platforms = layout[0] + layout[1]
+    extras = (1 if len(layout) > 4 and layout[4] else 0) + (2 if len(layout) > 5 and layout[5] else 0)
+    return 2 + 3 * platforms + 2 * (layout[2] + layout[3]) + platforms * extras
+
+
 def slotPhase(name, layout, controlWeights):
     '''A no-target network for a slot layout (platformsBelow, platformsAbove, monstersBelow, monstersAbove).
     inputs = 2 + 3 * platforms + 2 * monsters; hidden width = input size, so the first layer is no bottleneck;
     generations are scaled with the weight count relative to the control.'''
-    n = 2 + 3 * (layout[0] + layout[1]) + 2 * (layout[2] + layout[3])
+    n = obsSize(layout)
     hidden = [n, n, n]
     return dict(RECIPE, name=name, stable=layout, inputs=n, outputs=2, hidden=hidden, gens=scaledGens(n, hidden, 2, controlWeights))
 
@@ -89,12 +97,30 @@ def slotPhase(name, layout, controlWeights):
 # All three branch off the SAME pool (afterPool), same sigma / mutRate, and get the same wall-clock time (3 h; B plays ~3.4x more games per generation,
 # so it gets fewer generations). Snapshots at 500 / 1,000 gens to compare at equal generations too.
 POLISH = dict(RECIPE, inputs=23, outputs=2, afterPool="base0", minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, gens=100000, hours=3.0, snap=(500, 1000))
-PHASES = [
+POLISH_EXPERIMENT = [
     dict(RECIPE, name="base0", inputs=23, outputs=2, gens=344, hours=1.0),
     dict(POLISH, name="polishA"),
     dict(POLISH, name="polishB", games=800),
     dict(POLISH, name="polishC", zero=0.7),
 ]
+
+
+# New observation features (2026-10-07), screened from scratch against the 344-gen controls slotBase1/2 + noTarget1/2 (23 in / 2 out / [23]x3):
+#   occupied: a monster stands on that platform (1 float per platform slot)        -> 28 inputs
+#   landing:  [T, r] = frames until the feet land on that platform (vertical motion is independent of steering) and how much of the available
+#             steering is needed to get there (2 floats per platform slot)           -> 33 inputs
+#   both                                                                              -> 38 inputs
+# generations scaled with the weight count relative to the control, 2 replicates each, ~1.5 h on the 7950X.
+CONTROL_SLOTS = weights(23, [23] * 3, 2)    # 1,704 weights
+FEATURES_EXPERIMENT = [slotPhase(f"{name}_{r}", layout, CONTROL_SLOTS)
+                       for name, layout in (("featOcc", (3, 2, 1, 2, 1, 0)), ("featLand", (3, 2, 1, 2, 0, 1)), ("featBoth", (3, 2, 1, 2, 1, 1))) for r in "12"]
+
+# The polish branches again, but off the already finished base0 pool (no second base0 run): used by the combined experiment
+BASE0_POOL = "models/base0_2026-10-07_20-46-50_pool.pt"    # from-scratch base, 344 gens, normal starts
+POLISH_BRANCHES = [dict(ph, pool=BASE0_POOL, afterPool=None) for ph in POLISH_EXPERIMENT if ph["name"].startswith("polish")]
+
+# 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
+EXPERIMENTS = {"all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -176,12 +202,13 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
+    ap.add_argument("--experiment", default="all", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default all)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
     a = ap.parse_args()
 
-    phases = [ph for ph in PHASES if not a.phases or ph["name"] in a.phases.split(",")]
+    phases = [ph for ph in EXPERIMENTS[a.experiment] if not a.phases or ph["name"] in a.phases.split(",")]
     cfg = {key: values[1 if a.smoke else 0] for key, values in SETTINGS.items()}
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.makedirs("models", exist_ok=True)
