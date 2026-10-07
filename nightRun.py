@@ -12,7 +12,8 @@ models/night_benchmark.txt. A crash in one phase does not stop the others.
 To plan a new experiment, edit section 2 (PHASES). Section 1 holds the building blocks, section 3 the machinery.
 
 A phase is a dict (see RECIPE for all keys and their defaults). Where its network comes from:
-    'start': model file | 'pool': pool file | 'after': name of an earlier phase | none of them: a new random network
+    'start': model file | 'pool': pool file | 'after': name of an earlier phase (its best network) | 'afterPool': name of an earlier phase (its whole pool)
+    | none of them: a new random network
     (inputs / hidden / outputs).
 '''
 import argparse
@@ -39,6 +40,7 @@ import proSprudler as ps
 #   monster / monsterMult       monster practice: share of games with monsterMult x the normal monster spawn chance
 #   gens / hours                limits of the phase (whichever comes first)
 #   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
+#   games                       games per network per generation (default: SETTINGS)
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
               smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
 
@@ -50,7 +52,7 @@ SETTINGS = dict(
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 REFERENCES = [TARGET, CAREFUL]
-CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*"]    # replicates of the 344-gen control recipes
+CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*"]    # replicates of the 344-gen control recipes
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -79,13 +81,19 @@ def slotPhase(name, layout, controlWeights):
 # =============================================================================================================
 # 2. The experiment (edit this)
 # =============================================================================================================
-# Rest of the planned 6 h of polishBase2 (2026-10-07): polishBase2 was stopped by hand after 3 h 55 min (3,945 gens, before the CPU swap), so this phase
-# continues its POOL for the remaining ~2 h with the same recipe: 50/50 mix (half the games start at 0, half at 20-30k), careful mutations, 31 workers.
-# (polishBase2 itself was level with polishBase: 7,882 / 3,453 vs 8,354 / 3,564 - inside the noise; this run doubles as the stress test of the new CPU.)
-POLISH2_POOL = "models/polishBase2_2026-10-07_10-38-05_pool.pt"
+# Three polish levers, compared on ONE shared from-scratch base (2026-10-07; the continuation of the plateaued polishBase lineage lost start-0 skill):
+#   base0      from scratch, normal starts, 344 gens (random nets die instantly on hard starts, so the 50/50 mix cannot be used from gen 0)
+#   polishA    baseline polish: 200 games per network, half the games start at 0, half at 20-30k
+#   polishB    more games per network (800): less noisy selection
+#   polishC    mix shifted toward the early game: 70% of the games start at 0, 30% at 20-30k
+# All three branch off the SAME pool (afterPool), same sigma / mutRate, and get the same wall-clock time (3 h; B plays ~3.4x more games per generation,
+# so it gets fewer generations). Snapshots at 500 / 1,000 gens to compare at equal generations too.
+POLISH = dict(RECIPE, inputs=23, outputs=2, afterPool="base0", minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, gens=100000, hours=3.0, snap=(500, 1000))
 PHASES = [
-    dict(RECIPE, name="polishBase3", inputs=23, outputs=2, pool=POLISH2_POOL, minStart=20000, maxStart=30000, zero=0.5,
-         sigma=0.02, mutRate=0.7, gens=100000, hours=2.0, snap=(1000,)),
+    dict(RECIPE, name="base0", inputs=23, outputs=2, gens=344, hours=1.0),
+    dict(POLISH, name="polishA"),
+    dict(POLISH, name="polishB", games=800),
+    dict(POLISH, name="polishC", zero=0.7),
 ]
 
 
@@ -104,6 +112,10 @@ def startNetworkArgs(ph, results):
         if ph["after"] not in results:
             raise RuntimeError(f"phase '{ph['after']}' has no result - skipping")
         return dict(startNetwork=ps.loadNetwork(results[ph["after"]]))
+    if ph.get("afterPool"):    # the whole gene pool of an earlier phase (keeps the diversity; several phases can branch off the same pool)
+        if ph["afterPool"] not in results:
+            raise RuntimeError(f"phase '{ph['afterPool']}' has no result - skipping")
+        return dict(startNetwork=ps.loadPool(results[ph["afterPool"]].replace(".pt", "_pool.pt")))
     if ph.get("pool"):
         return dict(startNetwork=ps.loadPool(ph["pool"]))
     if ph.get("start"):
@@ -119,7 +131,7 @@ def runPhase(ph, cfg, a, results, note):
          f"mutRate {ph['mutRate']}, up to {gens} gens / {hours:.2f} h")
     try:
         ps.sprudlerTrainingLoop(
-            cfg["workers"], cfg["games"], gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
+            cfg["workers"], cfg["games"] if a.smoke else ph.get("games", cfg["games"]), gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
             networkName=ph["name"], livePlot=False,
             minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
             snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
