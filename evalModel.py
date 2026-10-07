@@ -56,7 +56,7 @@ if __name__ == "__main__":
     ap.add_argument("--monster-column", type=float, default=None, metavar="MULT", help="adds a column: hard starts 20-30k where every game has MULT x the normal monster spawn chance (e.g. 2)")
     ap.add_argument("--fast", action="store_true", help="numba-compiled env (identical scores, ~10x faster)")
     ap.add_argument("--repeat", type=int, default=1, help="action repeat the models were trained with (needs --fast)")
-    ap.add_argument("--workers", type=int, default=24)
+    ap.add_argument("--workers", type=int, default=31)
     a = ap.parse_args()
     sets = seedSets(a.games)
     stable = tuple(int(x) for x in a.slots.split(",")) if a.slots else a.stable

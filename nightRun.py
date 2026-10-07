@@ -44,13 +44,13 @@ RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=No
 
 # Population / evaluation settings: (full run, smoke test)
 SETTINGS = dict(
-    workers=(24, 4), population=(200, 12), games=(200, 6), stage1Games=(20, 3), elites=(3, 1), keepPart=(0.1, 0.25), finalistFraction=(0.3, 0.5))
+    workers=(31, 4), population=(200, 12), games=(200, 6), stage1Games=(20, 3), elites=(3, 1), keepPart=(0.1, 0.25), finalistFraction=(0.3, 0.5))
 
 # Models that are always benchmarked as a comparison (they use stableSlots + smoothing 0.5)
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 REFERENCES = [TARGET, CAREFUL]
-CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*"]    # replicates of the 344-gen control recipes
+CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*"]    # replicates of the 344-gen control recipes
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -79,13 +79,13 @@ def slotPhase(name, layout, controlWeights):
 # =============================================================================================================
 # 2. The experiment (edit this)
 # =============================================================================================================
-# Overnight (2026-10-07): ONE long polish run on a model trained FROM SCRATCH in the current setup (stable slots 3/2/1/2, no target mode, smoothing 0.5):
-# the pool of slotBase2 (344 gens from scratch: 7,160 / 2,776, half-at-0 + half-hard 5,161 = the best of the from-scratch models on the training objective).
-# Same polish recipe that gave `careful` its +29% hard / +9% start 0: 50/50 mix (half the games start at 0, half at 20-30k), careful mutations.
-# Snapshots to see the progress. (Earlier screening rounds - slot layouts, hidden widths - found nothing beating the default; see AGENTS.md 2p-2r.)
+# Rest of the planned 6 h of polishBase2 (2026-10-07): polishBase2 was stopped by hand after 3 h 55 min (3,945 gens, before the CPU swap), so this phase
+# continues its POOL for the remaining ~2 h with the same recipe: 50/50 mix (half the games start at 0, half at 20-30k), careful mutations, 31 workers.
+# (polishBase2 itself was level with polishBase: 7,882 / 3,453 vs 8,354 / 3,564 - inside the noise; this run doubles as the stress test of the new CPU.)
+POLISH2_POOL = "models/polishBase2_2026-10-07_10-38-05_pool.pt"
 PHASES = [
-    dict(RECIPE, name="polishBase", inputs=23, outputs=2, pool="models/slotBase2_2026-10-06_18-36-05_pool.pt", minStart=20000, maxStart=30000, zero=0.5,
-         sigma=0.02, mutRate=0.7, gens=100000, hours=8.0, snap=(1000, 2500, 5000)),
+    dict(RECIPE, name="polishBase3", inputs=23, outputs=2, pool=POLISH2_POOL, minStart=20000, maxStart=30000, zero=0.5,
+         sigma=0.02, mutRate=0.7, gens=100000, hours=2.0, snap=(1000,)),
 ]
 
 
