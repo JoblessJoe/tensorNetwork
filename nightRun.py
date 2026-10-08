@@ -17,6 +17,11 @@ A phase is a dict (see RECIPE for all keys and their defaults). Where its networ
     | none of them: a new random network
     (inputs / hidden / outputs).
 '''
+# One worker process per hardware thread already uses every core: numpy's BLAS must NOT start helper threads of its own (they spin and oversubscribe
+# the machine: 31 workers x ~2.5 busy threads each, load average ~96 on 32 threads, 4x slower generations). Must be set before numpy is imported.
+import os
+for _name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_name, "1")
 import argparse
 import glob
 import os
@@ -53,7 +58,10 @@ SETTINGS = dict(
 TARGET = "models/target_2026-10-05_10-07-53.pt"
 CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
 REFERENCES = [TARGET, CAREFUL]
-CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*", "base0_*"]    # replicates of the 344-gen control recipes
+CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*", "base0_*", "polishA_*", "polishB_*", "polishC_*"]    # replicates of the 344-gen control recipes
+
+# Extra comparison models for a slot layout other than the default (benchmarked together with the phases that use the same layout)
+REFERENCE_GROUPS = {(0.5, (3, 2, 1, 2, 0, 1)): ["featLand_[12]_*"], (0.5, (3, 2, 1, 2, 1, 1)): ["featBoth_[12]_*"], (0.5, (3, 2, 1, 2, 1, 0)): ["featOcc_[12]_*"]}
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -119,8 +127,22 @@ FEATURES_EXPERIMENT = [slotPhase(f"{name}_{r}", layout, CONTROL_SLOTS)
 BASE0_POOL = "models/base0_2026-10-07_20-46-50_pool.pt"    # from-scratch base, 344 gens, normal starts
 POLISH_BRANCHES = [dict(ph, pool=BASE0_POOL, afterPool=None) for ph in POLISH_EXPERIMENT if ph["name"].startswith("polish")]
 
+# Next round (2026-10-08), all 3 h, 50/50 mix unless noted, sigma 0.02 / mutRate 0.7, compared with polishA (200 games) / polishB (800) / polishC (70% at 0):
+#   polishD     800 games + 70/30 mix          (do the two levers add up?)
+#   polishLand  800 games, from the featLand_2 pool (landing prediction, 33 inputs), now WITH hard starts in the mix  (fair test of the feature; compare polishB)
+#   polishBoth  800 games, from the featBoth_2 pool (occupied flag + landing prediction, 38 inputs)                    (compare polishB)
+#   polishE     1,600 games                    (do more games keep helping? compare polishB 800 and polishA 200)
+FEAT_POOLS = dict(land="models/featLand_2_2026-10-07_22-12-42_pool.pt", both="models/featBoth_2_2026-10-07_23-30-00_pool.pt")
+NEXT_EXPERIMENT = [
+    dict(POLISH, name="polishD", afterPool=None, pool=BASE0_POOL, games=800, zero=0.7),
+    dict(POLISH, name="polishLand", afterPool=None, pool=FEAT_POOLS["land"], games=800, inputs=obsSize((3, 2, 1, 2, 0, 1)), hidden=[obsSize((3, 2, 1, 2, 0, 1))] * 3, stable=(3, 2, 1, 2, 0, 1)),
+    dict(POLISH, name="polishBoth", afterPool=None, pool=FEAT_POOLS["both"], games=800, inputs=obsSize((3, 2, 1, 2, 1, 1)), hidden=[obsSize((3, 2, 1, 2, 1, 1))] * 3, stable=(3, 2, 1, 2, 1, 1)),
+    dict(POLISH, name="polishE", afterPool=None, pool=BASE0_POOL, games=1600),
+]
+
+
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -186,6 +208,9 @@ def benchmark(phases, results, startTime, smoke):
     snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
     controls = sorted(f for pattern in CONTROL_GLOBS for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
     groups = {(0.5, True): REFERENCES + controls + snapshots}
+    for key, patterns in REFERENCE_GROUPS.items():
+        if any(ph.get("stable") == key[1] and ph.get("smooth", 1.0) == key[0] for ph in phases):    # only if a phase of this layout is benchmarked
+            groups[key] = sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
     for ph in phases:
         if ph["name"] in results:
             groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(results[ph["name"]])
@@ -202,7 +227,7 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="all", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default all)")
+    ap.add_argument("--experiment", default="next", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default next)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")

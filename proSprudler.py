@@ -1,3 +1,8 @@
+# One worker process per hardware thread already uses every core: numpy's BLAS must NOT start helper threads of its own (they spin and oversubscribe
+# the machine: 31 workers x ~2.5 busy threads each, load average ~96 on 32 threads, 4x slower generations). Must be set before numpy is imported.
+import os
+for _name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_name, "1")
 import math
 import os
 import random
