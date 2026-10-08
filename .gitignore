@@ -6,3 +6,5 @@ ENV/
 __pycache__
 data
 venv-p40/
+
+.vibe-wise/

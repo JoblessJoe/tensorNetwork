@@ -43,7 +43,10 @@ The user wants to write the code in this project themselves - it is a learning p
 - Small mechanical fixes that were requested are fine.
 - After a big delegated edit, do not just report results: offer to walk through the code in small chunks (the user wants to be able to use and change it).
 
-## 7. Scope
+## 7. Always use Vibe Wise for coding (added 2026-10-08)
+The user installed the Vibe Wise plugin (`vibe-wise@anthropic-plugin-directory`) to stop Claude from doing all the thinking. For any coding work, use it, together with this contract. If it is not active, say so.
+
+## 8. Scope
 Applies to this Project's conversations only.
  
 ---
