@@ -207,10 +207,14 @@ def benchmark(phases, results, startTime, smoke):
     evalModel applies ONE smoothing/slots setting to all its models, so models are benchmarked in groups of equal (smoothing, stable).'''
     snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
     controls = sorted(f for pattern in CONTROL_GLOBS for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
-    groups = {(0.5, True): REFERENCES + controls + snapshots}
+    groups = {(0.5, True): REFERENCES + controls}
+    for f in snapshots:    # a snapshot belongs to the slot layout of its own phase (otherwise it is evaluated with the wrong observation)
+        owner = next((ph for ph in phases if os.path.basename(f).startswith(ph["name"] + "_")), None)
+        key = (owner.get("smooth", 1.0), owner.get("stable", False)) if owner else (0.5, True)
+        groups.setdefault(key, []).append(f)
     for key, patterns in REFERENCE_GROUPS.items():
         if any(ph.get("stable") == key[1] and ph.get("smooth", 1.0) == key[0] for ph in phases):    # only if a phase of this layout is benchmarked
-            groups[key] = sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
+            groups.setdefault(key, []).extend(sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f)))
     for ph in phases:
         if ph["name"] in results:
             groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(results[ph["name"]])
