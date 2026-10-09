@@ -325,7 +325,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
                          inputSize: int | None = None,  hiddenSizes: list[int] | None = None,   outputSize: int | None = None,
                          networkName: str = "network",  targetDevice: str = "cpu",              maxStartHeight: int |None = None,
                          stage1Games: int | None = None,finalistFraction: float = 0.3,          maxHours: float | None = None,               
-                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1) -> Network:
+                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -360,7 +360,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
         # one network: all children are mutated copies of it. A pool (list, best first, see loadPool): children are bred
         # from the whole group, the best 'eliteCount' of it stay unchanged - so the diversity of the last run survives.
         selection = list(startNetwork) if isinstance(startNetwork, list) else [startNetwork for i in range(0, populationSize)]
-        currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
+        currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover, replaceRate=replaceRate)
     else:
         raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
 
@@ -410,7 +410,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
 
                     ## REPRODUCTION
                     breedStart = time.perf_counter()
-                    currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover)
+                    currGen = buildPopulation(populationSize, selection, sigma, mutationRate, eliteCount, crossover=crossover, replaceRate=replaceRate)
                     breedTime += time.perf_counter() - breedStart
                 
                     # saving a network every 50 iterations as a 'Checkpoint' if the run fails
@@ -429,7 +429,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
                                   f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                                   f"stage1Games={stage1Games if twoStage else 'None'} "
                                   f"shape={'-'.join(str(n) for n in [selection[0].layers[0][0].shape[1]] + [w.shape[0] for w, _ in selection[0].layers])} "
-                                  f"mutationRate={mutationRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
+                                  f"mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
                                   [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(),
                                    candidateScores.mean(dim=1).max().item(), selection[0].score])
                     pbar.set_postfix(best=f"{selection[0].score:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}")

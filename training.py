@@ -96,7 +96,16 @@ def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torc
     return value + noise * mutate
 
 
-def breed(selection: list[Network], sigma: float, mutationRate: float, parents: torch.Tensor | None = None) -> list[Network]:
+def mutateReplaceTensor(value: torch.Tensor, mutationRate: float) -> torch.Tensor:
+    mask = torch.rand_like(value) < mutationRate
+    fan_in = value.shape[-1]
+    bound = (6 / fan_in) ** 0.5
+    new = ((torch.rand_like(value) * 2 ) - 1) * bound
+    res = torch.where(mask, new, value)
+    return res
+
+
+def breed(selection: list[Network], sigma: float, mutationRate: float, parents: torch.Tensor | None = None, replaceRate: float = 0.0) -> list[Network]:
     '''Takes a tensor of the 'to breed-/parent'-networks and randomly 
        chooses edges and biases from them and returns a list of 'child'-networks.
     '''
@@ -110,11 +119,11 @@ def breed(selection: list[Network], sigma: float, mutationRate: float, parents: 
             parentsABias = selBiases[parents[0]]
             parentsBW = selWeights[parents[1]]
             parentsBBias = selBiases[parents[1]]
-            newLayerWeights = mutateTensor(crossoverTensor(parentsAW, parentsBW), sigma, mutationRate)
+            newLayerWeights = mutateReplaceTensor(mutateTensor(crossoverTensor(parentsAW, parentsBW), sigma, mutationRate), replaceRate)
             newLayerBiases = mutateTensor(crossoverTensor(parentsABias, parentsBBias), sigma, mutationRate)
             newGen += [(newLayerWeights, newLayerBiases)]
         else:
-            newLayerWeights = mutateTensor(selWeights, sigma, mutationRate)
+            newLayerWeights = mutateReplaceTensor(mutateTensor(selWeights, sigma, mutationRate), replaceRate)
             newLayerBiases = mutateTensor(selBiases, sigma, mutationRate)
             newGen += [(newLayerWeights, newLayerBiases)]
         
@@ -135,14 +144,14 @@ def breed(selection: list[Network], sigma: float, mutationRate: float, parents: 
     return networks
 
 
-def buildPopulation(populationSize: int, selection: list[Network], sigma: float, mutationRate: float, eliteCount: int = 3, crossover: bool = True) -> list[Network]:
+def buildPopulation(populationSize: int, selection: list[Network], sigma: float, mutationRate: float, eliteCount: int = 3, crossover: bool = True, replaceRate: float = 0.0) -> list[Network]:
     '''
     Builds a new generation of Networks breeded from the selection of the previous generation and returns it as a list.
     crossover=False -> mutation only (each child = one randomly picked parent + mutation).
     '''
 
     parents = pickRandomParents(selection, populationSize, eliteCount, crossover)
-    newPopulation = breed(selection, sigma, mutationRate, parents)
+    newPopulation = breed(selection, sigma, mutationRate, parents, replaceRate)
 
     # Saving elite individuals from mutation and breeding
     for i in range(0, eliteCount):
@@ -153,7 +162,7 @@ def buildPopulation(populationSize: int, selection: list[Network], sigma: float,
 def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigma: float, eliteCount: int,
                 keepPartSelection: float, trainingData: tuple[torch.Tensor, torch.Tensor], startNetwork: Network | None = None,
                 inputSize: int | None = None, hiddenSizes: list[int] | None = None, outputSize: int | None = None,
-                networkName: str = "network") -> Network:
+                networkName: str = "network", replaceRate: float = 0.0) -> Network:
     '''Runs the training of a network for a given amount of 'iterations'.
     \n It handles:
         * population generation
@@ -205,7 +214,7 @@ def trainingLoop(iterations: int, populationSize: int, mutationRate: float, sigm
             sortTime += time.perf_counter() - sortStart
             if loopCount < iterations:
                 startPopBuild = time.perf_counter()
-                currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount)
+                currPopulation = buildPopulation(populationSize, best, sigma, mutationRate, eliteCount, replaceRate=replaceRate)
                 torch.cuda.synchronize()
                 popTime += time.perf_counter()-startPopBuild
             elapsed = time.perf_counter() - start
