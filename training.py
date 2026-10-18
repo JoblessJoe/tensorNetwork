@@ -96,8 +96,9 @@ def mutateTensor(value: torch.Tensor, sigma: float, mutationRate: float) -> torc
     return value + noise * mutate
 
 
-def mutateReplaceTensor(value: torch.Tensor, mutationRate: float) -> torch.Tensor:
-    mask = torch.rand_like(value) < mutationRate
+def mutateReplaceTensor(value: torch.Tensor, replaceRate: float) -> torch.Tensor:
+    '''Input tensor randomly receives new weights with chance of 'replaceRate'.'''
+    mask = torch.rand_like(value) < replaceRate
     fan_in = value.shape[-1]
     bound = (6 / fan_in) ** 0.5
     new = ((torch.rand_like(value) * 2 ) - 1) * bound

@@ -20,14 +20,10 @@ from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
 try:
-    from fastEnv import FastBatch     # numba-compiled copy of the env (identical results, see sprudelJump/test_fastEnv.py)
+    from fastEnv import FastBatch
 except ImportError:
     FastBatch = None
 
-
-# Tensors sent to pool workers go through shared memory. The Linux default ('file_descriptor') keeps one open
-# fd per tensor, which blows past the 1024-fd limit at ~200 networks ("Too many open files"). 'file_system'
-# uses named shared-memory files instead. (macOS already uses this by default.)
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 LONG_GAME_REPORT_FRAMES = 25_000  # a game running longer than this prints a status line every this many frames
@@ -325,7 +321,9 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
                          inputSize: int | None = None,  hiddenSizes: list[int] | None = None,   outputSize: int | None = None,
                          networkName: str = "network",  targetDevice: str = "cpu",              maxStartHeight: int |None = None,
                          stage1Games: int | None = None,finalistFraction: float = 0.3,          maxHours: float | None = None,               
-                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0) -> Network:
+                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
+                        steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0,
+                        fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -490,6 +488,7 @@ if __name__ == "__main__":
     sigma = 0.02
     monsterFraction = 0.0   # monster practice (no gain in the 2x2 test): share of the games with monsterMult x the normal monster spawn chance
     monsterMult = 2.0
+    replaceRate = 0.001
     eliteCount = 3
     keepPart = 0.1
     concurrent = 23
