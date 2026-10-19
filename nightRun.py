@@ -41,6 +41,7 @@ import proSprudler as ps
 #   inputs / hidden / outputs   network shape (inputs 25 + outputs 7 = target mode, 23 + 2 = plain)
 #   minStart / maxStart / zero  start heights: random in minStart..maxStart (maxStart None = always 0); 'zero' = share of games that start at 0 anyway
 #   sigma / mutRate             mutation size / share of mutated weights
+#   replace                     share of weights replaced by a fresh Kaiming-range value on top of the noise (default 0 = off)
 #   smooth                      steer smoothing (1 = off)
 #   stable                      stable slot observation: False = classic, True = 3/2/1/2 slots, or a tuple (platformsBelow, platformsAbove, monstersBelow, monstersAbove)
 #   monster / monsterMult       monster practice: share of games with monsterMult x the normal monster spawn chance
@@ -141,8 +142,18 @@ NEXT_EXPERIMENT = [
 ]
 
 
+# Replace mutation (2026-10-19): on top of the gaussian noise, a share 'replace' of the weights gets a fresh random value (Kaiming range).
+# Screening off the polishLand pool (current best), polishLand recipe (800 games, 50/50 mix, sigma 0.02 / mutRate 0.7), 1.5 h each,
+# 2 replicates with replace 0.001 vs 2 same-recipe controls (replace 0), interleaved so a slow machine hits both arms alike.
+LAND_LAYOUT = (3, 2, 1, 2, 0, 1)
+POLISH_LAND_POOL = "models/polishLand_2026-10-08_13-46-00_pool.pt"
+REPLACE_BASE = dict(POLISH, afterPool=None, pool=POLISH_LAND_POOL, games=800, inputs=obsSize(LAND_LAYOUT), hidden=[obsSize(LAND_LAYOUT)] * 3,
+                    stable=LAND_LAYOUT, hours=1.5)
+REPLACE_EXPERIMENT = [dict(REPLACE_BASE, name=f"{kind}{r}", replace=rate) for r in "AB" for kind, rate in (("repl", 0.001), ("ctrl", 0.0))]
+
+
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -176,7 +187,7 @@ def runPhase(ph, cfg, a, results, note):
     gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
     hours = 0.0004 if a.smoke else ph["hours"] * a.scale
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-         f"mutRate {ph['mutRate']}, up to {gens} gens / {hours:.2f} h")
+         f"mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}, up to {gens} gens / {hours:.2f} h")
     try:
         ps.sprudlerTrainingLoop(
             cfg["workers"], cfg["games"] if a.smoke else ph.get("games", cfg["games"]), gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
@@ -185,7 +196,7 @@ def runPhase(ph, cfg, a, results, note):
             snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
             steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
             monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
-            fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1),
+            fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1), replaceRate=ph.get("replace", 0.0),
             stage1Games=cfg["stage1Games"], finalistFraction=cfg["finalistFraction"], maxHours=hours,
             **startNetworkArgs(ph, results))
         files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if isFinalModel(f)]
@@ -231,7 +242,7 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="next", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default next)")
+    ap.add_argument("--experiment", default="replace", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default replace)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")

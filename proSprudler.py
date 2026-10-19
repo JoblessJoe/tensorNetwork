@@ -496,4 +496,4 @@ if __name__ == "__main__":
     minStartHeight = 20000
     zeroFraction = 0.5
     maxHours = 5
-    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, maxHours=maxHours, startNetwork=model, networkName="careful2", livePlot=True, stage1Games=20, finalistFraction=0.3, steerSmoothing=steerSmoothing, stableSlots=stableSlots, monsterFraction=monsterFraction, monsterMult=monsterMult, fast=fast, actionRepeat=actionRepeat)
+    bestSprudler = sprudlerTrainingLoop(concurrent, gamesPerNetwork, generations, popSize, mutRate, sigma, eliteCount, keepPart, replaceRate=replaceRate, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, maxHours=maxHours, startNetwork=model, networkName="careful2", livePlot=True, stage1Games=20, finalistFraction=0.3, steerSmoothing=steerSmoothing, stableSlots=stableSlots, monsterFraction=monsterFraction, monsterMult=monsterMult, fast=fast, actionRepeat=actionRepeat)
