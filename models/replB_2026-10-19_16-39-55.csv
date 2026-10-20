@@ -1,0 +1,7 @@
+# name=replB generations=12 population=12 games=6 startFrom=models/polishLand_2026-10-08_13-46-00_pool.pt stage1Games=3 shape=33-33-33-33-2 mutationRate=0.7 replaceRate=0.001 sigma=0.02 elites=1 keepPart=0.25 minStartHeight=20000 maxStartHeight=30000 zeroFraction=0.5 steerSmoothing=0.5 stableSlots=(3,2,1,2,0,1) monsterFraction=0.0 monsterMult=1.0 fast=True actionRepeat=1
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,0.49,2974.86,2476.77,1234.33,5189.41,6737.47,6737.47
+2,0.74,3061.81,2941.30,1995.13,4261.49,7419.70,7419.70
+3,1.08,6268.07,5971.13,4364.00,8496.75,8560.60,8560.60
+4,1.36,4761.01,5268.20,2117.50,6275.95,4459.07,3807.60
+5,1.78,6478.67,6635.67,3182.11,8939.05,8796.80,8796.80
