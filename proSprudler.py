@@ -132,7 +132,7 @@ def runEnv(network: Network, maxStartHeight: int | None = None):
     return currState[1]
 
 
-def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: float, count: int | None = None) -> list[Network]:
+def sprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: float, count: int | None = None) -> list[Network]:
     '''
     Takes the networks and one average rank per network (low = good) and keeps the best ones:
     'count' of them, or - if not given - the 'keepPart' fraction of 'networks'.
@@ -142,6 +142,10 @@ def SprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: fl
     sel = ranks.topk(keep, largest=False, sorted=True)
     result = [networks[el] for el in sel.indices]
     return result
+
+
+def betterSelection():
+    ...
 
 
 def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, stableSlots: bool | tuple = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, returnCauses: bool = False):
@@ -404,7 +408,7 @@ def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: in
 
                     ## SELECTION
                     # rank the candidates against each other in every game, average the ranks, keep the best ones
-                    selection = SprudlerSelection(candidates, averageRanks(candidateScores), keepPartSelection, count=keepCount)
+                    selection = sprudlerSelection(candidates, averageRanks(candidateScores), keepPartSelection, count=keepCount)
 
                     ## REPRODUCTION
                     breedStart = time.perf_counter()
