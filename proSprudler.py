@@ -15,7 +15,7 @@ import torch
 from functools import partial
 from tqdm import tqdm
 from multiprocessing import Pool, Manager, TimeoutError
-from network import Network, buildNetwork, DEVICE
+from network import Network, buildNetwork, DEVICE, flattenNetwork, unflattenNetwork
 from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
@@ -144,8 +144,33 @@ def sprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: fl
     return result
 
 
-def betterSelection():
-    ...
+def betterSelection(parent: torch.Tensor, noise: torch.Tensor, learningRate: float, sigma: float,
+                    ranks: torch.Tensor, populationSize: int) -> tuple:
+    '''
+    Takes the parent, its children's noise and their ranks, moves the parent toward the better children and returns
+    (newParent, newChildren, newNoise) for the next generation.
+    - 'noise': [populationSize, P] tensor, row i = the noise that made child i
+    - 'ranks': one rank per child (0 = best); turned into vote weights 0.5 - rank / (N - 1), i.e. +0.5 best ... -0.5 worst
+    - 'learningRate': how far the parent moves along the average vote
+    - 'sigma', 'populationSize': passed on to betterBreed for the new children
+    '''
+    weightedRanks = [0.5 - rank / (len(ranks) - 1) for rank in ranks]
+    avgVote = sum([noise[i] * weightedRanks[i] for i in range(0, populationSize)]) / populationSize
+    newParent = parent + learningRate * avgVote
+    newPopulation, newNoise = betterBreed(newParent, sigma, populationSize)
+    return (newParent, newPopulation, newNoise) 
+
+
+def betterBreed(parent: torch.Tensor, sigma: float, populationSize: int) -> tuple[torch.Tensor, torch.Tensor]:
+    '''
+    Takes a parent vector, makes 'populationSize' children from it (parent + sigma * noise) and returns (children, noise).
+    - 'parent': flattened network, shape [P]
+    - 'sigma': size of the noise (std of the gaussian)
+    - returns: children and noise, both [populationSize, P]; row i of noise is what made child i
+    '''
+    noise = torch.randn(populationSize, *parent.shape) # creating the new random noise
+    children = parent + sigma * noise
+    return (children, noise)
 
 
 def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, stableSlots: bool | tuple = False, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, returnCauses: bool = False):
@@ -316,6 +341,150 @@ def evaluatePopulation(p, networks: list[Network], seeds: list, maxFrames: int, 
 def averageRanks(scores: torch.Tensor) -> torch.Tensor:
     '''[networks, games] scores -> one average rank per network (0 = best), ranking all networks against each other in every game.'''
     return scores.argsort(dim=0, descending=True).argsort(dim=0).float().mean(1)
+
+
+def trainingLoopES(concInstances: int,            perNetworkIterations: int,              generations: int,                            
+                        populationSize: int,           mutationRate: float,                    sigma: float, eliteCount: int, learningRate: float, 
+                        keepPartSelection: float,      crossover: bool = False,                maxFramesPerGame: int = MAX_FRAMES_PER_GAME, 
+                        startNetwork: Network | list[Network] | None = None,                   livePlot: bool = True,
+                        inputSize: int | None = None,  hiddenSizes: list[int] | None = None,   outputSize: int | None = None,
+                        networkName: str = "network",  targetDevice: str = "cpu",              maxStartHeight: int |None = None,
+                        maxHours: float | None = None,
+                        minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
+                        steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0,
+                        fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0) -> Network:
+    '''
+    creates/takes a Network instance and trains it for a certain 
+    amount of times. Then it returns the trained network and writes its weights into a file.
+
+    Evaluation: every child plays all 'perNetworkIterations' games on the generation's shared seeds (no two-stage:
+    in ES every child's rank is a vote, so the bad ones need full scores too).
+
+    'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
+    Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
+    '''
+    start = time.perf_counter()
+    os.makedirs("models", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = f"models/{networkName}_{timestamp}.pt"
+    print("Start of training loop!")
+    if livePlot:
+        # learning curve in its own process (own window, redraws every few seconds) - training never waits for it
+        subprocess.Popen([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "plotRun.py"),
+                          path.replace(".pt", ".csv"), "--live", "--chain"])
+    print("Generating first population...")
+
+    
+    ## FROM SCRATCH RUN
+    # if no startNetwork is given generate a population of networks with completely random weights and biases
+    if inputSize is not None and outputSize is not None and hiddenSizes is not None:
+        parent = buildNetwork(inputSize, hiddenSizes, outputSize, targetDevice)
+
+    ## CONTINUING TRAINING OF A NETWORK
+    # if startNetwork is given build a population of slight variations of itself, through mutation
+    elif startNetwork is not None:
+        # network start-pool
+        if isinstance(startNetwork, list) :
+            parent = startNetwork[0]
+        # single start-network
+        else:
+            parent = startNetwork
+    else:
+        raise ValueError("Please provide a starting network OR input- output- and hiddenSizes.")
+
+    template = parent
+    parent = flattenNetwork(parent)
+    currGen, noise = betterBreed(parent, sigma, populationSize)
+
+    evalTime = 0.0
+    bestEver = float("-inf")
+    manager = Manager()
+    sharedStatus = manager.dict()
+    gensDone = 0
+    try:
+        with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+            with tqdm(total=generations, desc=networkName, unit="gen") as pbar:
+                
+                ### START TRAININGLOOP ###
+                    # each loop runs one generation of networks, selects the best and breeds them, then the next
+                    # iteration does the same until the training is done. 
+                for i in range(0, generations):
+                    ## EVALUATION
+                    evalStart = time.perf_counter()
+                    seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]  # shared by all networks this generation
+
+                    currGenUnflattened = [unflattenNetwork(row, template) for row in currGen]
+                    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, stableSlots, monsterFraction, monsterMult, fast, actionRepeat))                           # [population, games]: everyone, all games
+
+                    evalTime += time.perf_counter() - evalStart
+
+                    # saving the score (mean points per game) of every child
+                    for j, net in enumerate(currGenUnflattened):
+                        net.score = popScores[j].mean().item()
+                    
+                    ## SELECTION & REPRODUCTION
+                    # rank the children against each other in every game and average the ranks
+                    # then rank those averages again: clean ranks 0..N-1 (0 = best), so the vote weights really span +0.5 .. -0.5
+                    ranks = averageRanks(popScores).argsort().argsort().float()
+                    parent, currGen, noise =  betterSelection(parent, noise, learningRate, sigma, ranks, populationSize)
+
+                    perNetwork = popScores.mean(dim=1)             # mean score per child
+                    bestChild = perNetwork.max().item()            # the parent itself never plays, so the best child is the 'best' score
+                    # saving a network every 50 iterations as a 'Checkpoint' if the run fails
+                    if (i + 1) % 50 == 0:
+                        unflattenedParent = unflattenNetwork(parent, template)
+                        saveNetwork(unflattenedParent, networkName, path)
+                        savePool([unflattenedParent], poolPath(path))
+
+                    bestEver = max(bestEver, bestChild)
+                    # one CSV line per generation (see plotRun.py): mean score per network -> population statistics
+                    q = torch.quantile(perNetwork, torch.tensor([0.1, 0.5, 0.9]))
+                    logGeneration(path.replace(".pt", ".csv"),
+                                  f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
+                                  f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
+                                  f"shape={'-'.join(str(n) for n in [template.layers[0][0].shape[1]] + [w.shape[0] for w, _ in template.layers])} "
+                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
+                                  [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(), bestChild, bestChild])    # 'best' and 'chosen' columns: both the best child
+                    pbar.set_postfix(best=f"{bestChild:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}")
+                    pbar.update(1)
+                    gensDone = i + 1
+                    if maxHours is not None and time.perf_counter() - start > maxHours * 3600:
+                        print(f"\nTime limit of {maxHours} h reached after {gensDone} generations.")
+                        break
+
+    except KeyboardInterrupt:
+        if gensDone == 0:
+            raise
+        print(f"\nInterrupted after {gensDone} generations - saving the last finished generation.")
+
+    manager.shutdown()
+    parentNet = unflattenNetwork(parent, template)    # the trained result: the parent of the last finished generation
+    savePath = saveNetwork(parentNet, networkName, path)
+    savePool([parentNet], poolPath(path))             # one-element pool, so nightRun's afterPool still works
+    csvPath = path.replace(".pt", ".csv")
+    if os.path.exists(csvPath):  # learning curve (whole lineage) as a PNG next to the model
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "plotRun.py"), csvPath, "--chain",
+                        "--save", path.replace(".pt", ".png")], check=False)
+    totalTime = time.perf_counter() - start
+    print(
+        f"\n{'=' * 44}\n"
+        f"{networkName:^44}\n"
+        f"{'=' * 44}\n"
+        f"Population size:     {populationSize}\n"
+        f"Generations:         {gensDone} of {generations}\n"
+        f"Games per network:   {perNetworkIterations}\n"
+        f"Max frames per game: {maxFramesPerGame:,}\n"
+        f"Learning rate:       {learningRate}\n"
+        f"Worker processes:    {concInstances}\n"
+        f"Avg. EvalTime:       {evalTime / gensDone:.3f} seconds\n"
+        f"Total time:          {totalTime:.1f} seconds\n"
+        f"Best child score:    {bestChild:.1f} (last generation)\n"
+        f"Saved to:            {savePath}\n"
+        f"Pool (parent only):  {poolPath(savePath)}\n"
+        f"{'=' * 44}"
+    )
+
+    return parentNet # the trained parent
 
 
 def sprudlerTrainingLoop(concInstances: int,            perNetworkIterations: int,              generations: int,                            

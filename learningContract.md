@@ -37,6 +37,8 @@ Reference length (roughly this size per message):
 
 **Why:** the user wants to actually absorb each piece before getting the next one, not scroll through a wall of text.
 
+**Tensor topics: one idea per message (added 2026-10-21).** Shapes, flattening, stacking, broadcasting are still new to the user. Introduce one operation at a time with a tiny concrete example (e.g. a 2x3 tensor written out), check it landed, then go on. Don't bundle "how to convert + how to convert back + why it helps" into one answer.
+
 ## 6. Big edits need a question first (added 2026-10-06)
 The user wants to write the code in this project themselves - it is a learning project, and that includes the training/tooling code, not just the network classes. Earlier delegations ("can you build that for me") covered that one task only; they do not become a standing permission.
 - Before any large edit (a new module, a rewrite, a change touching several files, e.g. the numba env port), **ask first**: say what you would build and why, and let the user decide whether to write it themselves, get a skeleton, or delegate it.

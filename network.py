@@ -102,3 +102,57 @@ def buildNetwork(inputSize: int, hiddenSizes: list[int], outputSize: int, target
     torch.nn.init.xavier_uniform_(outputWeights)
     newNetwork.append((outputWeights, torch.zeros([outputSize], device=targetDevice)))
     return Network(layers=newNetwork, loss=None)
+
+
+def flattenNetwork(network: Network) -> torch.Tensor:
+    '''
+    Takes a Network Object and turns it into a flattened tensor of its weights and biases.
+    '''
+    weights = [network.layers[i][0] for i in range(0, len(network.layers))]
+    biases = [network.layers[i][1] for i in range(0, len(network.layers))]
+    flatWeights = torch.cat([torch.flatten(i) for i in weights])
+    flatBiases = torch.cat([torch.flatten(i) for i in biases])
+    res = torch.cat([flatWeights, flatBiases])
+    return res
+    
+
+
+def unflattenNetwork(network: torch.Tensor, template: Network) -> Network:
+    '''
+    Takes a tensorized and flattened Network and reshapes it back to a Network Object.
+    '''
+    weightLayers = []
+    leftover = network
+    biasLayers = []
+
+    # building weight tensors 
+    for i in range(0, len(template.layers)):
+        # weights
+        amount = template.layers[i][0].numel()
+        shape = template.layers[i][0].shape
+        piece = leftover[:amount]
+        matrix = piece.reshape(shape)
+        weightLayers.append(matrix)
+        leftover = leftover[amount:]
+
+    # building bias tensors 
+    for i in range(0, len(template.layers)):
+        # biases
+        amount = template.layers[i][1].numel()
+        shape = template.layers[i][1].shape
+        piece = leftover[:amount]
+        matrix = piece.reshape(shape)
+        biasLayers.append(matrix)
+        leftover = leftover[amount:]
+
+    # building Network object from the two lists
+    layers = []
+    for i in range(0, len(template.layers)):
+        currLayer = (weightLayers[i], biasLayers[i])
+        layers.append(currLayer)
+
+    return Network(layers)
+    
+
+
+

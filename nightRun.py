@@ -48,6 +48,8 @@ import proSprudler as ps
 #   gens / hours                limits of the phase (whichever comes first)
 #   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
 #   games                       games per network per generation (default: SETTINGS)
+#   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
+#                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
               smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
 
@@ -157,9 +159,17 @@ REPLACE_EXPERIMENT = [dict(REPLACE_BASE, name=f"{kind}{r}", replace=rate) for r 
 SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_SLOTS), replace=rate)
                               for r in "AB" for kind, rate in (("scrCtrl", 0.0), ("scrRepl", 0.001), ("scrHi", 0.01))]
 
+# Evolution Strategies (2026-10-21): one parent, 200 children = parent + sigma * noise, every child plays all its games, the parent moves
+# along the rank-weighted average noise (learning rate lr). First test off the polishLand pool (its best network = the parent), 1.5 h each,
+# 2 replicates; the GA controls are ctrlA / ctrlB of the 'replace' experiment (same pool, same 1.5 h, benchmark 8,419 / 4,001 / 5,137 / 6,266 / 2,907 avg).
+# 200 games per child (not 800): ES has no two-stage shortcut, so 800 would cost ~3x the GA's time per generation; 200 is about the same.
+# lr 0.5: with N = 200 and weights +-0.5 the average vote is ~0.02 per weight, so each generation moves a weight ~0.01 (half of sigma 0.02).
+ES_BASE = dict(REPLACE_BASE, es=True, lr=0.5, games=200, snap=())
+ES_EXPERIMENT = [dict(ES_BASE, name=f"es{r}") for r in "AB"]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -192,19 +202,25 @@ def runPhase(ph, cfg, a, results, note):
     '''Trains one phase; on success stores its result file in results[name].'''
     gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
     hours = 0.0004 if a.smoke else ph["hours"] * a.scale
+    method = f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-         f"mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}, up to {gens} gens / {hours:.2f} h")
+         f"{method}, up to {gens} gens / {hours:.2f} h")
     try:
-        ps.sprudlerTrainingLoop(
-            cfg["workers"], cfg["games"] if a.smoke else ph.get("games", cfg["games"]), gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
-            networkName=ph["name"], livePlot=False,
-            minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
-            snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-            steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
-            monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
-            fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1), replaceRate=ph.get("replace", 0.0),
-            stage1Games=cfg["stage1Games"], finalistFraction=cfg["finalistFraction"], maxHours=hours,
-            **startNetworkArgs(ph, results))
+        games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
+        common = dict(networkName=ph["name"], livePlot=False,
+                      minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
+                      steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
+                      monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
+                      fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1), maxHours=hours,
+                      **startNetworkArgs(ph, results))
+        if ph.get("es"):
+            ps.trainingLoopES(cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+                              **common)
+        else:
+            ps.sprudlerTrainingLoop(
+                cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
+                snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()), replaceRate=ph.get("replace", 0.0),
+                stage1Games=cfg["stage1Games"], finalistFraction=cfg["finalistFraction"], **common)
         files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if isFinalModel(f)]
         results[ph["name"]] = max(files, key=os.path.getmtime)
         note(f"phase {ph['name']} finished -> {results[ph['name']]}")
