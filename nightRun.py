@@ -167,7 +167,7 @@ SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_
 ES_BASE = dict(REPLACE_BASE, es=True, lr=0.5, games=200, snap=())
 ES_EXPERIMENT = [dict(ES_BASE, name=f"es{r}") for r in "AB"]
 
-# ES long runs (2026-10-22, ~12 h): does ES break the GA plateau (~8,000-8,400 at start 0 / ~4,000 hard, more GA hours bought nothing)?
+# ES long runs (2026-10-21, ~12 h): does ES break the GA plateau (~8,000-8,400 at start 0 / ~4,000 hard, more GA hours bought nothing)?
 # Not a speed race: each run gets long enough to reach its OWN plateau; compared ceiling vs ceiling (one run per setting, so only a clear gain counts).
 #   esLong05 / esLong025    polishLand pool (the GA's best), lr 0.5 / 0.25, 4 h each                                  -> vs polishLand, ctrlA / ctrlB
 #   esScr05 -> esScrPolish05 from scratch, the GA lineage's two steps: 1 h normal starts, then 3 h 50/50 mix off its pool  -> does ES find its own way up?

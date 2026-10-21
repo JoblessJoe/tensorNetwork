@@ -1,0 +1,6 @@
+# Private notes, encrypted with git-crypt (key: ~/.config/git-crypt/tensorNetwork.key, never commit it)
+AGENTS.md filter=git-crypt diff=git-crypt
+HANDOFF.md filter=git-crypt diff=git-crypt
+CLAUDE.md filter=git-crypt diff=git-crypt
+learningContract.md filter=git-crypt diff=git-crypt
+notes.md filter=git-crypt diff=git-crypt
