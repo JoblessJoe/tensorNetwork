@@ -345,7 +345,7 @@ def averageRanks(scores: torch.Tensor) -> torch.Tensor:
 
 def trainingLoopES(concInstances: int,            perNetworkIterations: int,              generations: int,                            
                         populationSize: int,           mutationRate: float,                    sigma: float, eliteCount: int, learningRate: float, 
-                        keepPartSelection: float,      crossover: bool = False,                maxFramesPerGame: int = MAX_FRAMES_PER_GAME, 
+                        keepPartSelection: float,               maxFramesPerGame: int = MAX_FRAMES_PER_GAME, 
                         startNetwork: Network | list[Network] | None = None,                   livePlot: bool = True,
                         inputSize: int | None = None,  hiddenSizes: list[int] | None = None,   outputSize: int | None = None,
                         networkName: str = "network",  targetDevice: str = "cpu",              maxStartHeight: int |None = None,
@@ -435,6 +435,8 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         unflattenedParent = unflattenNetwork(parent, template)
                         saveNetwork(unflattenedParent, networkName, path)
                         savePool([unflattenedParent], poolPath(path))
+                    if (i + 1) in snapshotAt:     # a copy of the parent at this generation (the normal checkpoint file is overwritten)
+                        saveNetwork(unflattenNetwork(parent, template), networkName, path.replace(".pt", f"_g{i + 1}.pt"))
 
                     bestEver = max(bestEver, bestChild)
                     # one CSV line per generation (see plotRun.py): mean score per network -> population statistics

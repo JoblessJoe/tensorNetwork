@@ -64,7 +64,7 @@ REFERENCES = [TARGET, CAREFUL]
 CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*", "base0_*", "polishA_*", "polishB_*", "polishC_*"]    # replicates of the 344-gen control recipes
 
 # Extra comparison models for a slot layout other than the default (benchmarked together with the phases that use the same layout)
-REFERENCE_GROUPS = {(0.5, (3, 2, 1, 2, 0, 1)): ["featLand_[12]_*"], (0.5, (3, 2, 1, 2, 1, 1)): ["featBoth_[12]_*"], (0.5, (3, 2, 1, 2, 1, 0)): ["featOcc_[12]_*"]}
+REFERENCE_GROUPS = {(0.5, (3, 2, 1, 2, 0, 1)): ["featLand_[12]_*", "polishLand_2026-10-08_13-46-00", "ctrlA_2026-10-19_18-45-03", "ctrlB_2026-10-19_22-02-08", "scrCtrl[AB]_*"], (0.5, (3, 2, 1, 2, 1, 1)): ["featBoth_[12]_*"], (0.5, (3, 2, 1, 2, 1, 0)): ["featOcc_[12]_*"]}
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -167,18 +167,21 @@ SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_
 ES_BASE = dict(REPLACE_BASE, es=True, lr=0.5, games=200, snap=())
 ES_EXPERIMENT = [dict(ES_BASE, name=f"es{r}") for r in "AB"]
 
-# ES round 1 (2026-10-22, ~11 h): learning-rate sweep on the polish setting + a from-scratch test, 2 replicates each, interleaved (A block, then B).
-#   esP025 / esP05 / esP1   polish off the polishLand pool, lr 0.25 / 0.5 / 1.0, 1.5 h each   -> compare with ctrlA / ctrlB (GA, same pool, same 1.5 h)
-#   esS05 / esS1            from scratch (landing layout, scratch recipe, sigma 0.05), lr 0.5 / 1.0, 0.5 h each
-#                           -> compare with scrCtrlA / scrCtrlB (GA, 693 gens in ~30 min: equal TIME, not equal generations)
-ES_SCRATCH_BASE = dict(slotPhase("esScratch", LAND_LAYOUT, CONTROL_SLOTS), es=True, gens=100000, hours=0.5)
-ES_ROUND1_EXPERIMENT = [ph for r in "AB" for ph in
-                        [dict(ES_BASE, name=f"esP{tag}{r}", lr=lr) for tag, lr in (("025", 0.25), ("05", 0.5), ("1", 1.0))]
-                        + [dict(ES_SCRATCH_BASE, name=f"esS{tag}{r}", lr=lr) for tag, lr in (("05", 0.5), ("1", 1.0))]]
+# ES long runs (2026-10-22, ~12 h): does ES break the GA plateau (~8,000-8,400 at start 0 / ~4,000 hard, more GA hours bought nothing)?
+# Not a speed race: each run gets long enough to reach its OWN plateau; compared ceiling vs ceiling (one run per setting, so only a clear gain counts).
+#   esLong05 / esLong025    polishLand pool (the GA's best), lr 0.5 / 0.25, 4 h each                                  -> vs polishLand, ctrlA / ctrlB
+#   esScr05 -> esScrPolish05 from scratch, the GA lineage's two steps: 1 h normal starts, then 3 h 50/50 mix off its pool  -> does ES find its own way up?
+# ~5-7 s per generation (200 children x 200 games), so 4 h ~ 2,000-2,700 gens; snapshots show where the climb stops.
+ES_LONG_EXPERIMENT = [
+    dict(ES_BASE, name="esLong05", lr=0.5, hours=4.0, snap=(500, 1000, 2000)),
+    dict(slotPhase("esScr05", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0),
+    dict(ES_BASE, name="esScrPolish05", lr=0.5, hours=3.0, pool=None, afterPool="esScr05", snap=(500, 1000)),
+    dict(ES_BASE, name="esLong025", lr=0.25, hours=4.0, snap=(500, 1000, 2000)),
+]
 
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"esRound1": ES_ROUND1_EXPERIMENT, "es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"esLong": ES_LONG_EXPERIMENT, "es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -224,7 +227,7 @@ def runPhase(ph, cfg, a, results, note):
                       **startNetworkArgs(ph, results))
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
-                              **common)
+                              snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
@@ -273,7 +276,7 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="esRound1", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default esRound1)")
+    ap.add_argument("--experiment", default="esLong", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default esLong)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
