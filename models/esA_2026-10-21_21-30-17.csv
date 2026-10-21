@@ -1,0 +1,7 @@
+# name=esA generations=12 population=12 games=6 startFrom=models/polishLand_2026-10-08_13-46-00_pool.pt shape=33-33-33-33-2 method=ES learningRate=0.5 mutationRate=0.7 replaceRate=0.0 sigma=0.02 elites=1 keepPart=0.25 minStartHeight=20000 maxStartHeight=30000 zeroFraction=0.5 steerSmoothing=0.5 stableSlots=(3,2,1,2,0,1) monsterFraction=0.0 monsterMult=1.0 fast=True actionRepeat=1
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,0.71,4177.84,3766.32,2896.55,6209.62,7238.57,7238.57
+2,0.84,2181.90,2036.82,1609.60,2712.21,3871.17,3871.17
+3,1.09,4432.21,4824.40,2313.45,6115.65,6194.27,6194.27
+4,1.37,5333.69,5145.13,3694.40,7361.70,8198.27,8198.27
+5,1.64,4647.88,4785.87,3494.70,5335.67,7182.70,7182.70
