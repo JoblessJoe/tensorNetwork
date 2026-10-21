@@ -167,9 +167,18 @@ SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_
 ES_BASE = dict(REPLACE_BASE, es=True, lr=0.5, games=200, snap=())
 ES_EXPERIMENT = [dict(ES_BASE, name=f"es{r}") for r in "AB"]
 
+# ES round 1 (2026-10-22, ~11 h): learning-rate sweep on the polish setting + a from-scratch test, 2 replicates each, interleaved (A block, then B).
+#   esP025 / esP05 / esP1   polish off the polishLand pool, lr 0.25 / 0.5 / 1.0, 1.5 h each   -> compare with ctrlA / ctrlB (GA, same pool, same 1.5 h)
+#   esS05 / esS1            from scratch (landing layout, scratch recipe, sigma 0.05), lr 0.5 / 1.0, 0.5 h each
+#                           -> compare with scrCtrlA / scrCtrlB (GA, 693 gens in ~30 min: equal TIME, not equal generations)
+ES_SCRATCH_BASE = dict(slotPhase("esScratch", LAND_LAYOUT, CONTROL_SLOTS), es=True, gens=100000, hours=0.5)
+ES_ROUND1_EXPERIMENT = [ph for r in "AB" for ph in
+                        [dict(ES_BASE, name=f"esP{tag}{r}", lr=lr) for tag, lr in (("025", 0.25), ("05", 0.5), ("1", 1.0))]
+                        + [dict(ES_SCRATCH_BASE, name=f"esS{tag}{r}", lr=lr) for tag, lr in (("05", 0.5), ("1", 1.0))]]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"esRound1": ES_ROUND1_EXPERIMENT, "es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -264,7 +273,7 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="scratchReplace", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default scratchReplace)")
+    ap.add_argument("--experiment", default="esRound1", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default esRound1)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
