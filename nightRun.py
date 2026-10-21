@@ -151,9 +151,15 @@ REPLACE_BASE = dict(POLISH, afterPool=None, pool=POLISH_LAND_POOL, games=800, in
                     stable=LAND_LAYOUT, hours=1.5)
 REPLACE_EXPERIMENT = [dict(REPLACE_BASE, name=f"{kind}{r}", replace=rate) for r in "AB" for kind, rate in (("repl", 0.001), ("ctrl", 0.0))]
 
+# The same question from scratch (2026-10-20): the screening above only fine-tuned a finished pool, where fresh random weights have little to add.
+# Landing layout (33 in / [33]x3 / 2 out), from-scratch recipe (344 gens scaled by weight count, normal starts), 2 replicates each:
+# control (replace 0), replace 0.001 (the rate tested above) and a 10x higher rate 0.01. Interleaved so a slow machine hits all arms alike.
+SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_SLOTS), replace=rate)
+                              for r in "AB" for kind, rate in (("scrCtrl", 0.0), ("scrRepl", 0.001), ("scrHi", 0.01))]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -242,7 +248,7 @@ def benchmark(phases, results, startTime, smoke):
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="replace", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default replace)")
+    ap.add_argument("--experiment", default="scratchReplace", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default scratchReplace)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")

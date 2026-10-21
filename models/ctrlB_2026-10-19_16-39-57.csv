@@ -1,0 +1,6 @@
+# name=ctrlB generations=12 population=12 games=6 startFrom=models/polishLand_2026-10-08_13-46-00_pool.pt stage1Games=3 shape=33-33-33-33-2 mutationRate=0.7 replaceRate=0.0 sigma=0.02 elites=1 keepPart=0.25 minStartHeight=20000 maxStartHeight=30000 zeroFraction=0.5 steerSmoothing=0.5 stableSlots=(3,2,1,2,0,1) monsterFraction=0.0 monsterMult=1.0 fast=True actionRepeat=1
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,0.57,5257.92,5433.90,2787.73,6861.08,7806.90,7806.90
+2,0.83,3595.08,2866.47,2453.95,5780.87,5637.73,3129.37
+3,1.17,5299.39,4655.83,3889.20,7844.62,10434.33,8407.57
+4,1.48,5655.87,4359.80,3044.83,10277.75,7995.17,7995.17
