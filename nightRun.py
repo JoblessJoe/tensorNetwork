@@ -49,8 +49,8 @@ import proSprudler as ps
 #   gens / hours                limits of the phase (whichever comes first)
 #   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
 #   games                       games per network per generation (default: SETTINGS)
-#   population                  networks per generation (default: SETTINGS). A multiple of the workers fills every round (200 on 31 workers =
-#                               6 full rounds + one with 14 of 31 busy, ~8-14% idle time; AGENTS.md 2zc)
+#   population                  networks per generation (default: SETTINGS). A multiple of the workers does NOT save time worth mentioning
+#                               (measured ~1%: games differ in length, so the workers finish at different times anyway; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -200,17 +200,23 @@ REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), e
                           repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000))
                      for r in "AB" for k in range(1, 6)]
 
-# Population size vs worker rounds (2026-10-22, server, 19 workers): every worker plays one child at a time, so a generation takes
-# ceil(population / workers) rounds. 200 on 19 = 10 full rounds + one with 10 of 19 busy. Arms: 190 (10 x 19, one round less: ~9% faster
-# per generation, 5% fewer votes per ES step), 200 (control), 209 (11 x 19, same rounds as 200, 4.5% more children for free).
-# Question: which gives the best model after the same TIME? esScr05 recipe (= rep1 of 'repeat'), 1 h each, 3 replicates, interleaved.
-POPULATION_EXPERIMENT = [dict(slotPhase(f"pop{n}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
-                              population=n, snap=(250, 500))
-                         for r in "ABC" for n in (190, 200, 209)]
+# ES learning rate from scratch (2026-10-22, server, 19 workers): lr was only ever compared off a trained pool (round 1: 0.25 9,642 / 5,423 vs
+# 0.5 9,115 / 4,934, one run each). Here: which lr climbs best from a random network in the same time? esScr05 recipe (= rep1 of 'repeat':
+# landing layout, sigma 0.05, 200 children x 200 games, normal starts), lr 0.1 / 0.25 / 0.5 (control) / 1.0, 1 h each, 2 replicates, interleaved.
+# The server is ~5x slower than the PC (~250-400 gens per hour), so this sees the early climb only, not the plateau.
+ES_LR_EXPERIMENT = [dict(slotPhase(f"lr{str(lr).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=lr, gens=100000, hours=1.0,
+                         snap=(100, 250))
+                    for r in "AB" for lr in (0.1, 0.25, 0.5, 1.0)]
+
+# ES sigma from scratch (planned for the night after ES_LR): how far from the parent should the children be? ES so far used sigma 0.05
+# (scratch) and 0.02 (polish) only. Same recipe, lr 0.5, sigma 0.02 / 0.05 (control) / 0.1, 1.5 h each, 2 replicates, interleaved.
+ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
+                            gens=100000, hours=1.5, snap=(100, 250, 500))
+                       for r in "AB" for sg in (0.02, 0.05, 0.1)]
 
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"population": POPULATION_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
