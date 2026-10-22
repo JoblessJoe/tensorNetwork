@@ -7,6 +7,7 @@ models/night_benchmark_<experiment>.txt. A crash in one phase does not stop the 
     python nightRun.py --experiment features    another experiment
     python nightRun.py --phases a,b             only these phases (benchmark goes to night_benchmark_<experiment>_a_b.txt)
     python nightRun.py --scale 0.5              every phase's hours / generations x 0.5
+    python nightRun.py --workers 19             other number of worker processes (default SETTINGS: 31 = 32-thread PC; 20-thread server: 19)
     python nightRun.py --smoke                  tiny version to check that everything works (~1 minute)
     python nightRun.py --no-plot                no live learning-curve window
 
@@ -48,6 +49,8 @@ import proSprudler as ps
 #   gens / hours                limits of the phase (whichever comes first)
 #   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
 #   games                       games per network per generation (default: SETTINGS)
+#   population                  networks per generation (default: SETTINGS). A multiple of the workers fills every round (200 on 31 workers =
+#                               6 full rounds + one with 14 of 31 busy, ~8-14% idle time; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -197,9 +200,17 @@ REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), e
                           repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000))
                      for r in "AB" for k in range(1, 6)]
 
+# Population size vs worker rounds (2026-10-22, server, 19 workers): every worker plays one child at a time, so a generation takes
+# ceil(population / workers) rounds. 200 on 19 = 10 full rounds + one with 10 of 19 busy. Arms: 190 (10 x 19, one round less: ~9% faster
+# per generation, 5% fewer votes per ES step), 200 (control), 209 (11 x 19, same rounds as 200, 4.5% more children for free).
+# Question: which gives the best model after the same TIME? esScr05 recipe (= rep1 of 'repeat'), 1 h each, 3 replicates, interleaved.
+POPULATION_EXPERIMENT = [dict(slotPhase(f"pop{n}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
+                              population=n, snap=(250, 500))
+                         for r in "ABC" for n in (190, 200, 209)]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"population": POPULATION_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -232,9 +243,10 @@ def runPhase(ph, cfg, a, results, note):
     '''Trains one phase; on success stores its result file in results[name].'''
     gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
     hours = 0.0004 if a.smoke else ph["hours"] * a.scale
+    population = cfg["population"] if a.smoke else ph.get("population", cfg["population"])
     method = (f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}") + f", repeat {ph.get('repeat', 1)}, smooth {ph.get('smooth', 1.0):g}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-         f"{method}, up to {gens} gens / {hours:.2f} h")
+         f"{method}, population {population} on {cfg['workers']} workers, up to {gens} gens / {hours:.2f} h")
     try:
         games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
         common = dict(networkName=ph["name"], livePlot=False,
@@ -244,11 +256,11 @@ def runPhase(ph, cfg, a, results, note):
                       fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1), maxHours=hours,
                       **startNetworkArgs(ph, results))
         if ph.get("es"):
-            ps.trainingLoopES(cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+            ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()), **common)
         else:
             ps.sprudlerTrainingLoop(
-                cfg["workers"], games, gens, cfg["population"], ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
+                cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
                 snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()), replaceRate=ph.get("replace", 0.0),
                 stage1Games=cfg["stage1Games"], finalistFraction=cfg["finalistFraction"], **common)
         files = [f for f in glob.glob(f"models/{ph['name']}_*.pt") if isFinalModel(f)]
@@ -265,7 +277,7 @@ def slotsArgs(stable):
     return ["--stable"] if stable else []
 
 
-def benchmark(phases, results, startTime, smoke):
+def benchmark(phases, results, startTime, smoke, workers):
     '''Benchmarks references, control models and all phase results; returns the text.
     evalModel applies ONE smoothing/slots/repeat setting to all its models, so models are benchmarked in groups of equal (smoothing, stable, repeat);
     every model at the action repeat it was trained with (references: 1).'''
@@ -285,8 +297,7 @@ def benchmark(phases, results, startTime, smoke):
     text = ""
     for (smooth, stable, repeat), models in groups.items():
         cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--repeat", str(repeat), "--ranges"] + RANGES + slotsArgs(stable)
-        if smoke:
-            cmd += ["--games", "50", "--workers", "4"]
+        cmd += ["--games", "50", "--workers", "4"] if smoke else ["--workers", str(workers)]
         out = subprocess.run(cmd, capture_output=True, text=True)
         text += f"\n=== smoothing {smooth:g}, stableSlots {stable}, repeat {repeat} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
     return text
@@ -299,10 +310,13 @@ def main():
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
+    ap.add_argument("--workers", type=int, help="worker processes (default SETTINGS: 31; use hardware threads - 1)")
     a = ap.parse_args()
 
     phases = [ph for ph in EXPERIMENTS[a.experiment] if not a.phases or ph["name"] in a.phases.split(",")]
     cfg = {key: values[1 if a.smoke else 0] for key, values in SETTINGS.items()}
+    if a.workers and not a.smoke:
+        cfg["workers"] = a.workers
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.makedirs("models", exist_ok=True)
 
@@ -322,7 +336,7 @@ def main():
 
     if results:
         note("benchmarking ...")
-        text = benchmark(phases, results, startTime, a.smoke)
+        text = benchmark(phases, results, startTime, a.smoke, cfg["workers"])
         fileName = "night_benchmark_smoke.txt" if a.smoke else (f"night_benchmark_{a.experiment}_{a.phases.replace(',', '_')}.txt" if a.phases else f"night_benchmark_{a.experiment}.txt")    # a smoke test must never overwrite real results, one experiment never another's
         with open(os.path.join("models", fileName), "w") as f:
             f.write(text)
