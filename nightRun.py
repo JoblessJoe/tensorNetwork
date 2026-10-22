@@ -179,9 +179,17 @@ ES_LONG_EXPERIMENT = [
     dict(ES_BASE, name="esLong025", lr=0.25, hours=4.0, snap=(500, 1000, 2000)),
 ]
 
+# ES long runs, round 2 (2026-10-22): round 1 gave esLong025 9,642 / 5,423 vs esLong05 9,115 / 4,934 (one run each, lr 0.25 looked better).
+#   esLong025b   replicate of esLong025 (same recipe)    -> is the lr 0.25 result luck?
+#   esLong01     lr 0.1, everything else equal           -> does the trend "smaller lr is better" continue?
+ES_LONG2_EXPERIMENT = [
+    dict(ES_BASE, name="esLong025b", lr=0.25, hours=4.0, snap=(500, 1000, 2000)),
+    dict(ES_BASE, name="esLong01", lr=0.1, hours=4.0, snap=(500, 1000, 2000)),
+]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"esLong": ES_LONG_EXPERIMENT, "es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
