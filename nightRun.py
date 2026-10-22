@@ -1,11 +1,11 @@
 '''
 Unattended multi-phase run: training phases one after another, each limited by generations and/or hours.
 At the end every result is benchmarked (evalModel.py, fixed seeds) and the table is written to
-models/night_benchmark.txt. A crash in one phase does not stop the others.
+models/night_benchmark_<experiment>.txt. A crash in one phase does not stop the others.
 
     python nightRun.py                          all phases of the default experiment (see EXPERIMENTS), then the benchmark
     python nightRun.py --experiment features    another experiment
-    python nightRun.py --phases a,b             only these phases (benchmark goes to night_benchmark_a_b.txt)
+    python nightRun.py --phases a,b             only these phases (benchmark goes to night_benchmark_<experiment>_a_b.txt)
     python nightRun.py --scale 0.5              every phase's hours / generations x 0.5
     python nightRun.py --smoke                  tiny version to check that everything works (~1 minute)
     python nightRun.py --no-plot                no live learning-curve window
@@ -187,9 +187,19 @@ ES_LONG2_EXPERIMENT = [
     dict(ES_BASE, name="esLong01", lr=0.1, hours=4.0, snap=(500, 1000, 2000)),
 ]
 
+# Action repeat from scratch (2026-10-22): the network decides only every k-th frame and its action is repeated in between, so a generation
+# costs ~1/k of the network calls (repeat 2 ~1.7x faster per point climbed, AGENTS.md 2zb). Never trained with before; nets trained at 1 lose
+# 18% at 2. Question: which k gives the best model after the same TIME (more generations per hour vs coarser control)?
+# esScr05 recipe (landing layout, ES lr 0.5, normal starts), 1 h each, k = 1 (control) .. 5, 2 replicates, interleaved.
+# Smoothing per decision 1 - 0.5^k: the steering moves as fast per game frame as with 0.5 at every frame, so only the decision rate differs.
+# Snapshots at equal generations answer "per generation" as well. Benchmarked at each model's own repeat.
+REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
+                          repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000))
+                     for r in "AB" for k in range(1, 6)]
+
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -222,7 +232,7 @@ def runPhase(ph, cfg, a, results, note):
     '''Trains one phase; on success stores its result file in results[name].'''
     gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
     hours = 0.0004 if a.smoke else ph["hours"] * a.scale
-    method = f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}"
+    method = (f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}") + f", repeat {ph.get('repeat', 1)}, smooth {ph.get('smooth', 1.0):g}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
          f"{method}, up to {gens} gens / {hours:.2f} h")
     try:
@@ -257,34 +267,35 @@ def slotsArgs(stable):
 
 def benchmark(phases, results, startTime, smoke):
     '''Benchmarks references, control models and all phase results; returns the text.
-    evalModel applies ONE smoothing/slots setting to all its models, so models are benchmarked in groups of equal (smoothing, stable).'''
+    evalModel applies ONE smoothing/slots/repeat setting to all its models, so models are benchmarked in groups of equal (smoothing, stable, repeat);
+    every model at the action repeat it was trained with (references: 1).'''
     snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
     controls = sorted(f for pattern in CONTROL_GLOBS for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
-    groups = {(0.5, True): REFERENCES + controls}
+    groups = {(0.5, True, 1): REFERENCES + controls}
     for f in snapshots:    # a snapshot belongs to the slot layout of its own phase (otherwise it is evaluated with the wrong observation)
         owner = next((ph for ph in phases if os.path.basename(f).startswith(ph["name"] + "_")), None)
-        key = (owner.get("smooth", 1.0), owner.get("stable", False)) if owner else (0.5, True)
+        key = (owner.get("smooth", 1.0), owner.get("stable", False), owner.get("repeat", 1)) if owner else (0.5, True, 1)
         groups.setdefault(key, []).append(f)
     for key, patterns in REFERENCE_GROUPS.items():
         if any(ph.get("stable") == key[1] and ph.get("smooth", 1.0) == key[0] for ph in phases):    # only if a phase of this layout is benchmarked
-            groups.setdefault(key, []).extend(sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f)))
+            groups.setdefault(key + (1,), []).extend(sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f)))
     for ph in phases:
         if ph["name"] in results:
-            groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False)), []).append(results[ph["name"]])
+            groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False), ph.get("repeat", 1)), []).append(results[ph["name"]])
     text = ""
-    for (smooth, stable), models in groups.items():
-        cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--ranges"] + RANGES + slotsArgs(stable)
+    for (smooth, stable, repeat), models in groups.items():
+        cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--repeat", str(repeat), "--ranges"] + RANGES + slotsArgs(stable)
         if smoke:
             cmd += ["--games", "50", "--workers", "4"]
         out = subprocess.run(cmd, capture_output=True, text=True)
-        text += f"\n=== smoothing {smooth}, stableSlots {stable} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
+        text += f"\n=== smoothing {smooth:g}, stableSlots {stable}, repeat {repeat} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
     return text
 
 
 def main():
     ap = argparse.ArgumentParser(description="Unattended multi-phase training run")
     ap.add_argument("--scale", type=float, default=1.0, help="multiply every phase's hours and generations (default 1)")
-    ap.add_argument("--experiment", default="esLong", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default esLong)")
+    ap.add_argument("--experiment", default="repeat", choices=sorted(EXPERIMENTS), help="which list of phases (see EXPERIMENTS in section 2; default repeat)")
     ap.add_argument("--phases", help="comma-separated names: run only these phases (the benchmark goes to night_benchmark_<names>.txt)")
     ap.add_argument("--no-plot", action="store_true", help="do not open the live learning-curve window")
     ap.add_argument("--smoke", action="store_true", help="tiny test version")
@@ -312,7 +323,7 @@ def main():
     if results:
         note("benchmarking ...")
         text = benchmark(phases, results, startTime, a.smoke)
-        fileName = "night_benchmark_smoke.txt" if a.smoke else (f"night_benchmark_{a.phases.replace(',', '_')}.txt" if a.phases else "night_benchmark.txt")    # a smoke test must never overwrite real results
+        fileName = "night_benchmark_smoke.txt" if a.smoke else (f"night_benchmark_{a.experiment}_{a.phases.replace(',', '_')}.txt" if a.phases else f"night_benchmark_{a.experiment}.txt")    # a smoke test must never overwrite real results, one experiment never another's
         with open(os.path.join("models", fileName), "w") as f:
             f.write(text)
         note("benchmark written\n" + text)
