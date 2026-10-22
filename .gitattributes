@@ -4,3 +4,4 @@ HANDOFF.md filter=git-crypt diff=git-crypt
 CLAUDE.md filter=git-crypt diff=git-crypt
 learningContract.md filter=git-crypt diff=git-crypt
 notes.md filter=git-crypt diff=git-crypt
+memory/** filter=git-crypt diff=git-crypt
