@@ -200,6 +200,15 @@ REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), e
                           repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000))
                      for r in "AB" for k in range(1, 6)]
 
+# Action repeat, round 2 (2026-10-23): round 1 (AGENTS.md 2zd) had repeat 5 best per hour (10,906 start 0) and not saturated. Arms 6 / 8 / 10,
+# 2 replicates, plus one repeat-5 control (rep5C): the fused loop (7ef9bd4) makes generations ~6-11% faster than in round 1, so the control
+# measures that edge for the per-hour comparison (per generation the snapshots are unaffected). Same recipe, 1 h each, smoothing 1 - 0.5^k.
+REPEAT2_EXPERIMENT = ([dict(slotPhase("rep5C", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5,
+                            snap=(250, 500, 1000, 2000, 3000))]
+                      + [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
+                              repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000, 2000, 3000))
+                         for r in "AB" for k in (6, 8, 10)])
+
 # ES learning rate from scratch (2026-10-22, server, 19 workers): lr was only ever compared off a trained pool (round 1: 0.25 9,642 / 5,423 vs
 # 0.5 9,115 / 4,934, one run each). Here: which lr climbs best from a random network in the same time? esScr05 recipe (= rep1 of 'repeat':
 # landing layout, sigma 0.05, 200 children x 200 games, normal starts), lr 0.1 / 0.25 / 0.5 (control) / 1.0, 1 h each, 2 replicates, interleaved.
@@ -216,7 +225,7 @@ ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_
 
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
