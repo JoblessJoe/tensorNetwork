@@ -20,9 +20,13 @@ from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
 from env import SprudelJumpEnv
 try:
-    from fastEnv import FastBatch
+    from fastEnv import FastBatch, forwardLogits, HAVE_BLAS
 except ImportError:
     FastBatch = None
+    HAVE_BLAS = False
+# the matmuls of the forward pass in compiled code (needs scipy for numba's BLAS binding): same results, fewer numpy calls per decision.
+# SPRUDLER_NUMPY_FORWARD=1 switches it off (for comparisons)
+COMPILED_FORWARD = HAVE_BLAS and os.environ.get("SPRUDLER_NUMPY_FORWARD") != "1"
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 
@@ -278,15 +282,21 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
     n = len(alive)
     applied = np.full(len(seeds), 0.5)
     frames = 0
+    wTs, biases = tuple(wT for wT, _ in layers), tuple(b for _, b in layers)
     while n and frames < maxFrames:
-        x = obs[:n]
-        for L, (wT, b) in enumerate(layers):
-            x = x @ wT + b
-            if L < len(layers) - 1:
-                x = np.maximum(x, 0)
-            else:
-                with np.errstate(over="ignore"):
-                    x = 1 / (1 + np.exp(-x))
+        if COMPILED_FORWARD:
+            x = forwardLogits(obs[:n], wTs, biases)
+            with np.errstate(over="ignore"):
+                x = 1 / (1 + np.exp(-x))      # numpy's own float32 exp on purpose (a compiled one differs in the last digit)
+        else:
+            x = obs[:n]
+            for L, (wT, b) in enumerate(layers):
+                x = x @ wT + b
+                if L < len(layers) - 1:
+                    x = np.maximum(x, 0)
+                else:
+                    with np.errstate(over="ignore"):
+                        x = 1 / (1 + np.exp(-x))
         n = batch.stepObserve(alive, n, x, applied, steerSmoothing, actionRepeat, decide=targetMode)
         before, frames = frames, frames + actionRepeat
         if liveStatus is not None and n and before // LIVE_UPDATE_FRAMES != frames // LIVE_UPDATE_FRAMES:
