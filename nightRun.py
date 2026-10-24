@@ -224,8 +224,24 @@ ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_
                        for r in "AB" for sg in (0.02, 0.05, 0.1)]
 
 
+# Sigma x repeat, and a repeat-10 replicate (2026-10-23, after AGENTS.md 2ze): sigma 0.1 won on the server (repeat 1, from scratch, 8.0-8.2k vs 4-6k at
+# 0.05); all repeat runs used 0.05. Here sigma 0.1 / 0.15 on repeat 5, 2 replicates, sigma 0.2 once, against rep5C (sigma 0.05, 11,590 / 4,701) and a
+# second control rep5D, plus a third repeat-10 run (sigma 0.05; rep10A/B had ~6.1k on hard starts, unreplicated). Same recipe as REPEAT2, 1 h each,
+# interleaved; last a 4 h repeat-10 run rep10L (the 1 h runs were not saturated: where is the ceiling?).
+SIGMA_REPEAT_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg, gens=100000, hours=hrs,
+                                repeat=k, smooth=1 - 0.5 ** k, snap=snap)
+                           for name, sg, k, hrs, snap in (("s10r5A", 0.1, 5, 1.0, (250, 500, 1000, 2000, 3000)), ("s15r5A", 0.15, 5, 1.0, (250, 500, 1000, 2000, 3000)),
+                                                          ("rep10C", 0.05, 10, 1.0, (250, 500, 1000, 2000, 3000)), ("s10r5B", 0.1, 5, 1.0, (250, 500, 1000, 2000, 3000)),
+                                                          ("s15r5B", 0.15, 5, 1.0, (250, 500, 1000, 2000, 3000)), ("rep5D", 0.05, 5, 1.0, (250, 500, 1000, 2000, 3000)),
+                                                          ("s20r5A", 0.2, 5, 1.0, (250, 500, 1000, 2000, 3000)), ("rep10L", 0.05, 10, 4.0, (1000, 3000, 6000, 10000)))]
+
+# ES sigma from scratch, round 2 (server, 2026-10-23): extends ES_SIGMA (0.02 / 0.05 / 0.1; 0.1 best, 8.0-8.2k) upwards. Same recipe, 1.5 h, 2 replicates.
+ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
+                             gens=100000, hours=1.5, snap=(100, 250, 500))
+                        for r in "AB" for sg in (0.15, 0.2)]
+
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================

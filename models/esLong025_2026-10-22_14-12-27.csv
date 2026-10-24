@@ -1,0 +1,7 @@
+# name=esLong025 generations=12 population=12 games=6 startFrom=models/polishLand_2026-10-08_13-46-00_pool.pt shape=33-33-33-33-2 method=ES learningRate=0.25 mutationRate=0.7 replaceRate=0.0 sigma=0.02 elites=1 keepPart=0.25 minStartHeight=20000 maxStartHeight=30000 zeroFraction=0.5 steerSmoothing=0.5 stableSlots=(3,2,1,2,0,1) monsterFraction=0.0 monsterMult=1.0 fast=True actionRepeat=1
+gen,elapsed_s,mean,median,p10,p90,best,chosen
+1,0.45,6632.27,7149.98,4239.85,8730.90,9223.57,9223.57
+2,0.71,7300.45,7398.32,6216.51,8283.84,8966.77,8966.77
+3,1.03,8355.69,8893.97,6070.82,9769.48,10256.60,10256.60
+4,1.23,4233.13,3984.63,3282.63,5879.38,6989.37,6989.37
+5,1.52,7129.64,7377.68,5267.13,8679.28,8809.00,8809.00
