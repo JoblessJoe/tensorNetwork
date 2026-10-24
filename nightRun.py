@@ -242,13 +242,22 @@ REPEAT_LONG_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=T
                                repeat=k, smooth=1 - 0.5 ** k, snap=(1000, 3000, 6000, 10000))
                           for name, k in (("rl5A", 5), ("rl7A", 7), ("rl10B", 10), ("rl5B", 5), ("rl7B", 7), ("rl10C", 10))]
 
+# Games per child, continued from the best net (2026-10-24, server): all ES runs so far used 200 children x 200 games. Noise in the ranking matters most
+# near the ceiling (GA: 800 games helped in the polish stage), so continue the 4 h repeat-10 run (rep10L, 16.5k start 0) with the SAME recipe
+# (repeat 10, sigma 0.05, lr 0.5, start 0 only) and only change the games per child: 200 (control) vs 800, 4 h each. Equal wall-clock, so the
+# 800-game arm gets ~1/4 of the generations.
+REP10_BEST_POOL = "models/rep10L_2026-10-24_02-52-46_pool.pt"
+GAMES_PER_CHILD_EXPERIMENT = [dict(slotPhase(f"continueBest_{g}games", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP10_BEST_POOL,
+                                   games=g, gens=100000, hours=4.0, repeat=10, smooth=1 - 0.5 ** 10, snap=(250, 500, 1000, 2000))
+                              for g in (200, 800)]
+
 # ES sigma from scratch, round 2 (server, 2026-10-23): extends ES_SIGMA (0.02 / 0.05 / 0.1; 0.1 best, 8.0-8.2k) upwards. Same recipe, 1.5 h, 2 replicates.
 ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
                              gens=100000, hours=1.5, snap=(100, 250, 500))
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
