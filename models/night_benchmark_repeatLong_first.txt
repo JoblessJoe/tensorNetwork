@@ -1,0 +1,72 @@
+=== repeat 5 (smoothing 0.96875) ===
+[worker 705564] long game still running: 25,000 frames, best live score 75,350
+[worker 705562] long game still running: 25,000 frames, best live score 81,376
+[worker 705559] long game still running: 25,000 frames, best live score 77,406
+[worker 705563] long game still running: 25,000 frames, best live score 80,457
+[worker 705562] long game still running: 25,000 frames, best live score 77,765
+[worker 705561] long game still running: 25,000 frames, best live score 80,967
+[worker 705560] long game still running: 25,000 frames, best live score 76,115
+[worker 705563] long game still running: 25,000 frames, best live score 79,592
+[worker 705559] long game still running: 25,000 frames, best live score 77,550
+[worker 705562] long game still running: 25,000 frames, best live score 81,323
+[worker 705559] long game still running: 25,000 frames, best live score 78,978
+[worker 705559] long game still running: 50,000 frames, best live score 159,149
+[worker 705560] long game still running: 25,000 frames, best live score 82,648
+[worker 705561] long game still running: 25,000 frames, best live score 81,327
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rl5A_2026-10-24_10-51-51.pt         30,008  per set [30402, 28840, 33509, 27281]   21,568  per set [23296, 19054, 24583, 19337]   24,463  per set [26980, 22377, 24142, 24353]   26,271  per set [31668, 29073, 22513, 21830]    9,525  per set [9013, 12613, 9286, 7190]
+rl5A_2026-10-24_10-51-51_g1000.pt    6,920  per set [6517, 6999, 7363, 6800]    2,163  per set [2223, 2181, 2261, 1988]    3,241  per set [2910, 3393, 3382, 3280]    4,894  per set [4737, 4248, 4654, 5937]    1,397  per set [1269, 1316, 1583, 1420]
+rl5A_2026-10-24_10-51-51_g3000.pt   10,860  per set [10960, 10238, 10386, 11855]    4,113  per set [5507, 3552, 3687, 3706]    6,069  per set [6409, 5080, 5872, 6915]    7,811  per set [8050, 7210, 7270, 8712]    3,242  per set [2983, 3804, 2574, 3605]
+rl5A_2026-10-24_10-51-51_g6000.pt   16,567  per set [16430, 14808, 16348, 18682]   10,126  per set [8959, 9781, 11866, 9897]   10,717  per set [10917, 9528, 10928, 11493]   13,646  per set [13582, 12980, 13150, 14873]    4,847  per set [4661, 4401, 4387, 5941]
+rep5C_2026-10-23_08-25-17.pt        11,590  per set [12547, 11224, 11505, 11084]    4,701  per set [4401, 5573, 4958, 3870]    6,089  per set [6348, 6449, 5603, 5955]    8,438  per set [7922, 7721, 7429, 10680]    2,886  per set [3226, 3179, 2258, 2882]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rl5A_2026-10-24_10-51-51.pt                      38 /  32 /  22 /   8                35 /  30 /  26 /   8                32 /  30 /  29 /   8                36 /  30 /  24 /   9                51 /  28 /  16 /   4
+rl5A_2026-10-24_10-51-51_g1000.pt                41 /  16 /  34 /  10                34 /  14 /  38 /  14                44 /  16 /  30 /  10                36 /  12 /  45 /   6                36 /  14 /  32 /  18
+rl5A_2026-10-24_10-51-51_g3000.pt                63 /  20 /  12 /   4                50 /  21 /  26 /   2                50 /  23 /  24 /   3                54 /  24 /  20 /   2                56 /  25 /  16 /   2
+rl5A_2026-10-24_10-51-51_g6000.pt                48 /  26 /  22 /   5                40 /  31 /  26 /   2                43 /  30 /  24 /   4                46 /  30 /  19 /   5                47 /  34 /  16 /   4
+rep5C_2026-10-23_08-25-17.pt                     60 /  18 /  16 /   6                52 /  23 /  20 /   4                56 /  18 /  20 /   6                60 /  20 /  19 /   2                62 /  22 /  14 /   2
+=== repeat 7 (smoothing 0.992188) ===
+[worker 705605] long game still running: 25,004 frames, best live score 76,985
+[worker 705601] long game still running: 25,004 frames, best live score 80,601
+[worker 705605] long game still running: 25,004 frames, best live score 82,715
+[worker 705601] long game still running: 25,004 frames, best live score 80,119
+[worker 705603] long game still running: 25,004 frames, best live score 78,540
+[worker 705602] long game still running: 25,004 frames, best live score 78,078
+[worker 705611] long game still running: 25,004 frames, best live score 78,932
+[worker 705601] long game still running: 25,004 frames, best live score 79,482
+[worker 705612] long game still running: 25,004 frames, best live score 79,982
+[worker 705602] long game still running: 25,004 frames, best live score 80,585
+[worker 705602] long game still running: 25,004 frames, best live score 79,067
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rl7A_2026-10-24_15-18-38.pt          28,032  per set [26421, 31541, 30525, 23640]   18,317  per set [20249, 19555, 16357, 17109]   21,787  per set [19117, 26689, 22924, 18417]   21,461  per set [20349, 23310, 18780, 23404]    8,999  per set [8360, 11325, 8394, 7916]
+rl7A_2026-10-24_15-18-38_g1000.pt     6,504  per set [7687, 5994, 5554, 6782]    2,495  per set [2203, 2923, 2488, 2366]    3,318  per set [3398, 3976, 3199, 2700]    4,172  per set [3713, 4377, 4350, 4247]    2,051  per set [2063, 2301, 1992, 1850]
+rl7A_2026-10-24_15-18-38_g3000.pt    10,808  per set [9630, 11202, 10006, 12393]    4,541  per set [4490, 4545, 4947, 4183]    6,039  per set [5595, 5456, 6805, 6301]    7,690  per set [7813, 6998, 8135, 7813]    2,716  per set [2692, 2473, 3109, 2591]
+rl7A_2026-10-24_15-18-38_g6000.pt    14,125  per set [15607, 14231, 14022, 12640]    5,455  per set [5554, 4495, 4180, 7591]    7,276  per set [7611, 7474, 7814, 6204]   10,540  per set [10452, 12488, 8778, 10442]    3,436  per set [3292, 3760, 3594, 3098]
+rl7A_2026-10-24_15-18-38_g10000.pt   23,724  per set [24320, 23825, 26510, 20241]   13,388  per set [11483, 15389, 14251, 12428]   17,229  per set [15055, 18907, 17917, 17035]   20,931  per set [22188, 21718, 21668, 18149]    7,431  per set [6987, 7364, 7258, 8117]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                          start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rl7A_2026-10-24_15-18-38.pt                       52 /  25 /  16 /   7                48 /  29 /  18 /   6                44 /  32 /  16 /   8                51 /  24 /  16 /  10                48 /  38 /  10 /   4
+rl7A_2026-10-24_15-18-38_g1000.pt                 36 /  16 /  41 /   6                32 /  30 /  34 /   3                40 /  26 /  32 /   2                32 /  20 /  41 /   6                43 /  34 /  20 /   2
+rl7A_2026-10-24_15-18-38_g3000.pt                 42 /  32 /  24 /   3                29 /  41 /  22 /   8                34 /  46 /  18 /   2                40 /  38 /  18 /   4                32 /  50 /  14 /   4
+rl7A_2026-10-24_15-18-38_g6000.pt                 35 /  42 /  22 /   1                26 /  51 /  18 /   5                32 /  46 /  19 /   4                30 /  48 /  18 /   3                34 /  49 /  14 /   3
+rl7A_2026-10-24_15-18-38_g10000.pt                47 /  26 /  22 /   6                42 /  34 /  16 /   8                48 /  32 /  17 /   2                38 /  36 /  22 /   4                53 /  30 /  10 /   6
+=== repeat 10 (smoothing 0.999023) ===
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                     start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rep10L_2026-10-24_02-52-46.pt   16,535  per set [17296, 14673, 19725, 14447]   10,589  per set [11927, 11795, 8946, 9688]   11,281  per set [10935, 11082, 11247, 11859]   13,054  per set [12517, 13320, 11851, 14529]    5,490  per set [4998, 6650, 5592, 4722]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                     start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+rep10L_2026-10-24_02-52-46.pt                62 /  26 /  11 /   2                54 /  31 /  14 /   1                62 /  24 /  12 /   2                58 /  26 /  12 /   3                70 /  24 /   6 /   1
+done
