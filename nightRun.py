@@ -52,6 +52,7 @@ import proSprudler as ps
 #   population                  networks per generation (default: SETTINGS). A multiple of the workers does NOT save time worth mentioning
 #                               (measured ~1%: games differ in length, so the workers finish at different times anyway; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
+#   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
               smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
@@ -330,7 +331,8 @@ def runPhase(ph, cfg, a, results, note):
                       **startNetworkArgs(ph, results))
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
-                              snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()), **common)
+                              snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],

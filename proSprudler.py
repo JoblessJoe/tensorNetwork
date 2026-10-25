@@ -148,6 +148,27 @@ def sprudlerSelection(networks: list[Network], ranks: torch.Tensor, keepPart: fl
     return result
 
 
+def scheduledValue(start: float, end: float | None, progress: float) -> float:
+    '''
+    A value that moves from 'start' to 'end' over a run (used for sigma and the learning rate in trainingLoopES).
+    - 'progress': 0.0 = beginning of the run, 1.0 = end (clamped to that range)
+    - 'end' is None: the value stays at 'start' (fixed value, the old behaviour)
+    - the path is geometric (start * (end / start) ** progress): both values are scale factors, so a halving costs the same
+      "distance" early and late in the run; a straight line would spend most of the run near the start value
+    '''
+    if end is None:
+        return start
+    progress = min(max(progress, 0.0), 1.0)
+    return start * (end / start) ** progress
+
+
+def runProgress(generation: int, generations: int, startTime: float, maxHours: float | None) -> float:
+    '''How far a run is (0.0 .. 1.0): by the clock if the run has a time limit (then 'generations' is only an upper bound), else by generations.'''
+    if maxHours is not None:
+        return (time.perf_counter() - startTime) / (maxHours * 3600)
+    return generation / generations
+
+
 def betterSelection(parent: torch.Tensor, noise: torch.Tensor, learningRate: float, sigma: float,
                     ranks: torch.Tensor, populationSize: int) -> tuple:
     '''
@@ -358,7 +379,8 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         maxHours: float | None = None,
                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
                         steerSmoothing: float = 1.0, stableSlots: bool = False, monsterFraction: float = 0.0, monsterMult: float = 1.0,
-                        fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0) -> Network:
+                        fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0,
+                        sigmaEnd: float | None = None, learningRateEnd: float | None = None) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -366,6 +388,8 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     Evaluation: every child plays all 'perNetworkIterations' games on the generation's shared seeds (no two-stage:
     in ES every child's rank is a vote, so the bad ones need full scores too).
 
+    'sigmaEnd' / 'learningRateEnd': if given, sigma / the learning rate move geometrically from their start value to this value over the run
+    (by the clock if 'maxHours' is set, else by generation, see scheduledValue); None = fixed.
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
     '''
@@ -432,7 +456,10 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     # rank the children against each other in every game and average the ranks
                     # then rank those averages again: clean ranks 0..N-1 (0 = best), so the vote weights really span +0.5 .. -0.5
                     ranks = averageRanks(popScores).argsort().argsort().float()
-                    parent, currGen, noise =  betterSelection(parent, noise, learningRate, sigma, ranks, populationSize)
+                    progress = runProgress(i + 1, generations, start, maxHours)
+                    currSigma = scheduledValue(sigma, sigmaEnd, progress)
+                    currLearningRate = scheduledValue(learningRate, learningRateEnd, progress)
+                    parent, currGen, noise =  betterSelection(parent, noise, currLearningRate, currSigma, ranks, populationSize)
 
                     perNetwork = popScores.mean(dim=1)             # mean score per child
                     bestChild = perNetwork.max().item()            # the parent itself never plays, so the best child is the 'best' score
@@ -451,9 +478,9 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                                   f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
                                   f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                                   f"shape={'-'.join(str(n) for n in [template.layers[0][0].shape[1]] + [w.shape[0] for w, _ in template.layers])} "
-                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat}",
+                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} stableSlots={str(stableSlots).replace(" ", "")} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat} sigmaEnd={sigmaEnd} learningRateEnd={learningRateEnd}",
                                   [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(), bestChild, bestChild])    # 'best' and 'chosen' columns: both the best child
-                    pbar.set_postfix(best=f"{bestChild:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}")
+                    pbar.set_postfix(best=f"{bestChild:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}", sigma=f"{currSigma:.4f}", lr=f"{currLearningRate:.3f}")
                     pbar.update(1)
                     gensDone = i + 1
                     if maxHours is not None and time.perf_counter() - start > maxHours * 3600:
