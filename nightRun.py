@@ -256,11 +256,15 @@ GAMES_PER_CHILD_EXPERIMENT = [dict(slotPhase(f"continueBest_{g}games", LAND_LAYO
 # More children instead of more games (2026-10-25): same cost per generation as 200 children x 200 games (40,000 games), but 800 children x 50 games. lr stays 0.5: the useful part of the
 # averaged vote does NOT shrink with N (only its noise does), so lr 1.0 doubled the step and the first update dropped the children from 15.7k to 12.2k. 2 h; control = the 200 x 200 arm.
 CHILDREN_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name="continueBest_800children_50games", games=50, population=800, lr=0.5, hours=2.0)]
-# Population scan (2026-10-25): 800 children x 50 games matched the 200 x 200 control after half the time (AGENTS.md 2zh). Same budget per generation (~40,000
-# games), more children / fewer games each, 2 h each from the same net, plus a replicate of 800 x 50 and 800 x 50 with lr 0.25. lr 0.5 stays for the others.
-POPULATION_SCAN_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name=name, games=g, population=n, lr=lr, hours=2.0)
-                              for name, n, g, lr in (("continueBest_800children_50games_again", 800, 50, 0.5), ("continueBest_1600children_25games", 1600, 25, 0.5),
-                                                     ("continueBest_3200children_12games", 3200, 12, 0.5), ("continueBest_800children_50games_lr025", 800, 50, 0.25))]
+# Population scan (2026-10-25, PC): 800 children x 50 games matched the 200 x 200 control after half the time on the server (AGENTS.md 2zh). Same budget per
+# generation (~40,000 games), children vs games per child, 1 h each, from the best 4 h repeat-5 net (30.0k start 0) at repeat 5: the 200 x 200 control, 800 x 50,
+# 1600 x 25, 3200 x 12, and 800 x 50 with lr 0.25. lr 0.5 for the others (the useful part of the vote does not shrink with N, so no rescaling).
+REP5_BEST_POOL = "models/rl5A_2026-10-24_10-51-51_pool.pt"
+POPULATION_SCAN_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=lr, sigma=0.05, pool=REP5_BEST_POOL, games=g, population=n, gens=100000,
+                                   hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000, 2000))
+                              for name, n, g, lr in (("continueRepeat5_200children_200games", 200, 200, 0.5), ("continueRepeat5_800children_50games", 800, 50, 0.5),
+                                                     ("continueRepeat5_1600children_25games", 1600, 25, 0.5), ("continueRepeat5_3200children_12games", 3200, 12, 0.5),
+                                                     ("continueRepeat5_800children_50games_lr025", 800, 50, 0.25))]
 
 GAMES_FEWER_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
