@@ -253,6 +253,9 @@ GAMES_PER_CHILD_EXPERIMENT = [dict(slotPhase(f"continueBest_{g}games", LAND_LAYO
 
 # Fewer games per child (2026-10-24 evening): 800 games lost to 200 at equal wall-clock (server benchmark 17.3k / 11.9k vs 18.3k / 12.6k from the 16.5k / 10.6k net).
 # ES averages the ranking noise over 200 children, so fewer games = more generations may win. Same continuation, 100 and 50 games per child, 4 h each.
+# More children instead of more games (2026-10-25): same cost per generation as 200 children x 200 games (40,000 games), but 800 children x 50 games. The vote
+# per weight shrinks with sqrt(N) (std 0.29 / sqrt(N)), so lr 1.0 for N = 800 keeps the step size of lr 0.5 at N = 200. 2 h; the control is the 200 x 200 arm.
+CHILDREN_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name="continueBest_800children_50games", games=50, population=800, lr=1.0, hours=2.0)]
 GAMES_FEWER_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # ES sigma from scratch, round 2 (server, 2026-10-23): extends ES_SIGMA (0.02 / 0.05 / 0.1; 0.1 best, 8.0-8.2k) upwards. Same recipe, 1.5 h, 2 replicates.
@@ -261,7 +264,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
