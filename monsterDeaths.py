@@ -25,7 +25,7 @@ import numpy as np
 
 import evalModel as ev
 import proSprudler as ps
-from fastEnv import FastBatch, PX, PY, VY, NM
+from fastEnv import FastBatch, PX, PY, VY, NM, TOTAL, OFFSET
 
 HIST = 64                # frames of history per game
 PLAYER_W, MONSTER_W, MONSTER_H, SCREEN_W = 40, 36, 36, 400
@@ -33,7 +33,7 @@ SCROLL_THRESHOLD, GRAVITY, MAX_FALL = 280.0, 0.4, 15.0    # env constants (SCROL
 COLLISION_DX = (PLAYER_W + MONSTER_W) / 2     # 38 px: closer than this horizontally = on collision course
 
 
-def playGames(net, seeds, maxStart, minStart, slots, smoothing=0.5, maxFrames=100_000):
+def playGames(net, seeds, maxStart, minStart, slots, smoothing=0.5, maxFrames=100_000, repeat=1):
     '''Plays the games like evaluateNetworkFast and returns one record per game that ended by a monster while rising.'''
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in net.layers]
     nIn = layers[0][0].shape[0]
@@ -54,20 +54,26 @@ def playGames(net, seeds, maxStart, minStart, slots, smoothing=0.5, maxFrames=10
         if smoothing < 1.0:
             applied[alive] += smoothing * (steer - applied[alive])
             steer = applied[alive]
-        slot = frames[alive] % HIST
-        hist[alive, slot] = np.stack([batch.F[alive, PX], batch.F[alive, PY], batch.F[alive, VY], scrolled[alive], steer, x[:, 1]], axis=1)
-        pyPre, vyPre = batch.F[alive, PY].copy(), batch.F[alive, VY].copy()
-        batch.step(alive, steer, x[:, 1].astype(np.float64), 1)
-        scrolled[alive] += np.maximum(0.0, SCROLL_THRESHOLD - (pyPre + np.minimum(vyPre + GRAVITY, MAX_FALL)))
-        frames[alive] += 1
-        for g in alive[batch.done()[alive]]:
-            causes[g] = batch.causes()[g]
-            if causes[g] == 1:
-                rec = killerRecord(batch, hist, frames, scrolled, g)
-                if rec is not None:
-                    records.append(rec)
+        cur, st, sh = alive.copy(), steer.copy(), x[:, 1].astype(np.float64)
+        for _ in range(repeat):    # the decision is held for 'repeat' frames (action repeat); every frame is recorded
+            slot = frames[cur] % HIST
+            hist[cur, slot] = np.stack([batch.F[cur, PX], batch.F[cur, PY], batch.F[cur, VY], scrolled[cur], st, sh], axis=1)
+            pyPre, vyPre = batch.F[cur, PY].copy(), batch.F[cur, VY].copy()
+            batch.step(cur, st, sh, 1)
+            scrolled[cur] += np.maximum(0.0, SCROLL_THRESHOLD - (pyPre + np.minimum(vyPre + GRAVITY, MAX_FALL)))
+            frames[cur] += 1
+            d = batch.done()[cur]
+            for g in cur[d]:
+                causes[g] = batch.causes()[g]
+                if causes[g] == 1:
+                    rec = killerRecord(batch, hist, frames, scrolled, g)
+                    if rec is not None:
+                        records.append(rec)
+            cur, st, sh = cur[~d], st[~d], sh[~d]
+            if not cur.size:
+                break
         alive = alive[~batch.done()[alive]]
-    return records, causes
+    return records, causes, batch.F[:, TOTAL] - batch.F[:, OFFSET], scrolled
 
 
 def killerRecord(batch, hist, frames, scrolled, g):
@@ -126,15 +132,18 @@ def main():
     ap = argparse.ArgumentParser(description="Analyse monster deaths while rising")
     ap.add_argument("model")
     ap.add_argument("--games", type=int, default=200)
-    ap.add_argument("--stable", default="3,2,1,2", help="stable slot counts the model was trained with (default 3,2,1,2)")
+    ap.add_argument("--stable", default="3,2,1,2", help="stable slot counts the model was trained with (default 3,2,1,2; the landing layout is 3,2,1,2,0,1)")
     ap.add_argument("--smoothing", type=float, default=0.5)
+    ap.add_argument("--repeat", type=int, default=1, help="action repeat the model was trained with (then also --smoothing 1 - 0.5^repeat)")
     a = ap.parse_args()
     net = ps.loadNetwork(a.model)
     slots = tuple(int(v) for v in a.stable.split(","))
     seeds = [s for group in ev.seedSets(a.games) for s in group]
     for label, hi, lo in (("start 0", None, 0), ("hard starts 20-30k", 30000, 20000)):
-        records, causes = playGames(net, seeds, hi, lo, slots, a.smoothing)
+        records, causes, score, scrolled = playGames(net, seeds, hi, lo, slots, a.smoothing, repeat=a.repeat)
         report(records, causes, label)
+        kills = (score - scrolled) / 100.0     # score = scrolled pixels + 100 per kill (MONSTER_KILL_BONUS) - the start offset
+        print(f"  score per game {score.mean():,.0f} = height {np.mean(scrolled):,.0f} + kills {np.mean(kills):.0f} x 100 (kills are {100 * np.mean(kills) * 100 / max(1.0, score.mean()):.0f}% of the score; the start offset blurs this for hard starts)")
 
 
 if __name__ == "__main__":
