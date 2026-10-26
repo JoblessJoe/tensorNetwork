@@ -304,7 +304,18 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
     applied = np.full(len(seeds), 0.5)
     frames = 0
     wTs, biases = tuple(wT for wT, _ in layers), tuple(b for _, b in layers)
-    while n and frames < maxFrames:
+    if COMPILED_FORWARD and hasattr(batch, "run"):
+        # FastBatch.run plays the decisions in a tight loop (sigmoid split into compiled parts + numpy's exp, one error-state switch per call, same
+        # results bit for bit, 25-50% less per-decision overhead); it runs in chunks that end where the live status / long-game lines are due
+        while n and frames < maxFrames:
+            before = frames
+            stop = min(maxFrames, (frames // LIVE_UPDATE_FRAMES + 1) * LIVE_UPDATE_FRAMES)
+            n, frames = batch.run(alive, n, wTs, biases, applied, steerSmoothing, actionRepeat, targetMode, frames, stop)
+            if liveStatus is not None and n and before // LIVE_UPDATE_FRAMES != frames // LIVE_UPDATE_FRAMES:
+                liveStatus[os.getpid()] = (float(batch.scores()[alive[:n]].max()), frames)
+            if n and before // LONG_GAME_REPORT_FRAMES != frames // LONG_GAME_REPORT_FRAMES:
+                print(f"[worker {os.getpid()}] long game still running: {frames:,} frames, best live score {batch.scores()[alive[:n]].max():,.0f}", flush=True)
+    while n and frames < maxFrames:    # the same loop decision by decision (numpy forward, or an older fastEnv without FastBatch.run)
         if COMPILED_FORWARD:
             x = forwardLogits(obs[:n], wTs, biases)
             with np.errstate(over="ignore"):
@@ -329,6 +340,56 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
     return (batch.scores().tolist(), batch.causes().tolist()) if returnCauses else batch.scores().tolist()
 
 
+def evaluateNetworksFast(networks: list, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, stableSlots,
+                         monsterFraction, monsterMult, actionRepeat, returnCauses=False):
+    '''
+    evaluateNetworkFast for a GROUP of networks of the same shape: they all play the same 'seeds' in ONE lockstep loop (one FastBatch of
+    len(networks) * len(seeds) games, FastBatch.runGroup). Every game plays exactly as it would alone (bit-identical scores), but the fixed cost of a
+    decision (the Python loop, np.exp, the compiled step's dispatch) is shared by the whole group: with 50 games per child that cost is about a
+    third of an evaluation. Returns one result per network (scores, or (scores, causes) with returnCauses), in the order of 'networks'.
+    '''
+    k, S = len(networks), len(seeds)
+    per = [[(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in net.layers] for net in networks]
+    nIn, nOut = per[0][0][0].shape[0], per[0][-1][0].shape[1]
+    customLayout = isinstance(stableSlots, tuple) and stableSlots != (3, 2, 1, 2)
+    targetMode = nIn == 25 and nOut == 7 and not customLayout
+    wsStack = tuple(np.ascontiguousarray(np.stack([layers[L][0] for layers in per])) for L in range(len(per[0])))
+    bsStack = tuple(np.ascontiguousarray(np.stack([layers[L][1] for layers in per])) for L in range(len(per[0])))
+    batch = FastBatch(list(seeds) * k, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult, stable=stableSlots, difficulty=nIn == 24 and not customLayout)
+    alive, obs = batch.startLoop(nIn)
+    n = len(alive)
+    applied = np.full(k * S, 0.5)
+    frames = 0
+    while n and frames < maxFrames:
+        before = frames
+        stop = min(maxFrames, (frames // LIVE_UPDATE_FRAMES + 1) * LIVE_UPDATE_FRAMES)
+        n, frames = batch.runGroup(alive, n, wsStack, bsStack, S, applied, steerSmoothing, actionRepeat, targetMode, frames, stop)
+        if liveStatus is not None and n and before // LIVE_UPDATE_FRAMES != frames // LIVE_UPDATE_FRAMES:
+            liveStatus[os.getpid()] = (float(batch.scores()[alive[:n]].max()), frames)
+        if n and before // LONG_GAME_REPORT_FRAMES != frames // LONG_GAME_REPORT_FRAMES:
+            print(f"[worker {os.getpid()}] long game still running: {frames:,} frames, best live score {batch.scores()[alive[:n]].max():,.0f}", flush=True)
+    if liveStatus is not None:
+        liveStatus.pop(os.getpid(), None)
+    scores = batch.scores().reshape(k, S).tolist()
+    if returnCauses:
+        causes = batch.causes().reshape(k, S).tolist()
+        return [(scores[c], causes[c]) for c in range(k)]
+    return scores
+
+
+GROUP_SIZE_MAX = 4             # children per worker task at most
+GROUP_TARGET_GAMES = 200       # a group should hold about this many games: below it the fixed cost per decision matters, above it nothing is gained
+GROUP_MIN_TASKS_PER_WORKER = 8  # the end of a generation waits for the last tasks: bigger groups only while every worker still gets this many tasks
+
+
+def groupSize(numNetworks: int, gamesPerNetwork: int, workers: int) -> int:
+    '''How many networks one worker task plays together (1 = no grouping). SPRUDLER_GROUP=n overrides (1 switches it off).'''
+    forced = os.environ.get("SPRUDLER_GROUP")
+    if forced:
+        return max(1, int(forced))
+    return max(1, min(GROUP_SIZE_MAX, GROUP_TARGET_GAMES // max(1, gamesPerNetwork), numNetworks // (GROUP_MIN_TASKS_PER_WORKER * max(1, workers))))
+
+
 def logGeneration(logPath: str, meta: str, row: list):
     '''
     Appends one generation's statistics as a line to the run's CSV file (created with a
@@ -350,13 +411,24 @@ def evaluatePopulation(p, networks: list[Network], seeds: list, maxFrames: int, 
     Returns one list of per-game scores per network, in the same order as 'networks'.
     '''
     evaluate = partial(evaluateNetwork, seeds=seeds, iterations=len(seeds), maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, stableSlots=stableSlots, monsterFraction=monsterFraction, monsterMult=monsterMult, fast=fast, actionRepeat=actionRepeat)
-    results = p.imap(evaluate, networks)  # yields each network's result as soon as it is done, in order
+    k = groupSize(len(networks), len(seeds), getattr(p, "_processes", 1)) if fast and COMPILED_FORWARD and hasattr(FastBatch, "runGroup") else 1
+    if k > 1:    # several children per task, played in one lockstep loop (same scores, less fixed cost per decision)
+        evaluate = partial(evaluateNetworksFast, seeds=seeds, maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, stableSlots=stableSlots, monsterFraction=monsterFraction, monsterMult=monsterMult, actionRepeat=actionRepeat)
+        tasks = [networks[i:i + k] for i in range(0, len(networks), k)]
+    else:
+        tasks = networks
+    results = p.imap(evaluate, tasks)  # yields each task's result as soon as it is done, in order
     scores = []
     with tqdm(total=len(networks), desc=desc, unit="net", leave=False) as bar:
         while len(scores) < len(networks):
             try:
-                scores.append(results.next(timeout=1.0))
-                bar.update(1)
+                got = results.next(timeout=1.0)
+                if k > 1:
+                    scores.extend(got)
+                    bar.update(len(got))
+                else:
+                    scores.append(got)
+                    bar.update(1)
             except TimeoutError:
                 pass
             live = sorted(sharedStatus.values(), reverse=True)  # [(score, frames), ...] best first

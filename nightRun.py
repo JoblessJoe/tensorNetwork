@@ -267,6 +267,24 @@ POPULATION_SCAN_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), 
                                                      ("continueRepeat5_1600children_25games", 1600, 25, 0.5), ("continueRepeat5_3200children_12games", 3200, 12, 0.5),
                                                      ("continueRepeat5_800children_50games_lr025", 800, 50, 0.25))]
 
+# Long run (2026-10-25 evening, PC): one net for up to 24 h. Start = final model of the 800 x 50 arm of the population scan (36.1k start 0 / 32.2k hard, the best arm),
+# the proven recipe (800 children x 50 games, repeat 5, start 0 only) with sigma falling 0.05 -> 0.03 and lr 0.5 -> 0.2 over the 24 h (geometric, by the clock).
+# lr must stay near 0.5 at the start for 800 children (lr 1.0 overshot); sigma 0.02 pool runs went flat, so the end values stay moderate.
+# Snapshots every few thousand generations (~800 gens/h): pick the best by benchmark afterwards, the end of a run can drift.
+LONG_RUN_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_sigmaLrDecay", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, lrEnd=0.2, sigma=0.05, sigmaEnd=0.03,
+                            pool="models/continueRepeat5_800children_50games_2026-10-25_13-35-30_pool.pt", games=50, population=800, gens=1000000,
+                            hours=24.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(2000, 5000, 10000, 15000))]
+
+# Next server screening batch (2026-10-26): continue the 30.0k repeat-5 net (200 x 200, repeat 5, sigma 0.05, lr 0.5 as in sigmaContinue) and change ONE thing per arm:
+# a smaller fixed lr (0.25, 0.15), half the games from hard starts (20-30k), half the games with 2x monsters. FIXED GENERATIONS (350 = what the sigma 0.05 control arms
+# reached in 1.25 h: 349 / 347), not fixed time, so CPU contention on the shared server cannot change how much training an arm gets (the 'hours' cap is only a safety limit).
+# The control is the sigma 0.05 pair of sigmaContinue (same machine, same start, same settings). Two replicates (A, B), same order in both rounds.
+CONTINUE_BASE = dict(slotPhase("base", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP5_BEST_POOL, games=200, population=200, gens=350, hours=3.0,
+                     repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 200))
+SCREEN_ARMS = (("lr025", dict(lr=0.25)), ("lr015", dict(lr=0.15)),
+               ("hardStarts", dict(zero=0.5, minStart=20000, maxStart=30000)), ("monsters", dict(monster=0.5, monsterMult=2.0)))
+SCREEN_EXPERIMENT = [dict(CONTINUE_BASE, name=f"continueRepeat5_{arm}_{r}", **changes) for r in "AB" for arm, changes in SCREEN_ARMS]
+
 GAMES_FEWER_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -284,7 +302,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
