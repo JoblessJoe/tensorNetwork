@@ -254,6 +254,16 @@ BEHAVIOUR_EXPERIMENT = [dict(slotPhase(f"behaviour_{arm}", CONTROL_SLOTS), es=Tr
                              games=50, population=800, gens=1000000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
                         for arm, pen in BEHAVIOUR_ARMS]
 
+# Steering-only penalty under the new bullet rule (2026-10-27): the nets learned under the old rule (control 124.3k -> 103.4k start 0 with the new one), so every
+# arm continues the control pool of the behaviour experiment. The shot penalties did nothing (saturated shoot output), so only the steer penalty is varied:
+# control (0), 0.5, 1, 2 (the light arm used 2 together with shot terms and lost a third of its score). 1 h each, same recipe as BEHAVIOUR_EXPERIMENT.
+# Judge by the benchmark (against the control arm) and behaviour.py (steer change per decision).
+STEER_POOL = "models/behaviour_control_2026-10-27_08-22-28_pool.pt"
+STEER_ARMS = (("control", 0.0), ("steer05", 0.5), ("steer1", 1.0), ("steer2", 2.0))
+STEER_EXPERIMENT = [dict(slotPhase(f"newRule_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=(0.0, 0.0, steer), pool=STEER_POOL,
+                         games=50, population=800, gens=1000000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
+                    for arm, steer in STEER_ARMS]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -271,7 +281,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
