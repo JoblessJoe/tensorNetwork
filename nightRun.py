@@ -33,18 +33,18 @@ import time
 import traceback
 
 import proSprudler as ps
+from proSprudler import OBSERVATION_LENGTH
 
 # =============================================================================================================
 # 1. Building blocks
 # =============================================================================================================
 
 # The from-scratch recipe. Keys of a phase (every phase = RECIPE + its own changes):
-#   inputs / hidden / outputs   network shape (inputs 25 + outputs 7 = target mode, 23 + 2 = plain)
+#   inputs / hidden / outputs   network shape (the observation has OBSERVATION_LENGTH = 33 floats, 2 outputs: steer, shoot)
 #   minStart / maxStart / zero  start heights: random in minStart..maxStart (maxStart None = always 0); 'zero' = share of games that start at 0 anyway
 #   sigma / mutRate             mutation size / share of mutated weights
 #   replace                     share of weights replaced by a fresh Kaiming-range value on top of the noise (default 0 = off)
 #   smooth                      steer smoothing (1 = off)
-#   stable                      stable slot observation: False = classic, True = 3/2/1/2 slots, or a tuple (platformsBelow, platformsAbove, monstersBelow, monstersAbove)
 #   monster / monsterMult       monster practice: share of games with monsterMult x the normal monster spawn chance
 #   gens / hours                limits of the phase (whichever comes first)
 #   fast, repeat, snap          numba env, action repeat, generations at which snapshots are saved
@@ -56,21 +56,12 @@ import proSprudler as ps
 #                               for every bullet, and per unit of summed steer change between decisions (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
-RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
-              smooth=0.5, stable=True, gens=344, hours=2.0, fast=True)
+RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
+              smooth=0.5, gens=344, hours=2.0, fast=True)
 
 # Population / evaluation settings: (full run, smoke test)
 SETTINGS = dict(
     workers=(31, 4), population=(200, 12), games=(200, 6), stage1Games=(20, 3), elites=(3, 1), keepPart=(0.1, 0.25), finalistFraction=(0.3, 0.5))
-
-# Models that are always benchmarked as a comparison (they use stableSlots + smoothing 0.5)
-TARGET = "models/target_2026-10-05_10-07-53.pt"
-CAREFUL = "models/careful_2026-10-05_18-43-51.pt"   # best so far: 7,485 / 3,106 / 4,502 / 4,968 / 2,188
-REFERENCES = [TARGET, CAREFUL]
-CONTROL_GLOBS = ["tgtScratchA_*", "tgtFast[BCD]_*", "noTarget[12]_*", "slotBase[12]_*", "polishBase_*", "polishBase2_*", "polishBase3_*", "base0_*", "polishA_*", "polishB_*", "polishC_*"]    # replicates of the 344-gen control recipes
-
-# Extra comparison models for a slot layout other than the default (benchmarked together with the phases that use the same layout)
-REFERENCE_GROUPS = {(0.5, (3, 2, 1, 2, 0, 1)): ["featLand_[12]_*", "polishLand_2026-10-08_13-46-00", "ctrlA_2026-10-19_18-45-03", "ctrlB_2026-10-19_22-02-08", "scrCtrl[AB]_*"], (0.5, (3, 2, 1, 2, 1, 1)): ["featBoth_[12]_*"], (0.5, (3, 2, 1, 2, 1, 0)): ["featOcc_[12]_*"]}
 
 # Benchmark columns after 'start 0': hard starts, mixed starts, half at 0 + half hard
 RANGES = ["20000:30000", "0:30000", "20000:30000:0.5"]
@@ -87,82 +78,33 @@ def scaledGens(inputs, hidden, outputs, controlWeights, baseGens=344):
     return round(baseGens * weights(inputs, hidden, outputs) / controlWeights)
 
 
-def obsSize(layout):
-    '''Number of network inputs for a stable-slot layout (platformsBelow, platformsAbove, monstersBelow, monstersAbove[, occupied, landing]).'''
-    platforms = layout[0] + layout[1]
-    extras = (1 if len(layout) > 4 and layout[4] else 0) + (2 if len(layout) > 5 and layout[5] else 0)
-    return 2 + 3 * platforms + 2 * (layout[2] + layout[3]) + platforms * extras
-
-
-def slotPhase(name, layout, controlWeights):
-    '''A no-target network for a slot layout (platformsBelow, platformsAbove, monstersBelow, monstersAbove).
-    inputs = 2 + 3 * platforms + 2 * monsters; hidden width = input size, so the first layer is no bottleneck;
+def slotPhase(name, controlWeights):
+    '''A network phase with the fixed observation (33 inputs); hidden width = input size, so the first layer is no bottleneck;
     generations are scaled with the weight count relative to the control.'''
-    n = obsSize(layout)
+    n = OBSERVATION_LENGTH
     hidden = [n, n, n]
-    return dict(RECIPE, name=name, stable=layout, inputs=n, outputs=2, hidden=hidden, gens=scaledGens(n, hidden, 2, controlWeights))
+    return dict(RECIPE, name=name, inputs=n, outputs=2, hidden=hidden, gens=scaledGens(n, hidden, 2, controlWeights))
 
 
 # =============================================================================================================
 # 2. The experiment (edit this)
 # =============================================================================================================
-# Three polish levers, compared on ONE shared from-scratch base (2026-10-07; the continuation of the plateaued polishBase lineage lost start-0 skill):
-#   base0      from scratch, normal starts, 344 gens (random nets die instantly on hard starts, so the 50/50 mix cannot be used from gen 0)
-#   polishA    baseline polish: 200 games per network, half the games start at 0, half at 20-30k
-#   polishB    more games per network (800): less noisy selection
-#   polishC    mix shifted toward the early game: 70% of the games start at 0, 30% at 20-30k
-# All three branch off the SAME pool (afterPool), same sigma / mutRate, and get the same wall-clock time (3 h; B plays ~3.4x more games per generation,
-# so it gets fewer generations). Snapshots at 500 / 1,000 gens to compare at equal generations too.
-POLISH = dict(RECIPE, inputs=23, outputs=2, afterPool="base0", minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, gens=100000, hours=3.0, snap=(500, 1000))
-POLISH_EXPERIMENT = [
-    dict(RECIPE, name="base0", inputs=23, outputs=2, gens=344, hours=1.0),
-    dict(POLISH, name="polishA"),
-    dict(POLISH, name="polishB", games=800),
-    dict(POLISH, name="polishC", zero=0.7),
-]
-
-
-# New observation features (2026-10-07), screened from scratch against the 344-gen controls slotBase1/2 + noTarget1/2 (23 in / 2 out / [23]x3):
-#   occupied: a monster stands on that platform (1 float per platform slot)        -> 28 inputs
-#   landing:  [T, r] = frames until the feet land on that platform (vertical motion is independent of steering) and how much of the available
-#             steering is needed to get there (2 floats per platform slot)           -> 33 inputs
-#   both                                                                              -> 38 inputs
-# generations scaled with the weight count relative to the control, 2 replicates each, ~1.5 h on the 7950X.
-CONTROL_SLOTS = weights(23, [23] * 3, 2)    # 1,704 weights
-FEATURES_EXPERIMENT = [slotPhase(f"{name}_{r}", layout, CONTROL_SLOTS)
-                       for name, layout in (("featOcc", (3, 2, 1, 2, 1, 0)), ("featLand", (3, 2, 1, 2, 0, 1)), ("featBoth", (3, 2, 1, 2, 1, 1))) for r in "12"]
-
-# The polish branches again, but off the already finished base0 pool (no second base0 run): used by the combined experiment
-BASE0_POOL = "models/base0_2026-10-07_20-46-50_pool.pt"    # from-scratch base, 344 gens, normal starts
-POLISH_BRANCHES = [dict(ph, pool=BASE0_POOL, afterPool=None) for ph in POLISH_EXPERIMENT if ph["name"].startswith("polish")]
-
-# Next round (2026-10-08), all 3 h, 50/50 mix unless noted, sigma 0.02 / mutRate 0.7, compared with polishA (200 games) / polishB (800) / polishC (70% at 0):
-#   polishD     800 games + 70/30 mix          (do the two levers add up?)
-#   polishLand  800 games, from the featLand_2 pool (landing prediction, 33 inputs), now WITH hard starts in the mix  (fair test of the feature; compare polishB)
-#   polishBoth  800 games, from the featBoth_2 pool (occupied flag + landing prediction, 38 inputs)                    (compare polishB)
-#   polishE     1,600 games                    (do more games keep helping? compare polishB 800 and polishA 200)
-FEAT_POOLS = dict(land="models/featLand_2_2026-10-07_22-12-42_pool.pt", both="models/featBoth_2_2026-10-07_23-30-00_pool.pt")
-NEXT_EXPERIMENT = [
-    dict(POLISH, name="polishD", afterPool=None, pool=BASE0_POOL, games=800, zero=0.7),
-    dict(POLISH, name="polishLand", afterPool=None, pool=FEAT_POOLS["land"], games=800, inputs=obsSize((3, 2, 1, 2, 0, 1)), hidden=[obsSize((3, 2, 1, 2, 0, 1))] * 3, stable=(3, 2, 1, 2, 0, 1)),
-    dict(POLISH, name="polishBoth", afterPool=None, pool=FEAT_POOLS["both"], games=800, inputs=obsSize((3, 2, 1, 2, 1, 1)), hidden=[obsSize((3, 2, 1, 2, 1, 1))] * 3, stable=(3, 2, 1, 2, 1, 1)),
-    dict(POLISH, name="polishE", afterPool=None, pool=BASE0_POOL, games=1600),
-]
-
+# The GA polish recipe (sigma 0.02, mutRate 0.7, hard starts in the mix, 3 h); REPLACE_BASE builds on it. (The earlier polish / feature experiments need observation
+# layouts that no longer exist and were removed; their results are in AGENTS.md.)
+POLISH = dict(RECIPE, afterPool=None, minStart=20000, maxStart=30000, zero=0.5, sigma=0.02, mutRate=0.7, gens=100000, hours=3.0, snap=(500, 1000))
+CONTROL_SLOTS = weights(23, [23] * 3, 2)    # 1,704 weights: the control of the early 23-input screens; generations of a phase scale with weights / this
 
 # Replace mutation (2026-10-19): on top of the gaussian noise, a share 'replace' of the weights gets a fresh random value (Kaiming range).
 # Screening off the polishLand pool (current best), polishLand recipe (800 games, 50/50 mix, sigma 0.02 / mutRate 0.7), 1.5 h each,
 # 2 replicates with replace 0.001 vs 2 same-recipe controls (replace 0), interleaved so a slow machine hits both arms alike.
-LAND_LAYOUT = (3, 2, 1, 2, 0, 1)
 POLISH_LAND_POOL = "models/polishLand_2026-10-08_13-46-00_pool.pt"
-REPLACE_BASE = dict(POLISH, afterPool=None, pool=POLISH_LAND_POOL, games=800, inputs=obsSize(LAND_LAYOUT), hidden=[obsSize(LAND_LAYOUT)] * 3,
-                    stable=LAND_LAYOUT, hours=1.5)
+REPLACE_BASE = dict(POLISH, afterPool=None, pool=POLISH_LAND_POOL, games=800, hours=1.5)
 REPLACE_EXPERIMENT = [dict(REPLACE_BASE, name=f"{kind}{r}", replace=rate) for r in "AB" for kind, rate in (("repl", 0.001), ("ctrl", 0.0))]
 
 # The same question from scratch (2026-10-20): the screening above only fine-tuned a finished pool, where fresh random weights have little to add.
 # Landing layout (33 in / [33]x3 / 2 out), from-scratch recipe (344 gens scaled by weight count, normal starts), 2 replicates each:
 # control (replace 0), replace 0.001 (the rate tested above) and a 10x higher rate 0.01. Interleaved so a slow machine hits all arms alike.
-SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", LAND_LAYOUT, CONTROL_SLOTS), replace=rate)
+SCRATCH_REPLACE_EXPERIMENT = [dict(slotPhase(f"{kind}{r}", CONTROL_SLOTS), replace=rate)
                               for r in "AB" for kind, rate in (("scrCtrl", 0.0), ("scrRepl", 0.001), ("scrHi", 0.01))]
 
 # Evolution Strategies (2026-10-21): one parent, 200 children = parent + sigma * noise, every child plays all its games, the parent moves
@@ -180,7 +122,7 @@ ES_EXPERIMENT = [dict(ES_BASE, name=f"es{r}") for r in "AB"]
 # ~5-7 s per generation (200 children x 200 games), so 4 h ~ 2,000-2,700 gens; snapshots show where the climb stops.
 ES_LONG_EXPERIMENT = [
     dict(ES_BASE, name="esLong05", lr=0.5, hours=4.0, snap=(500, 1000, 2000)),
-    dict(slotPhase("esScr05", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0),
+    dict(slotPhase("esScr05", CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0),
     dict(ES_BASE, name="esScrPolish05", lr=0.5, hours=3.0, pool=None, afterPool="esScr05", snap=(500, 1000)),
     dict(ES_BASE, name="esLong025", lr=0.25, hours=4.0, snap=(500, 1000, 2000)),
 ]
@@ -199,16 +141,16 @@ ES_LONG2_EXPERIMENT = [
 # esScr05 recipe (landing layout, ES lr 0.5, normal starts), 1 h each, k = 1 (control) .. 5, 2 replicates, interleaved.
 # Smoothing per decision 1 - 0.5^k: the steering moves as fast per game frame as with 0.5 at every frame, so only the decision rate differs.
 # Snapshots at equal generations answer "per generation" as well. Benchmarked at each model's own repeat.
-REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
+REPEAT_EXPERIMENT = [dict(slotPhase(f"rep{k}{r}", CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
                           repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000))
                      for r in "AB" for k in range(1, 6)]
 
 # Action repeat, round 2 (2026-10-23): round 1 (AGENTS.md 2zd) had repeat 5 best per hour (10,906 start 0) and not saturated. Arms 6 / 8 / 10,
 # 2 replicates, plus one repeat-5 control (rep5C): the fused loop (7ef9bd4) makes generations ~6-11% faster than in round 1, so the control
 # measures that edge for the per-hour comparison (per generation the snapshots are unaffected). Same recipe, 1 h each, smoothing 1 - 0.5^k.
-REPEAT2_EXPERIMENT = ([dict(slotPhase("rep5C", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5,
+REPEAT2_EXPERIMENT = ([dict(slotPhase("rep5C", CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5,
                             snap=(250, 500, 1000, 2000, 3000))]
-                      + [dict(slotPhase(f"rep{k}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
+                      + [dict(slotPhase(f"rep{k}{r}", CONTROL_SLOTS), es=True, lr=0.5, gens=100000, hours=1.0,
                               repeat=k, smooth=1 - 0.5 ** k, snap=(250, 500, 1000, 2000, 3000))
                          for r in "AB" for k in (6, 8, 10)])
 
@@ -216,13 +158,13 @@ REPEAT2_EXPERIMENT = ([dict(slotPhase("rep5C", LAND_LAYOUT, CONTROL_SLOTS), es=T
 # 0.5 9,115 / 4,934, one run each). Here: which lr climbs best from a random network in the same time? esScr05 recipe (= rep1 of 'repeat':
 # landing layout, sigma 0.05, 200 children x 200 games, normal starts), lr 0.1 / 0.25 / 0.5 (control) / 1.0, 1 h each, 2 replicates, interleaved.
 # The server is ~5x slower than the PC (~250-400 gens per hour), so this sees the early climb only, not the plateau.
-ES_LR_EXPERIMENT = [dict(slotPhase(f"lr{str(lr).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=lr, gens=100000, hours=1.0,
+ES_LR_EXPERIMENT = [dict(slotPhase(f"lr{str(lr).replace('.', '')}{r}", CONTROL_SLOTS), es=True, lr=lr, gens=100000, hours=1.0,
                          snap=(100, 250))
                     for r in "AB" for lr in (0.1, 0.25, 0.5, 1.0)]
 
 # ES sigma from scratch (planned for the night after ES_LR): how far from the parent should the children be? ES so far used sigma 0.05
 # (scratch) and 0.02 (polish) only. Same recipe, lr 0.5, sigma 0.02 / 0.05 (control) / 0.1, 1.5 h each, 2 replicates, interleaved.
-ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
+ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
                             gens=100000, hours=1.5, snap=(100, 250, 500))
                        for r in "AB" for sg in (0.02, 0.05, 0.1)]
 
@@ -231,7 +173,7 @@ ES_SIGMA_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_
 # 0.05); all repeat runs used 0.05. Here sigma 0.1 / 0.15 on repeat 5, 2 replicates, sigma 0.2 once, against rep5C (sigma 0.05, 11,590 / 4,701) and a
 # second control rep5D, plus a third repeat-10 run (sigma 0.05; rep10A/B had ~6.1k on hard starts, unreplicated). Same recipe as REPEAT2, 1 h each,
 # interleaved; last a 4 h repeat-10 run rep10L (the 1 h runs were not saturated: where is the ceiling?).
-SIGMA_REPEAT_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg, gens=100000, hours=hrs,
+SIGMA_REPEAT_EXPERIMENT = [dict(slotPhase(name, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg, gens=100000, hours=hrs,
                                 repeat=k, smooth=1 - 0.5 ** k, snap=snap)
                            for name, sg, k, hrs, snap in (("s10r5A", 0.1, 5, 1.0, (250, 500, 1000, 2000, 3000)), ("s15r5A", 0.15, 5, 1.0, (250, 500, 1000, 2000, 3000)),
                                                           ("rep10C", 0.05, 10, 1.0, (250, 500, 1000, 2000, 3000)), ("s10r5B", 0.1, 5, 1.0, (250, 500, 1000, 2000, 3000)),
@@ -241,7 +183,7 @@ SIGMA_REPEAT_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=
 # Long replicates (2026-10-24): rep10L (repeat 10, sigma 0.05, 4 h from scratch) reached 16,535 / 10,589 (start 0 / hard) in ONE run, while the 1 h repeat-10
 # replicate rep10C collapsed (3.6k). Which repeat is the most reliable over a long run? 4 h each, sigma 0.05, lr 0.5, repeat 5 / 7 / 10, smoothing 1 - 0.5^k.
 # Order = one replicate of each arm first (12 h), then the second ones; rep10L is the first repeat-10 replicate, so the new repeat-10 runs are B and C.
-REPEAT_LONG_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, gens=100000, hours=4.0,
+REPEAT_LONG_EXPERIMENT = [dict(slotPhase(name, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, gens=100000, hours=4.0,
                                repeat=k, smooth=1 - 0.5 ** k, snap=(1000, 3000, 6000, 10000))
                           for name, k in (("rl5A", 5), ("rl7A", 7), ("rl10B", 10), ("rl5B", 5), ("rl7B", 7), ("rl10C", 10))]
 
@@ -250,7 +192,7 @@ REPEAT_LONG_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=T
 # (repeat 10, sigma 0.05, lr 0.5, start 0 only) and only change the games per child: 200 (control) vs 800, 4 h each. Equal wall-clock, so the
 # 800-game arm gets ~1/4 of the generations.
 REP10_BEST_POOL = "models/rep10L_2026-10-24_02-52-46_pool.pt"
-GAMES_PER_CHILD_EXPERIMENT = [dict(slotPhase(f"continueBest_{g}games", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP10_BEST_POOL,
+GAMES_PER_CHILD_EXPERIMENT = [dict(slotPhase(f"continueBest_{g}games", CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP10_BEST_POOL,
                                    games=g, gens=100000, hours=4.0, repeat=10, smooth=1 - 0.5 ** 10, snap=(250, 500, 1000, 2000))
                               for g in (200, 800)]
 
@@ -263,7 +205,7 @@ CHILDREN_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name="continueBest_80
 # generation (~40,000 games), children vs games per child, 1 h each, from the best 4 h repeat-5 net (30.0k start 0) at repeat 5: the 200 x 200 control, 800 x 50,
 # 1600 x 25, 3200 x 12, and 800 x 50 with lr 0.25. lr 0.5 for the others (the useful part of the vote does not shrink with N, so no rescaling).
 REP5_BEST_POOL = "models/rl5A_2026-10-24_10-51-51_pool.pt"
-POPULATION_SCAN_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=lr, sigma=0.05, pool=REP5_BEST_POOL, games=g, population=n, gens=100000,
+POPULATION_SCAN_EXPERIMENT = [dict(slotPhase(name, CONTROL_SLOTS), es=True, lr=lr, sigma=0.05, pool=REP5_BEST_POOL, games=g, population=n, gens=100000,
                                    hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000, 2000))
                               for name, n, g, lr in (("continueRepeat5_200children_200games", 200, 200, 0.5), ("continueRepeat5_800children_50games", 800, 50, 0.5),
                                                      ("continueRepeat5_1600children_25games", 1600, 25, 0.5), ("continueRepeat5_3200children_12games", 3200, 12, 0.5),
@@ -273,7 +215,7 @@ POPULATION_SCAN_EXPERIMENT = [dict(slotPhase(name, LAND_LAYOUT, CONTROL_SLOTS), 
 # the proven recipe (800 children x 50 games, repeat 5, start 0 only) with sigma falling 0.05 -> 0.03 and lr 0.5 -> 0.2 over the 24 h (geometric, by the clock).
 # lr must stay near 0.5 at the start for 800 children (lr 1.0 overshot); sigma 0.02 pool runs went flat, so the end values stay moderate.
 # Snapshots every few thousand generations (~800 gens/h): pick the best by benchmark afterwards, the end of a run can drift.
-LONG_RUN_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_sigmaLrDecay", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, lrEnd=0.2, sigma=0.05, sigmaEnd=0.03,
+LONG_RUN_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_sigmaLrDecay", CONTROL_SLOTS), es=True, lr=0.5, lrEnd=0.2, sigma=0.05, sigmaEnd=0.03,
                             pool="models/continueRepeat5_800children_50games_2026-10-25_13-35-30_pool.pt", games=50, population=800, gens=1000000,
                             hours=24.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(2000, 5000, 10000, 15000))]
 
@@ -281,7 +223,7 @@ LONG_RUN_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_sigmaLrDe
 # a smaller fixed lr (0.25, 0.15), half the games from hard starts (20-30k), half the games with 2x monsters. FIXED GENERATIONS (350 = what the sigma 0.05 control arms
 # reached in 1.25 h: 349 / 347), not fixed time, so CPU contention on the shared server cannot change how much training an arm gets (the 'hours' cap is only a safety limit).
 # The control is the sigma 0.05 pair of sigmaContinue (same machine, same start, same settings). Two replicates (A, B), same order in both rounds.
-CONTINUE_BASE = dict(slotPhase("base", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP5_BEST_POOL, games=200, population=200, gens=350, hours=3.0,
+CONTINUE_BASE = dict(slotPhase("base", CONTROL_SLOTS), es=True, lr=0.5, sigma=0.05, pool=REP5_BEST_POOL, games=200, population=200, gens=350, hours=3.0,
                      repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 200))
 SCREEN_ARMS = (("lr025", dict(lr=0.25)), ("lr015", dict(lr=0.15)),
                ("hardStarts", dict(zero=0.5, minStart=20000, maxStart=30000)), ("monsters", dict(monster=0.5, monsterMult=2.0)))
@@ -292,7 +234,7 @@ SCREEN_EXPERIMENT = [dict(CONTINUE_BASE, name=f"continueRepeat5_{arm}_{r}", **ch
 # Same recipe (800 x 50, repeat 5, start 0 only); sigma 0.03 -> 0.025 and lr 0.2 -> 0.12 over 18 h (both showed a wide plateau, so this is a gentle continuation of the
 # decay). Progress of the schedules counts the process clock (perf_counter): if the PC sleeps meanwhile the run lasts longer in wall time.
 LONG_RUN_PART1_POOL = "models/longRepeat5_800children_50games_sigmaLrDecay_2026-10-25_21-32-23_pool.pt"
-LONG_RUN2_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_continued", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.2, lrEnd=0.12, sigma=0.03, sigmaEnd=0.025,
+LONG_RUN2_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_continued", CONTROL_SLOTS), es=True, lr=0.2, lrEnd=0.12, sigma=0.03, sigmaEnd=0.025,
                              pool=LONG_RUN_PART1_POOL, games=50, population=800, gens=1000000, hours=18.0, repeat=5, smooth=1 - 0.5 ** 5,
                              snap=(1000, 2500, 5000, 7500, 10000))]
 
@@ -308,7 +250,7 @@ LONG_RUN2B_EXPERIMENT = [dict(LONG_RUN2_EXPERIMENT[0], name="longRepeat5_800chil
 # Judge by the benchmark (start 0 / hard within noise of 110.7k / 101.0k) and by the behaviour counters, not by the CSV (penalised fitness for the arms).
 BEHAVIOUR_POOL = "models/longRepeat5_800children_50games_continued_resumed_2026-10-26_22-01-30_pool.pt"
 BEHAVIOUR_ARMS = (("control", (0.0, 0.0, 0.0)), ("light", (2.0, 0.2, 2.0)), ("medium", (5.0, 0.5, 6.0)), ("strong", (10.0, 1.0, 15.0)))
-BEHAVIOUR_EXPERIMENT = [dict(slotPhase(f"behaviour_{arm}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=BEHAVIOUR_POOL,
+BEHAVIOUR_EXPERIMENT = [dict(slotPhase(f"behaviour_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=BEHAVIOUR_POOL,
                              games=50, population=800, gens=1000000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
                         for arm, pen in BEHAVIOUR_ARMS]
 
@@ -318,18 +260,18 @@ GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest
 # probably shrinks as the net gets good. Continue the best 4 h repeat-5 net (30.0k start 0) with the proven recipe (200 x 200, lr 0.5, repeat 5) and only
 # change sigma: 0.05 = control, 0.03, 0.07, 0.02, 0.1. Two full rounds (A, B), 1.25 h each, same order in both so round A is a complete scan if the run is cut
 # short; the control appears twice to measure run-to-run noise from the same start net.
-SIGMA_CONTINUE_EXPERIMENT = [dict(slotPhase(f"continueRepeat5_sigma{str(sg).replace('.', '')}_{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
+SIGMA_CONTINUE_EXPERIMENT = [dict(slotPhase(f"continueRepeat5_sigma{str(sg).replace('.', '')}_{r}", CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
                                   pool=REP5_BEST_POOL, games=200, population=200, gens=100000, hours=1.25, repeat=5, smooth=1 - 0.5 ** 5,
                                   snap=(100, 200, 400, 600))
                              for r in "AB" for sg in (0.05, 0.03, 0.07, 0.02, 0.1)]
 
 # ES sigma from scratch, round 2 (server, 2026-10-23): extends ES_SIGMA (0.02 / 0.05 / 0.1; 0.1 best, 8.0-8.2k) upwards. Same recipe, 1.5 h, 2 replicates.
-ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
+ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONTROL_SLOTS), es=True, lr=0.5, sigma=sg,
                              gens=100000, hours=1.5, snap=(100, 250, 500))
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -370,7 +312,7 @@ def runPhase(ph, cfg, a, results, note):
         games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
         common = dict(networkName=ph["name"], livePlot=False,
                       minStartHeight=ph["minStart"], maxStartHeight=ph["maxStart"], zeroFraction=ph.get("zero", 0.0),
-                      steerSmoothing=ph.get("smooth", 1.0), stableSlots=ph.get("stable", False),
+                      steerSmoothing=ph.get("smooth", 1.0),
                       monsterFraction=ph.get("monster", 0.0), monsterMult=ph.get("monsterMult", 1.0),
                       fast=ph.get("fast", False), actionRepeat=ph.get("repeat", 1), maxHours=hours,
                       **startNetworkArgs(ph, results))
@@ -390,32 +332,25 @@ def runPhase(ph, cfg, a, results, note):
         note(f"phase {ph['name']} FAILED:\n{traceback.format_exc()}")
 
 
-def slotsArgs(stable):
-    '''evalModel arguments for a 'stable' setting.'''
-    if isinstance(stable, tuple):
-        return ["--slots", ",".join(map(str, stable))]
-    return ["--stable"] if stable else []
-
-
 def benchmark(phases, results, startTime, smoke, workers):
     '''Benchmarks references, control models and all phase results; returns the text.
-    evalModel applies ONE smoothing/slots/repeat setting to all its models, so models are benchmarked in groups of equal (smoothing, stable, repeat);
+    evalModel applies ONE smoothing/repeat setting to all its models, so models are benchmarked in groups of equal (smoothing, repeat);
     every model at the action repeat it was trained with (references: 1).'''
     snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
-    groups = {}    # only this run's own phases and snapshots: the old reference / control models (REFERENCES, CONTROL_GLOBS, REFERENCE_GROUPS) are no longer benchmarked along
+    groups = {}    # only this run's own phases and snapshots: old reference models are no longer benchmarked along
     for f in snapshots:    # a snapshot belongs to the slot layout of its own phase (otherwise it is evaluated with the wrong observation)
         owner = next((ph for ph in phases if os.path.basename(f).startswith(ph["name"] + "_")), None)
-        key = (owner.get("smooth", 1.0), owner.get("stable", False), owner.get("repeat", 1)) if owner else (0.5, True, 1)
+        key = (owner.get("smooth", 1.0), owner.get("repeat", 1)) if owner else (0.5, 1)
         groups.setdefault(key, []).append(f)
     for ph in phases:
         if ph["name"] in results:
-            groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False), ph.get("repeat", 1)), []).append(results[ph["name"]])
+            groups.setdefault((ph.get("smooth", 1.0), ph.get("repeat", 1)), []).append(results[ph["name"]])
     text = ""
-    for (smooth, stable, repeat), models in groups.items():
-        cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--repeat", str(repeat), "--ranges"] + RANGES + slotsArgs(stable)
+    for (smooth, repeat), models in groups.items():
+        cmd = [sys.executable, "evalModel.py"] + models + ["--smoothing", str(smooth), "--monster-column", "2", "--fast", "--repeat", str(repeat), "--ranges"] + RANGES
         cmd += ["--games", "50", "--workers", "4"] if smoke else ["--workers", str(workers)]
         out = subprocess.run(cmd, capture_output=True, text=True)
-        text += f"\n=== smoothing {smooth:g}, stableSlots {stable}, repeat {repeat} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
+        text += f"\n=== smoothing {smooth:g}, repeat {repeat} ===" + out.stdout + (("\n" + out.stderr[-2000:]) if out.returncode else "")
     return text
 
 

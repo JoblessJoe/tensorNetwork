@@ -7,7 +7,7 @@ death by a monster while rising (cause 1), looks back at the last frames before 
   - did the player steer TOWARD the monster or away from it in the last 20 frames, and did it shoot?
 
     python monsterDeaths.py models/polishBase_2026-10-07_01-24-15.pt            start 0 and hard starts (20-30k), 200 games each
-    python monsterDeaths.py models/x.pt --games 400 --stable 3,2,1,2
+    python monsterDeaths.py models/x.pt --games 400
 
 Reading it: if most deaths are already on a collision course 45 frames before the hit and the net steered toward the monster, the policy walks into
 monsters it could dodge (an indecision / learning problem). If the monster only comes into reach in the last ~10 frames, the death was forced by the
@@ -33,11 +33,10 @@ SCROLL_THRESHOLD, GRAVITY, MAX_FALL = 280.0, 0.4, 15.0    # env constants (SCROL
 COLLISION_DX = (PLAYER_W + MONSTER_W) / 2     # 38 px: closer than this horizontally = on collision course
 
 
-def playGames(net, seeds, maxStart, minStart, slots, smoothing=0.5, maxFrames=100_000, repeat=1):
+def playGames(net, seeds, maxStart, minStart, smoothing=0.96875, maxFrames=100_000, repeat=5):
     '''Plays the games like evaluateNetworkFast and returns one record per game that ended by a monster while rising.'''
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in net.layers]
-    nIn = layers[0][0].shape[0]
-    batch = FastBatch(seeds, maxStart, minStart, 0.0, 0.0, 1.0, stable=slots)
+    batch = FastBatch(seeds, maxStart, minStart, 0.0, 0.0, 1.0)
     G = len(seeds)
     hist = np.zeros((G, HIST, 6))    # per frame BEFORE the step: playerX, playerY, velY, scrolled px so far, applied steer, shoot
     scrolled = np.zeros(G)           # total px the screen has scrolled (monsters keep screen y - scrolled constant; stomp bonuses are NOT scroll)
@@ -46,7 +45,7 @@ def playGames(net, seeds, maxStart, minStart, slots, smoothing=0.5, maxFrames=10
     alive = np.arange(G, dtype=np.int64)
     records, causes = [], np.zeros(G, dtype=np.int64)
     while alive.size and frames.max() < maxFrames:
-        x = batch.observe(alive, nIn).astype(np.float32)
+        x = batch.observe(alive).astype(np.float32)
         for L, (wT, b) in enumerate(layers):
             x = x @ wT + b
             x = np.maximum(x, 0) if L < len(layers) - 1 else 1 / (1 + np.exp(-x))
@@ -132,15 +131,13 @@ def main():
     ap = argparse.ArgumentParser(description="Analyse monster deaths while rising")
     ap.add_argument("model")
     ap.add_argument("--games", type=int, default=200)
-    ap.add_argument("--stable", default="3,2,1,2", help="stable slot counts the model was trained with (default 3,2,1,2; the landing layout is 3,2,1,2,0,1)")
-    ap.add_argument("--smoothing", type=float, default=0.5)
-    ap.add_argument("--repeat", type=int, default=1, help="action repeat the model was trained with (then also --smoothing 1 - 0.5^repeat)")
+    ap.add_argument("--smoothing", type=float, default=0.96875)
+    ap.add_argument("--repeat", type=int, default=5, help="action repeat the model was trained with (then also --smoothing 1 - 0.5^repeat)")
     a = ap.parse_args()
     net = ps.loadNetwork(a.model)
-    slots = tuple(int(v) for v in a.stable.split(","))
     seeds = [s for group in ev.seedSets(a.games) for s in group]
     for label, hi, lo in (("start 0", None, 0), ("hard starts 20-30k", 30000, 20000)):
-        records, causes, score, scrolled = playGames(net, seeds, hi, lo, slots, a.smoothing, repeat=a.repeat)
+        records, causes, score, scrolled = playGames(net, seeds, hi, lo, a.smoothing, repeat=a.repeat)
         report(records, causes, label)
         kills = (score - scrolled) / 100.0     # score = scrolled pixels + 100 per kill (MONSTER_KILL_BONUS) - the start offset
         print(f"  score per game {score.mean():,.0f} = height {np.mean(scrolled):,.0f} + kills {np.mean(kills):.0f} x 100 (kills are {100 * np.mean(kills) * 100 / max(1.0, score.mean()):.0f}% of the score; the start offset blurs this for hard starts)")

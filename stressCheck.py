@@ -25,25 +25,24 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "
 import evalModel as ev
 import proSprudler as ps
 
-CAREFUL = "models/careful_2026-10-05_18-43-51.pt"
-POLISH = "models/polishBase_2026-10-07_01-24-15.pt"
-# benchmark of CAREFUL at start 0, mean per 50-game seed set (rounded), measured on the Ryzen 9 PRO 7945: independent of this CPU
-REFERENCE = {(CAREFUL, "start 0"): [8144, 6824, 7817, 7155]}
+MODEL = "models/behaviour_control_2026-10-27_08-22-28.pt"    # 33 inputs, repeat 5, smoothing 0.96875
+# benchmark of MODEL at start 0, mean per 50-game seed set (rounded), measured on the Ryzen 9 7950X (2026-10-27): independent of this CPU
+REFERENCE = {(MODEL, "start 0"): [105085, 105403, 105332, 97715]}
 
 
 COPIES = 12    # every game set is played this many times per round: keeps all workers busy (and the copies must agree with each other, too)
 
 
 def makeJobs():
-    '''The same games as the benchmark: both models, start 0 and hard starts (20-30k), 4 seed sets each, with their settings (stable, smoothing 0.5).'''
+    '''The same games as the benchmark: the model, start 0 and hard starts (20-30k), 4 seed sets each, with its settings (repeat 5, smoothing 0.96875).'''
     sets = ev.seedSets(200)
     modes = {"start 0": (None, 0), "hard": (30000, 20000)}
     jobs = []
     for copy in range(COPIES):
-        for path in (CAREFUL, POLISH):
+        for path in (MODEL,):
             for label, (hi, lo) in modes.items():
                 for i, seeds in enumerate(sets):
-                    jobs.append(((path, label, i, copy), (path, seeds, hi, lo, 0.0, 0.5, True, 0.0, 1.0, True, 1)))
+                    jobs.append(((path, label, i, copy), (path, seeds, hi, lo, 0.0, 0.96875, 0.0, 1.0, True, 5)))
     return jobs
 
 

@@ -145,7 +145,9 @@ def networkInfo(csvPath, meta):
 
 def describeSlots(text):
     '''Human-readable observation layout from the CSV value of stableSlots.'''
-    if text in (None, "False"):
+    if text is None:
+        return "slots 3/2/1/2 + landing prediction (fixed layout)"    # runs since the layout became fixed no longer log stableSlots
+    if text == "False":
         return "classic observation (5 platforms + 3 monsters sorted by distance)"
     if text == "True":
         return "slots 3/2/1/2 (platforms below/above, monsters below/above)"
