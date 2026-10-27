@@ -52,8 +52,8 @@ from proSprudler import OBSERVATION_LENGTH
 #   population                  networks per generation (default: SETTINGS). A multiple of the workers does NOT save time worth mentioning
 #                               (measured ~1%: games differ in length, so the workers finish at different times anyway; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
-#   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer): points subtracted per game for bullets fired with no monster on screen,
-#                               for every bullet, and per unit of summed steer change between decisions (proSprudler.behaviourPenalty); default (0, 0, 0)
+#   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer[, shotMiss]): points subtracted per game for bullets fired with no monster on screen,
+#                               for every bullet, per unit of summed steer change between decisions, and for every bullet that hit nothing (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -266,12 +266,14 @@ STEER_EXPERIMENT = [dict(slotPhase(f"newRule_{arm}", CONTROL_SLOTS), es=True, lr
 
 # Shoot-head reset (2026-10-27 evening): the control net's shoot output is saturated (logit ~ +25 in every situation), so ES noise never flips a shot and a shot
 # penalty gets no signal. resetShootHead.py zeroes only that output's weights / bias (steering and everything else stays), the shoot logit starts near 0.
-# Reset net: 10.8k points (30 games, start 0; was 132.7k), shoots in 37% of the frames instead of 100%. Six arms, 1.25 h each, same recipe as the other
-# screens (800 x 50, repeat 5, lr 0.2, sigma 0.03), penalties (shotFree, shotAll, steer): no penalty (how fast does it relearn?), light (2, 0.2), (5, 0.5),
-# (5, 0), (20, 0), (20, 2). A kill is worth 100 points; a 100k game has ~3.5k bullets, ~70% fired with no monster on screen.
+# Reset net: 10.8k points (30 games, start 0; was 132.7k), shoots in 37% of the frames instead of 100%.
+# Goal: aimed shots, not spray and pray. The control net kills ~250 monsters per game (150k-point games) with ~4,700 bullets (accuracy ~5%), so the penalty counts the bullets that hit
+# NOTHING (shotMiss, points per missed bullet; a kill pays +100, so a bullet is worth firing when it hits with a probability above miss / (100 + miss)).
+# Six arms, 1.25 h each, same recipe as the other screens (800 x 50, repeat 5, lr 0.2, sigma 0.03), penalties (shotFree, shotAll, steer, shotMiss):
+# no penalty (how fast does it relearn?), miss 3 / 10 / 30 / 100, and miss 10 with 5 per bullet fired while no monster is on screen.
 HEAD_RESET_POOL = "models/newRule_control_headReset_pool.pt"
-HEAD_RESET_ARMS = (("noPenalty", (0.0, 0.0, 0.0)), ("free5_all05", (5.0, 0.5, 0.0)), ("free20", (20.0, 0.0, 0.0)),
-                   ("free2_all02", (2.0, 0.2, 0.0)), ("free5", (5.0, 0.0, 0.0)), ("free20_all2", (20.0, 2.0, 0.0)))
+HEAD_RESET_ARMS = (("noPenalty", (0.0, 0.0, 0.0, 0.0)), ("miss10", (0.0, 0.0, 0.0, 10.0)), ("miss30", (0.0, 0.0, 0.0, 30.0)),
+                   ("miss3", (0.0, 0.0, 0.0, 3.0)), ("miss100", (0.0, 0.0, 0.0, 100.0)), ("free5_miss10", (5.0, 0.0, 0.0, 10.0)))
 HEAD_RESET_EXPERIMENT = [dict(slotPhase(f"headReset_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=HEAD_RESET_POOL,
                               games=50, population=800, gens=1000000, hours=1.25, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
                          for arm, pen in HEAD_RESET_ARMS]
