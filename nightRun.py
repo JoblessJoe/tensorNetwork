@@ -269,13 +269,13 @@ STEER_EXPERIMENT = [dict(slotPhase(f"newRule_{arm}", CONTROL_SLOTS), es=True, lr
 # Reset net: 10.8k points (30 games, start 0; was 132.7k), shoots in 37% of the frames instead of 100%.
 # Goal: aimed shots, not spray and pray. The control net kills ~250 monsters per game (150k-point games) with ~4,700 bullets (accuracy ~5%), so the penalty counts the bullets that hit
 # NOTHING (shotMiss, points per missed bullet; a kill pays +100, so a bullet is worth firing when it hits with a probability above miss / (100 + miss)).
-# Six arms, 1.25 h each, same recipe as the other screens (800 x 50, repeat 5, lr 0.2, sigma 0.03), penalties (shotFree, shotAll, steer, shotMiss):
+# Six arms, 2.2 h each (~13 h in total, the night plus the morning), same recipe as the other screens (800 x 50, repeat 5, lr 0.2, sigma 0.03), penalties (shotFree, shotAll, steer, shotMiss):
 # no penalty (how fast does it relearn?), miss 3 / 10 / 30 / 100, and miss 10 with 5 per bullet fired while no monster is on screen.
 HEAD_RESET_POOL = "models/newRule_control_headReset_pool.pt"
 HEAD_RESET_ARMS = (("noPenalty", (0.0, 0.0, 0.0, 0.0)), ("miss10", (0.0, 0.0, 0.0, 10.0)), ("miss30", (0.0, 0.0, 0.0, 30.0)),
                    ("miss3", (0.0, 0.0, 0.0, 3.0)), ("miss100", (0.0, 0.0, 0.0, 100.0)), ("free5_miss10", (5.0, 0.0, 0.0, 10.0)))
 HEAD_RESET_EXPERIMENT = [dict(slotPhase(f"headReset_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=HEAD_RESET_POOL,
-                              games=50, population=800, gens=1000000, hours=1.25, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
+                              games=50, population=800, gens=1000000, hours=2.2, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000))
                          for arm, pen in HEAD_RESET_ARMS]
 
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
