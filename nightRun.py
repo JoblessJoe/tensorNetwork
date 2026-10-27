@@ -52,6 +52,8 @@ import proSprudler as ps
 #   population                  networks per generation (default: SETTINGS). A multiple of the workers does NOT save time worth mentioning
 #                               (measured ~1%: games differ in length, so the workers finish at different times anyway; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
+#   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer): points subtracted per game for bullets fired with no monster on screen,
+#                               for every bullet, and per unit of summed steer change between decisions (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=25, outputs=7, hidden=[23, 23, 23], minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -294,7 +296,23 @@ LONG_RUN2_EXPERIMENT = [dict(slotPhase("longRepeat5_800children_50games_continue
                              pool=LONG_RUN_PART1_POOL, games=50, population=800, gens=1000000, hours=18.0, repeat=5, smooth=1 - 0.5 ** 5,
                              snap=(1000, 2500, 5000, 7500, 10000))]
 
-GAMES_FEWER_EXPERIMENT = [dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
+# longRun2 was cut by an accidental PC shutdown after 502 generations (73 min, 2026-10-26 21:56): resume from its last checkpoint pool with the same
+# recipe (the schedules had decayed only ~6%, so they restart at the same values) for the remaining ~16.8 h.
+LONG_RUN2_RESUME_POOL = "models/longRepeat5_800children_50games_continued_2026-10-26_20-36-32_pool.pt"
+LONG_RUN2B_EXPERIMENT = [dict(LONG_RUN2_EXPERIMENT[0], name="longRepeat5_800children_50games_continued_resumed", pool=LONG_RUN2_RESUME_POOL, hours=16.8)]
+
+# Behaviour fine-tuning (2026-10-27): continue the final net of longRun2b with a fitness that punishes shooting at nothing and wiggling (proSprudler.behaviourPenalty).
+# Scale: the net scores ~3 points per frame, a 110k game has ~7k decisions, ~3.6k bullets (73% with no monster on screen) and a summed steer change of ~2k;
+# a kill is worth 100. Penalties (shotFree, shotAll, steer) in points: light (2, 0.2, 2) ~ 5% of a game, medium (5, 0.5, 6) ~ 15%, strong (10, 1, 15) ~ 30% of the score
+# at the current behaviour. Same recipe as longRun2 (800 x 50, repeat 5, lr 0.2, sigma 0.03, fixed), 1 h per arm; the control has no penalty.
+# Judge by the benchmark (start 0 / hard within noise of 110.7k / 101.0k) and by the behaviour counters, not by the CSV (penalised fitness for the arms).
+BEHAVIOUR_POOL = "models/longRepeat5_800children_50games_continued_resumed_2026-10-26_22-01-30_pool.pt"
+BEHAVIOUR_ARMS = (("control", (0.0, 0.0, 0.0)), ("light", (2.0, 0.2, 2.0)), ("medium", (5.0, 0.5, 6.0)), ("strong", (10.0, 1.0, 15.0)))
+BEHAVIOUR_EXPERIMENT = [dict(slotPhase(f"behaviour_{arm}", LAND_LAYOUT, CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=BEHAVIOUR_POOL,
+                             games=50, population=800, gens=1000000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
+                        for arm, pen in BEHAVIOUR_ARMS]
+
+GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
 # probably shrinks as the net gets good. Continue the best 4 h repeat-5 net (30.0k start 0) with the proven recipe (200 x 200, lr 0.5, repeat 5) and only
@@ -311,7 +329,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", LAND
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
+EXPERIMENTS = {"behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, "next": NEXT_EXPERIMENT, "all": FEATURES_EXPERIMENT + POLISH_BRANCHES, "polish": POLISH_EXPERIMENT, "features": FEATURES_EXPERIMENT}    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -359,7 +377,7 @@ def runPhase(ph, cfg, a, results, note):
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), **common)
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
@@ -384,15 +402,11 @@ def benchmark(phases, results, startTime, smoke, workers):
     evalModel applies ONE smoothing/slots/repeat setting to all its models, so models are benchmarked in groups of equal (smoothing, stable, repeat);
     every model at the action repeat it was trained with (references: 1).'''
     snapshots = sorted(f for name in results for f in glob.glob(f"models/{name}_*_g[0-9]*.pt") if os.path.getmtime(f) > startTime)
-    controls = sorted(f for pattern in CONTROL_GLOBS for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f))
-    groups = {(0.5, True, 1): REFERENCES + controls}
+    groups = {}    # only this run's own phases and snapshots: the old reference / control models (REFERENCES, CONTROL_GLOBS, REFERENCE_GROUPS) are no longer benchmarked along
     for f in snapshots:    # a snapshot belongs to the slot layout of its own phase (otherwise it is evaluated with the wrong observation)
         owner = next((ph for ph in phases if os.path.basename(f).startswith(ph["name"] + "_")), None)
         key = (owner.get("smooth", 1.0), owner.get("stable", False), owner.get("repeat", 1)) if owner else (0.5, True, 1)
         groups.setdefault(key, []).append(f)
-    for key, patterns in REFERENCE_GROUPS.items():
-        if any(ph.get("stable") == key[1] and ph.get("smooth", 1.0) == key[0] for ph in phases):    # only if a phase of this layout is benchmarked
-            groups.setdefault(key + (1,), []).extend(sorted(f for pattern in patterns for f in glob.glob(f"models/{pattern}.pt") if isFinalModel(f)))
     for ph in phases:
         if ph["name"] in results:
             groups.setdefault((ph.get("smooth", 1.0), ph.get("stable", False), ph.get("repeat", 1)), []).append(results[ph["name"]])
