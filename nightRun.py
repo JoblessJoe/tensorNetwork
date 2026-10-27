@@ -264,6 +264,18 @@ STEER_EXPERIMENT = [dict(slotPhase(f"newRule_{arm}", CONTROL_SLOTS), es=True, lr
                          games=50, population=800, gens=1000000, hours=1.0, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
                     for arm, steer in STEER_ARMS]
 
+# Shoot-head reset (2026-10-27 evening): the control net's shoot output is saturated (logit ~ +25 in every situation), so ES noise never flips a shot and a shot
+# penalty gets no signal. resetShootHead.py zeroes only that output's weights / bias (steering and everything else stays), the shoot logit starts near 0.
+# Reset net: 10.8k points (30 games, start 0; was 132.7k), shoots in 37% of the frames instead of 100%. Six arms, 1.25 h each, same recipe as the other
+# screens (800 x 50, repeat 5, lr 0.2, sigma 0.03), penalties (shotFree, shotAll, steer): no penalty (how fast does it relearn?), light (2, 0.2), (5, 0.5),
+# (5, 0), (20, 0), (20, 2). A kill is worth 100 points; a 100k game has ~3.5k bullets, ~70% fired with no monster on screen.
+HEAD_RESET_POOL = "models/newRule_control_headReset_pool.pt"
+HEAD_RESET_ARMS = (("noPenalty", (0.0, 0.0, 0.0)), ("free5_all05", (5.0, 0.5, 0.0)), ("free20", (20.0, 0.0, 0.0)),
+                   ("free2_all02", (2.0, 0.2, 0.0)), ("free5", (5.0, 0.0, 0.0)), ("free20_all2", (20.0, 2.0, 0.0)))
+HEAD_RESET_EXPERIMENT = [dict(slotPhase(f"headReset_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=pen, pool=HEAD_RESET_POOL,
+                              games=50, population=800, gens=1000000, hours=1.25, repeat=5, smooth=1 - 0.5 ** 5, snap=(100, 250))
+                         for arm, pen in HEAD_RESET_ARMS]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -281,7 +293,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
