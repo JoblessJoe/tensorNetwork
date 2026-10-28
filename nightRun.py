@@ -289,6 +289,17 @@ DEAD_ZONE_EXPERIMENT = [dict(slotPhase(f"deadZone_{arm}", CONTROL_SLOTS), es=Tru
                              games=50, population=800, gens=1000000, hours=2.2, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000))
                         for arm, w in DEAD_ZONE_ARMS]
 
+# Constant-speed arc (2026-10-29): the dead-zone nets rush above the landing spot, rest and drop. The deviation penalty charges the squared distance of the player's x from a
+# straight line at constant speed between the start and the landing spot of every jump (px^2 / 1000 per point; steering steadily all the way costs nothing, rush and rest
+# does). Calibration on the detour-0.1 net: ~1.05 million px^2 per 1,000 frames = ~1,050 points per 1,000 frames per unit of weight, the score is ~3,100 points per 1,000
+# frames, so weight w costs ~0.33 w of the score at today's behaviour. Four arms from the detour-0.1 net (accuracy 46%, "really good" in the demo), all with miss 10 and
+# detour 0.1 as before: deviation 0 (control), 0.03 (~1%), 0.1 (~3%), 0.3 (~10%). 2.2 h each.
+ARC_POOL = "models/deadZone_detour01_2026-10-28_14-29-32_pool.pt"
+ARC_ARMS = (("dev0", 0.0), ("dev003", 0.03), ("dev01", 0.1), ("dev03", 0.3))
+ARC_EXPERIMENT = [dict(slotPhase(f"arc_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=(0.0, 0.0, 0.0, 10.0, 0.1, w), pool=ARC_POOL,
+                       games=50, population=800, gens=1000000, hours=2.2, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000))
+                  for arm, w in ARC_ARMS]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -306,7 +317,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================

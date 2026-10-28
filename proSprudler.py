@@ -269,11 +269,12 @@ def behaviourPenalty(batch, penalties: tuple) -> np.ndarray:
     '''Per game: shotFree * (bullets fired while no monster was on screen) + shotAll * (all bullets fired) + steer * (summed absolute change of the applied
     steer between two decisions) + shotMiss * (bullets that hit nothing = bullets fired - monsters killed by a bullet). Subtracted from the score, so ES ranks a
     net that sprays bullets / wiggles lower; + detour * (sideways distance travelled minus the net displacement, summed over the jumps in px: going out and
-    coming back costs, going straight to the landing spot costs nothing). penalties = (shotFree, shotAll, steer[, shotMiss[, detour]]); all zero = no penalty.
-    A kill is worth +100 points.'''
-    shotFree, shotAll, steer, shotMiss, detour = (tuple(penalties) + (0.0, 0.0))[:5]
+    coming back costs, going straight to the landing spot costs nothing); + deviation * (squared distance from a constant-speed straight line between the start and the
+    landing spot of every jump, in px^2 / 1000: rushing to the landing spot and resting costs, steering steadily all the way costs nothing).
+    penalties = (shotFree, shotAll, steer[, shotMiss[, detour[, deviation]]]); all zero = no penalty. A kill is worth +100 points.'''
+    shotFree, shotAll, steer, shotMiss, detour, deviation = (tuple(penalties) + (0.0, 0.0, 0.0))[:6]
     shots, shotsFree, steerChange = batch.behaviour()
-    return shotFree * shotsFree + shotAll * shots + steer * steerChange + shotMiss * (shots - batch.hits()) + detour * batch.detours()
+    return shotFree * shotsFree + shotAll * shots + steer * steerChange + shotMiss * (shots - batch.hits()) + detour * batch.detours() + deviation * batch.deviations() / 1000.0
 
 
 def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing,
@@ -450,7 +451,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
 
     'sigmaEnd' / 'learningRateEnd': if given, sigma / the learning rate move geometrically from their start value to this value over the run
     (by the clock if 'maxHours' is set, else by generation, see scheduledValue); None = fixed.
-    'penalties' (fast=True only): (shotFree, shotAll, steer[, shotMiss[, detour]]) per game, subtracted from the score the votes are made of (see behaviourPenalty); the CSV's
+    'penalties' (fast=True only): (shotFree, shotAll, steer[, shotMiss[, detour[, deviation]]]) per game, subtracted from the score the votes are made of (see behaviourPenalty); the CSV's
     mean / median / best are then penalised fitness, not game score. (0, 0, 0) = off.
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
