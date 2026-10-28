@@ -426,6 +426,50 @@ def evaluatePopulation(p, networks: list[Network], seeds: list, maxFrames: int, 
     return scores
 
 
+class _GpuCounters:
+    '''The counters of a GPU evaluation with FastBatch's method names, flat (child-major), so behaviourPenalty works on them unchanged.'''
+
+    def __init__(self, r):
+        self.r = r
+
+    def behaviour(self):
+        return self.r["shots"].ravel(), self.r["shotsFree"].ravel(), self.r["steerChange"].ravel()
+
+    def hits(self):
+        return self.r["hits"].ravel()
+
+    def detours(self):
+        return self.r["detour"].ravel()
+
+    def deviations(self):
+        return self.r["deviation"].ravel()
+
+
+def evaluatePopulationGpu(state: dict, rows: torch.Tensor, template: Network, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction,
+                          steerSmoothing, monsterFraction, monsterMult, actionRepeat, penalties) -> np.ndarray:
+    '''evaluatePopulation on the GPU: every child (a flat parameter row, layout of flattenNetwork) plays all 'seeds'. Returns [children, games] scores minus the
+    behaviour penalties, like the CPU path. 'state' keeps the GPU batch between generations.'''
+    from gpuEnv import GpuBatch
+    P, S = rows.shape[0], len(seeds)
+    if state.get("shape") != (P, S):
+        state["batch"], state["shape"] = GpuBatch(children=P, games=S), (P, S)
+    flat = rows.detach().cpu().numpy().astype(np.float32)
+    weights, biases, offset = [], [], 0
+    for w, _ in template.layers:    # flattenNetwork: all weight matrices ([out, in]) first, then all biases
+        n = w.numel()
+        weights.append(flat[:, offset:offset + n].reshape(P, w.shape[0], w.shape[1]).transpose(0, 2, 1))
+        offset += n
+    for _, b in template.layers:
+        biases.append(flat[:, offset:offset + b.numel()])
+        offset += b.numel()
+    r = state["batch"].evaluate([a for wb in zip(weights, biases) for a in wb], seeds, smooth=steerSmoothing, repeat=actionRepeat, maxStart=maxStartHeight,
+                                minStart=minStartHeight, zeroFraction=zeroFraction, monsterFraction=monsterFraction, monsterMult=monsterMult, maxFrames=maxFrames)
+    scores = r["score"]
+    if any(penalties):
+        scores = scores - behaviourPenalty(_GpuCounters(r), penalties).reshape(P, S)
+    return scores.astype(np.float32)    # the CPU path's torch.tensor(list of floats) is float32 too
+
+
 def averageRanks(scores: torch.Tensor) -> torch.Tensor:
     '''[networks, games] scores -> one average rank per network (0 = best), ranking all networks against each other in every game.'''
     return scores.argsort(dim=0, descending=True).argsort(dim=0).float().mean(1)
@@ -441,7 +485,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
                         steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0,
                         fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0,
-                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0)) -> Network:
+                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -453,6 +497,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     (by the clock if 'maxHours' is set, else by generation, see scheduledValue); None = fixed.
     'penalties' (fast=True only): (shotFree, shotAll, steer[, shotMiss[, detour[, deviation]]]) per game, subtracted from the score the votes are made of (see behaviourPenalty); the CSV's
     mean / median / best are then penalised fitness, not game score. (0, 0, 0) = off.
+    'gpu': evaluate the population on the GPU (sprudelJump/gpuEnv.py, needs ~/venv-gpu; the worker pool is then unused, start the run with few workers).
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
     '''
@@ -488,6 +533,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     template = parent
     parent = flattenNetwork(parent)
     currGen, noise = betterBreed(parent, sigma, populationSize)
+    gpuState = {}    # the GPU batch, created on the first generation (after the worker pool has forked)
 
     evalTime = 0.0
     bestEver = float("-inf")
@@ -506,14 +552,18 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     evalStart = time.perf_counter()
                     seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]  # shared by all networks this generation
 
-                    currGenUnflattened = [unflattenNetwork(row, template) for row in currGen]
-                    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, penalties))                           # [population, games]: everyone, all games
+                    if gpu:    # all children's games at once on the GPU (gpuEnv), straight from the flat parameter rows
+                        popScores = torch.tensor(evaluatePopulationGpu(gpuState, currGen, template, seeds, maxFramesPerGame, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, penalties))
+                    else:
+                        currGenUnflattened = [unflattenNetwork(row, template) for row in currGen]
+                        popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, penalties))                           # [population, games]: everyone, all games
 
                     evalTime += time.perf_counter() - evalStart
 
                     # saving the score (mean points per game) of every child
-                    for j, net in enumerate(currGenUnflattened):
-                        net.score = popScores[j].mean().item()
+                    if not gpu:
+                        for j, net in enumerate(currGenUnflattened):
+                            net.score = popScores[j].mean().item()
                     
                     ## SELECTION & REPRODUCTION
                     # rank the children against each other in every game and average the ranks

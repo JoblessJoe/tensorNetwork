@@ -54,6 +54,7 @@ from proSprudler import OBSERVATION_LENGTH
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
 #   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer[, shotMiss[, detour]]): points subtracted per game for bullets fired with no monster on screen,
 #                               for every bullet, per unit of summed steer change between decisions, for every bullet that hit nothing, and per px of detour (sideways distance travelled beyond the net displacement of a jump) (proSprudler.behaviourPenalty); default (0, 0, 0)
+#   gpu                         (ES only, optional) evaluate the population on the GPU (sprudelJump/gpuEnv.py); run nightRun with ~/venv-gpu/bin/python and a small --workers
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -305,6 +306,19 @@ ARC_EXPERIMENT = [dict(slotPhase(f"arc_{arm}", CONTROL_SLOTS), es=True, lr=0.2, 
 # second run of the control and one deviation arm tells how much of the PC's differences is luck.
 ARC_REPLICATE_EXPERIMENT = [dict(ph, name=ph["name"].replace("arc_", "arcRep_"), gens=1600, hours=8.0) for ph in ARC_EXPERIMENT if ph["name"] in ("arc_dev0", "arc_dev01")]
 
+# The arc arms on the GPU (2026-10-29): same phases, population evaluated by sprudelJump/gpuEnv.py (identical scores to the CPU path in the test). Start with
+# ~/venv-gpu/bin/python nightRun.py --experiment arcGpu --workers 2 (the worker pool is unused; the benchmark at the end runs on the CPU with --workers).
+ARC_GPU_EXPERIMENT = [dict(ph, name=ph["name"].replace("arc_", "arcGpu_"), gpu=True) for ph in ARC_EXPERIMENT]
+
+# Overnight GPU long run (2026-10-28 23:35 -> ~08:45, next to the CPU's arc screen): continues the detour-0.1 net (the user's favourite: aimed shooting, little swing)
+# with the penalties of the arc arms and a tiny arc penalty (deviation 0.03, ~1% of the score), so the night already climbs towards 100k whatever the screen says;
+# tomorrow the long run continues from this pool with the deviation weight the screen picks. Schedules as in the earlier long runs (sigma 0.03 -> 0.025,
+# lr 0.2 -> 0.12 over the run). GPU: ~690 generations per hour. Start: ~/venv-gpu/bin/python nightRun.py --experiment longArcGpu --workers 24 --no-plot
+# (the pool's workers idle during training; the benchmark at the end uses them, when the CPU run is over).
+LONG_ARC_GPU_EXPERIMENT = [dict(slotPhase("longArcGpu_dev003", CONTROL_SLOTS), es=True, lr=0.2, lrEnd=0.12, sigma=0.03, sigmaEnd=0.025, gpu=True,
+                                penalties=(0.0, 0.0, 0.0, 10.0, 0.1, 0.03), pool=ARC_POOL, games=50, population=800, gens=1000000, hours=9.0,
+                                repeat=5, smooth=1 - 0.5 ** 5, snap=(1000, 2500, 4000))]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -322,7 +336,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -370,7 +384,7 @@ def runPhase(ph, cfg, a, results, note):
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), **common)
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
