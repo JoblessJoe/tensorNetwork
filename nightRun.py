@@ -52,8 +52,8 @@ from proSprudler import OBSERVATION_LENGTH
 #   population                  networks per generation (default: SETTINGS). A multiple of the workers does NOT save time worth mentioning
 #                               (measured ~1%: games differ in length, so the workers finish at different times anyway; AGENTS.md 2zc)
 #   es / lr                     es=True: train with Evolution Strategies (proSprudler.trainingLoopES) instead of the GA; lr = its learning rate.
-#   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer[, shotMiss]): points subtracted per game for bullets fired with no monster on screen,
-#                               for every bullet, per unit of summed steer change between decisions, and for every bullet that hit nothing (proSprudler.behaviourPenalty); default (0, 0, 0)
+#   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer[, shotMiss[, detour]]): points subtracted per game for bullets fired with no monster on screen,
+#                               for every bullet, per unit of summed steer change between decisions, for every bullet that hit nothing, and per px of detour (sideways distance travelled beyond the net displacement of a jump) (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -278,6 +278,17 @@ HEAD_RESET_EXPERIMENT = [dict(slotPhase(f"headReset_{arm}", CONTROL_SLOTS), es=T
                               games=50, population=800, gens=1000000, hours=2.2, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000))
                          for arm, pen in HEAD_RESET_ARMS]
 
+# Dead zone 0.2 + detour penalty (2026-10-28): a steer output within 0.2 of 0.5 now means "do not move" (env.STEER_DEAD_ZONE), so the net can rest instead of
+# swinging out and back. The detour penalty charges the sideways distance travelled beyond the net displacement of every jump (px of back and forth).
+# Calibration (miss-10 net under the dead zone): ~2,500 px of detour per 1,000 frames, the score is ~3 points per frame, so weight w costs about 0.9 w of the score
+# at today's behaviour. Four arms from the miss-10 net (aimed shooting, accuracy 44%), all with miss 10: detour 0 (adapts to the dead zone, the control),
+# 0.03, 0.1, 0.3. 2.2 h each, same recipe as the other screens.
+DEAD_ZONE_POOL = "models/headReset_miss10_2026-10-27_23-08-55_pool.pt"
+DEAD_ZONE_ARMS = (("detour0", 0.0), ("detour01", 0.1), ("detour003", 0.03), ("detour03", 0.3))
+DEAD_ZONE_EXPERIMENT = [dict(slotPhase(f"deadZone_{arm}", CONTROL_SLOTS), es=True, lr=0.2, sigma=0.03, penalties=(0.0, 0.0, 0.0, 10.0, w), pool=DEAD_ZONE_POOL,
+                             games=50, population=800, gens=1000000, hours=2.2, repeat=5, smooth=1 - 0.5 ** 5, snap=(250, 500, 1000))
+                        for arm, w in DEAD_ZONE_ARMS]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -295,7 +306,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
