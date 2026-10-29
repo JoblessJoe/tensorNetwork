@@ -56,6 +56,7 @@ from proSprudler import OBSERVATION_LENGTH
 #                               for every bullet, per unit of summed steer change between decisions, for every bullet that hit nothing, and per px of detour (sideways distance travelled beyond the net displacement of a jump) (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   gpu                         (ES only, optional) evaluate the population on the GPU (sprudelJump/gpuEnv.py); run nightRun with ~/venv-gpu/bin/python and a small --workers
 #   penaltyRamp                 (ES only, optional) share of the run over which the penalties grow linearly from 0 to full size (by the clock, via `hours`); 0 = full from the start
+#   penaltyStartScore / penaltyFullScore   (ES only, optional) the penalty ramp follows the net's competence: 0 until the smoothed generation mean reaches the start score, 1 at the full score
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -343,6 +344,10 @@ SCRATCH_GPU_EXPERIMENT = [dict(slotPhase("scratchGpu", CONTROL_SLOTS), es=True, 
                                penalties=(0.0, 0.0, 0.0, 10.0, 0.1, 0.1), penaltyRamp=0.25, games=50, population=800, gens=1000000, hours=24.0,
                                repeat=5, smooth=1 - 0.5 ** 5, snap=tuple(range(1000, 40001, 1000)))]
 
+# The same from scratch with the shape of the earlier from-scratch runs (2026-10-29): 800 x 50 stayed at ~270 points for 8,000 generations (older runs: 200 children x
+# 200 games took off after 100-250 generations), so only population / games change here. 24 h cap, ramp over the first 25%, snapshots every 1,000 generations.
+SCRATCH_GPU200_EXPERIMENT = [dict(SCRATCH_GPU_EXPERIMENT[0], name="scratchGpu200", population=200, games=200)]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -360,7 +365,12 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+# From scratch with a competence ramp (2026-10-29): tests showed that the detour / deviation penalties alone keep a fresh net flat at ~270 (standing still beats climbing in
+# the rank votes) while miss 10 alone learns fine. So the movement penalties and the dead zone stay at 0 until the smoothed generation mean reaches 10k, then grow linearly
+# to full size at 30k. 200 x 200 (this shape took off after 100-250 generations). 24 h cap, snapshots every 1,000 generations for targetWatch.py (stops at 100k).
+SCRATCH_RAMP_GPU_EXPERIMENT = [dict(SCRATCH_GPU_EXPERIMENT[0], name="scratchRampGpu", population=200, games=200, penaltyRamp=0.0, penaltyStartScore=10000.0, penaltyFullScore=30000.0)]
+
+EXPERIMENTS = {"scratchRampGpu": SCRATCH_RAMP_GPU_EXPERIMENT, "scratchGpu200": SCRATCH_GPU200_EXPERIMENT, "scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -408,7 +418,7 @@ def runPhase(ph, cfg, a, results, note):
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), penaltyRamp=ph.get("penaltyRamp", 0.0), **common)
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), penaltyRamp=ph.get("penaltyRamp", 0.0), penaltyStartScore=ph.get("penaltyStartScore"), penaltyFullScore=ph.get("penaltyFullScore"), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],

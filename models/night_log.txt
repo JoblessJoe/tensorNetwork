@@ -9003,3 +9003,587 @@ arc_dev01_2026-10-29_03-29-35.pt                       60 /  30 /   7 /   2     
 arc_dev03_2026-10-29_05-56-20.pt                       61 /  28 /   8 /   2                54 /  34 /   8 /   4                57 /  25 /  15 /   2                52 /  30 /  14 /   2                60 /  38 /   2 /   0
 
 [2026-10-29 08:23:07] run done
+[2026-10-29 09:32:48] phase longArcGpu_dev003 finished -> models/longArcGpu_dev003_2026-10-28_23-32-44.pt
+[2026-10-29 09:32:48] benchmarking ...
+[2026-10-29 09:32:58] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===[worker 1053682] long game still running: 25,000 frames, best live score 99,569
+[worker 1053684] long game still running: 25,000 frames, best live score 80,566
+[worker 1053672] long game still running: 25,000 frames, best live score 83,847
+[worker 1053674] long game still running: 25,000 frames, best live score 84,251
+[worker 1053679] long game still running: 25,000 frames, best live score 83,251
+[worker 1053670] long game still running: 25,000 frames, best live score 84,270
+[worker 1053671] long game still running: 25,000 frames, best live score 83,469
+[worker 1053676] long game still running: 25,000 frames, best live score 82,920
+[worker 1053684] long game still running: 50,000 frames, best live score 163,154
+[worker 1053672] long game still running: 50,000 frames, best live score 165,379
+[worker 1053674] long game still running: 50,000 frames, best live score 165,793
+[worker 1053679] long game still running: 50,000 frames, best live score 164,059
+[worker 1053670] long game still running: 50,000 frames, best live score 164,427
+[worker 1053668] long game still running: 25,000 frames, best live score 84,276
+[worker 1053666] long game still running: 25,000 frames, best live score 80,319
+[worker 1053682] long game still running: 25,000 frames, best live score 84,377
+[worker 1053684] long game still running: 75,000 frames, best live score 243,442
+[worker 1053671] long game still running: 50,000 frames, best live score 163,781
+[worker 1053676] long game still running: 50,000 frames, best live score 161,957
+[worker 1053674] long game still running: 75,000 frames, best live score 245,425
+[worker 1053672] long game still running: 75,000 frames, best live score 238,730
+[worker 1053678] long game still running: 25,000 frames, best live score 82,504
+[worker 1053685] long game still running: 25,000 frames, best live score 79,894
+[worker 1053684] long game still running: 100,000 frames, best live score 323,342
+[worker 1053679] long game still running: 75,000 frames, best live score 244,379
+[worker 1053686] long game still running: 25,000 frames, best live score 80,173
+[worker 1053671] long game still running: 75,000 frames, best live score 243,315
+[worker 1053674] long game still running: 100,000 frames, best live score 326,152
+[worker 1053676] long game still running: 75,000 frames, best live score 240,518
+[worker 1053667] long game still running: 25,000 frames, best live score 81,178
+[worker 1053664] long game still running: 25,000 frames, best live score 80,670
+[worker 1053682] long game still running: 50,000 frames, best live score 165,281
+[worker 1053666] long game still running: 50,000 frames, best live score 163,889
+[worker 1053678] long game still running: 50,000 frames, best live score 164,158
+[worker 1053668] long game still running: 50,000 frames, best live score 164,840
+[worker 1053685] long game still running: 50,000 frames, best live score 158,217
+[worker 1053682] long game still running: 75,000 frames, best live score 248,993
+[worker 1053666] long game still running: 75,000 frames, best live score 240,733
+[worker 1053669] long game still running: 25,000 frames, best live score 84,372
+[worker 1053675] long game still running: 25,000 frames, best live score 83,115
+[worker 1053682] long game still running: 100,000 frames, best live score 324,551
+[worker 1053687] long game still running: 25,000 frames, best live score 80,665
+[worker 1053686] long game still running: 50,000 frames, best live score 161,982
+[worker 1053678] long game still running: 75,000 frames, best live score 249,355
+[worker 1053685] long game still running: 75,000 frames, best live score 239,336
+[worker 1053664] long game still running: 50,000 frames, best live score 160,829
+[worker 1053668] long game still running: 75,000 frames, best live score 245,505
+[worker 1053684] long game still running: 25,000 frames, best live score 82,945
+[worker 1053667] long game still running: 50,000 frames, best live score 161,745
+[worker 1053678] long game still running: 100,000 frames, best live score 322,217
+[worker 1053686] long game still running: 75,000 frames, best live score 244,093
+[worker 1053675] long game still running: 50,000 frames, best live score 163,844
+[worker 1053670] long game still running: 25,000 frames, best live score 84,980
+[worker 1053672] long game still running: 25,000 frames, best live score 84,708
+[worker 1053667] long game still running: 75,000 frames, best live score 242,876
+[worker 1053684] long game still running: 50,000 frames, best live score 164,333
+[worker 1053683] long game still running: 25,000 frames, best live score 82,743
+[worker 1053664] long game still running: 25,000 frames, best live score 100,920
+[worker 1053680] long game still running: 25,000 frames, best live score 100,876
+[worker 1053674] long game still running: 25,000 frames, best live score 84,159
+[worker 1053669] long game still running: 50,000 frames, best live score 164,564
+[worker 1053679] long game still running: 25,000 frames, best live score 82,941
+[worker 1053687] long game still running: 50,000 frames, best live score 162,731
+[worker 1053684] long game still running: 75,000 frames, best live score 244,475
+[worker 1053676] long game still running: 25,000 frames, best live score 83,557
+[worker 1053675] long game still running: 75,000 frames, best live score 244,043
+[worker 1053671] long game still running: 25,000 frames, best live score 84,233
+[worker 1053669] long game still running: 75,000 frames, best live score 243,195
+[worker 1053684] long game still running: 100,000 frames, best live score 323,060
+[worker 1053682] long game still running: 25,000 frames, best live score 83,353
+[worker 1053687] long game still running: 75,000 frames, best live score 238,354
+[worker 1053672] long game still running: 50,000 frames, best live score 165,235
+[worker 1053683] long game still running: 50,000 frames, best live score 164,703
+[worker 1053675] long game still running: 100,000 frames, best live score 319,149
+[worker 1053665] long game still running: 25,000 frames, best live score 79,843
+[worker 1053670] long game still running: 50,000 frames, best live score 164,823
+[worker 1053674] long game still running: 50,000 frames, best live score 164,766
+[worker 1053666] long game still running: 25,000 frames, best live score 83,458
+[worker 1053687] long game still running: 100,000 frames, best live score 319,109
+[worker 1053672] long game still running: 75,000 frames, best live score 245,966
+[worker 1053679] long game still running: 50,000 frames, best live score 163,902
+[worker 1053676] long game still running: 50,000 frames, best live score 165,473
+[worker 1053671] long game still running: 50,000 frames, best live score 162,430
+[worker 1053681] long game still running: 25,000 frames, best live score 84,054
+[worker 1053672] long game still running: 100,000 frames, best live score 325,862
+[worker 1053674] long game still running: 75,000 frames, best live score 246,521
+[worker 1053670] long game still running: 75,000 frames, best live score 244,413
+[worker 1053677] long game still running: 25,000 frames, best live score 83,728
+[worker 1053678] long game still running: 25,000 frames, best live score 80,750
+[worker 1053682] long game still running: 50,000 frames, best live score 164,884
+[worker 1053679] long game still running: 75,000 frames, best live score 241,927
+[worker 1053676] long game still running: 75,000 frames, best live score 248,532
+[worker 1053674] long game still running: 100,000 frames, best live score 328,555
+[worker 1053673] long game still running: 25,000 frames, best live score 83,524
+[worker 1053665] long game still running: 50,000 frames, best live score 162,439
+[worker 1053685] long game still running: 25,000 frames, best live score 82,807
+[worker 1053664] long game still running: 25,000 frames, best live score 80,852
+[worker 1053666] long game still running: 50,000 frames, best live score 167,055
+[worker 1053676] long game still running: 100,000 frames, best live score 330,843
+[worker 1053684] long game still running: 25,000 frames, best live score 84,499
+[worker 1053680] long game still running: 25,000 frames, best live score 82,728
+[worker 1053668] long game still running: 25,000 frames, best live score 84,079
+[worker 1053678] long game still running: 50,000 frames, best live score 164,112
+[worker 1053681] long game still running: 50,000 frames, best live score 164,243
+[worker 1053673] long game still running: 50,000 frames, best live score 166,470
+[worker 1053666] long game still running: 75,000 frames, best live score 248,509
+[worker 1053685] long game still running: 50,000 frames, best live score 161,671
+[worker 1053669] long game still running: 25,000 frames, best live score 83,281
+[worker 1053687] long game still running: 25,000 frames, best live score 82,671
+[worker 1053686] long game still running: 25,000 frames, best live score 80,531
+[worker 1053664] long game still running: 50,000 frames, best live score 163,382
+[worker 1053667] long game still running: 25,000 frames, best live score 84,307
+[worker 1053677] long game still running: 50,000 frames, best live score 165,435
+[worker 1053683] long game still running: 25,000 frames, best live score 84,480
+[worker 1053668] long game still running: 50,000 frames, best live score 163,948
+[worker 1053684] long game still running: 50,000 frames, best live score 164,599
+[worker 1053678] long game still running: 75,000 frames, best live score 244,291
+[worker 1053664] long game still running: 75,000 frames, best live score 243,177
+[worker 1053680] long game still running: 50,000 frames, best live score 163,753
+[worker 1053681] long game still running: 75,000 frames, best live score 243,424
+[worker 1053672] long game still running: 25,000 frames, best live score 84,540
+[worker 1053669] long game still running: 50,000 frames, best live score 164,194
+[worker 1053664] long game still running: 100,000 frames, best live score 321,513
+[worker 1053680] long game still running: 75,000 frames, best live score 240,807
+[worker 1053675] long game still running: 25,000 frames, best live score 84,090
+[worker 1053684] long game still running: 75,000 frames, best live score 243,564
+[worker 1053678] long game still running: 100,000 frames, best live score 324,777
+[worker 1053668] long game still running: 75,000 frames, best live score 246,975
+[worker 1053670] long game still running: 25,000 frames, best live score 84,264
+[worker 1053669] long game still running: 75,000 frames, best live score 242,239
+[worker 1053677] long game still running: 75,000 frames, best live score 246,566
+[worker 1053681] long game still running: 100,000 frames, best live score 325,368
+[worker 1053687] long game still running: 50,000 frames, best live score 165,256
+[worker 1053671] long game still running: 25,000 frames, best live score 83,917
+[worker 1053668] long game still running: 100,000 frames, best live score 327,799
+[worker 1053683] long game still running: 50,000 frames, best live score 163,667
+[worker 1053667] long game still running: 50,000 frames, best live score 164,293
+[worker 1053682] long game still running: 25,000 frames, best live score 83,278
+[worker 1053686] long game still running: 50,000 frames, best live score 162,246
+[worker 1053672] long game still running: 50,000 frames, best live score 164,984
+[worker 1053687] long game still running: 75,000 frames, best live score 244,216
+[worker 1053667] long game still running: 75,000 frames, best live score 245,797
+[worker 1053673] long game still running: 25,000 frames, best live score 80,389
+[worker 1053671] long game still running: 50,000 frames, best live score 166,949
+[worker 1053670] long game still running: 50,000 frames, best live score 163,039
+[worker 1053674] long game still running: 25,000 frames, best live score 80,493
+[worker 1053686] long game still running: 75,000 frames, best live score 242,014
+[worker 1053682] long game still running: 50,000 frames, best live score 164,951
+[worker 1053666] long game still running: 25,000 frames, best live score 84,141
+[worker 1053687] long game still running: 100,000 frames, best live score 324,880
+[worker 1053675] long game still running: 50,000 frames, best live score 165,390
+[worker 1053672] long game still running: 75,000 frames, best live score 245,220
+[worker 1053667] long game still running: 100,000 frames, best live score 327,825
+[worker 1053664] long game still running: 25,000 frames, best live score 84,628
+[worker 1053670] long game still running: 75,000 frames, best live score 241,620
+[worker 1053682] long game still running: 75,000 frames, best live score 246,108
+[worker 1053685] long game still running: 25,000 frames, best live score 80,702
+[worker 1053686] long game still running: 100,000 frames, best live score 323,232
+[worker 1053671] long game still running: 75,000 frames, best live score 245,472
+[worker 1053679] long game still running: 25,000 frames, best live score 79,947
+[worker 1053672] long game still running: 100,000 frames, best live score 320,644
+[worker 1053665] long game still running: 25,000 frames, best live score 84,849
+[worker 1053674] long game still running: 50,000 frames, best live score 162,651
+[worker 1053676] long game still running: 25,000 frames, best live score 84,532
+[worker 1053666] long game still running: 50,000 frames, best live score 163,917
+[worker 1053675] long game still running: 75,000 frames, best live score 247,049
+[worker 1053669] long game still running: 25,000 frames, best live score 84,844
+[worker 1053671] long game still running: 100,000 frames, best live score 322,872
+[worker 1053681] long game still running: 25,000 frames, best live score 82,679
+[worker 1053678] long game still running: 25,000 frames, best live score 84,089
+[worker 1053684] long game still running: 25,000 frames, best live score 84,780
+[worker 1053664] long game still running: 50,000 frames, best live score 166,729
+[worker 1053680] long game still running: 25,000 frames, best live score 83,910
+[worker 1053675] long game still running: 100,000 frames, best live score 322,097
+[worker 1053674] long game still running: 75,000 frames, best live score 240,916
+[worker 1053668] long game still running: 25,000 frames, best live score 83,953
+[worker 1053673] long game still running: 50,000 frames, best live score 163,474
+[worker 1053677] long game still running: 25,000 frames, best live score 82,568
+[worker 1053666] long game still running: 75,000 frames, best live score 245,158
+[worker 1053685] long game still running: 50,000 frames, best live score 162,578
+[worker 1053665] long game still running: 50,000 frames, best live score 163,851
+[worker 1053664] long game still running: 75,000 frames, best live score 244,109
+[worker 1053667] long game still running: 25,000 frames, best live score 101,442
+[worker 1053674] long game still running: 100,000 frames, best live score 322,765
+[worker 1053683] long game still running: 25,000 frames, best live score 84,628
+[worker 1053669] long game still running: 50,000 frames, best live score 162,003
+[worker 1053682] long game still running: 25,000 frames, best live score 99,651
+[worker 1053679] long game still running: 50,000 frames, best live score 161,718
+[worker 1053665] long game still running: 75,000 frames, best live score 246,453
+[worker 1053676] long game still running: 50,000 frames, best live score 165,016
+[worker 1053681] long game still running: 50,000 frames, best live score 163,831
+[worker 1053677] long game still running: 50,000 frames, best live score 159,752
+[worker 1053673] long game still running: 75,000 frames, best live score 245,378
+[worker 1053669] long game still running: 75,000 frames, best live score 242,969
+[worker 1053678] long game still running: 50,000 frames, best live score 165,419
+[worker 1053684] long game still running: 50,000 frames, best live score 163,875
+[worker 1053665] long game still running: 100,000 frames, best live score 325,483
+[worker 1053680] long game still running: 50,000 frames, best live score 165,343
+[worker 1053677] long game still running: 75,000 frames, best live score 240,197
+[worker 1053673] long game still running: 100,000 frames, best live score 321,582
+[worker 1053679] long game still running: 75,000 frames, best live score 243,233
+[worker 1053681] long game still running: 75,000 frames, best live score 243,751
+[worker 1053668] long game still running: 50,000 frames, best live score 164,110
+[worker 1053676] long game still running: 75,000 frames, best live score 245,132
+[worker 1053678] long game still running: 75,000 frames, best live score 245,455
+[worker 1053683] long game still running: 50,000 frames, best live score 166,729
+[worker 1053680] long game still running: 75,000 frames, best live score 246,001
+[worker 1053679] long game still running: 100,000 frames, best live score 324,719
+[worker 1053681] long game still running: 100,000 frames, best live score 324,203
+[worker 1053684] long game still running: 75,000 frames, best live score 244,996
+[worker 1053678] long game still running: 100,000 frames, best live score 327,262
+[worker 1053676] long game still running: 100,000 frames, best live score 325,819
+[worker 1053668] long game still running: 75,000 frames, best live score 242,967
+[worker 1053683] long game still running: 75,000 frames, best live score 245,298
+[worker 1053668] long game still running: 100,000 frames, best live score 325,819
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                      start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+longArcGpu_dev003_2026-10-28_23-32-44_g1000.pt   74,163  per set [60084, 75762, 74019, 86787]   67,334  per set [76351, 81893, 53683, 57409]   71,710  per set [74388, 71974, 72617, 67859]   79,712  per set [72416, 100346, 69724, 76361]   18,861  per set [21872, 17442, 20474, 15654]
+longArcGpu_dev003_2026-10-28_23-32-44_g2500.pt   77,919  per set [71412, 72257, 86962, 81046]   65,798  per set [71178, 80460, 59381, 52171]   70,002  per set [71609, 81661, 62450, 64288]   75,718  per set [78403, 91432, 70419, 62617]   18,979  per set [17614, 22226, 17453, 18623]
+longArcGpu_dev003_2026-10-28_23-32-44_g4000.pt   84,192  per set [88205, 74802, 93193, 80569]   70,984  per set [68428, 83863, 74483, 57162]   85,076  per set [72758, 102506, 79603, 85437]   78,631  per set [89671, 85743, 74717, 64393]   20,336  per set [20328, 21803, 20272, 18939]
+longArcGpu_dev003_2026-10-28_23-32-44.pt         86,784  per set [79690, 83689, 90624, 93131]   76,156  per set [71887, 104741, 68376, 59622]   87,750  per set [94160, 96185, 72571, 88085]   81,510  per set [73626, 84197, 65226, 102992]   20,592  per set [20310, 26111, 16857, 19089]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                      start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+longArcGpu_dev003_2026-10-28_23-32-44_g1000.pt                50 /  36 /  10 /   4                51 /  32 /  11 /   6                54 /  26 /  14 /   4                51 /  35 /  12 /   2                57 /  32 /   8 /   2
+longArcGpu_dev003_2026-10-28_23-32-44_g2500.pt                50 /  30 /  16 /   3                57 /  26 /  14 /   2                58 /  28 /   9 /   4                55 /  32 /  10 /   1                56 /  37 /   6 /   2
+longArcGpu_dev003_2026-10-28_23-32-44_g4000.pt                57 /  27 /   9 /   4                58 /  26 /  12 /   2                63 /  28 /   6 /   2                54 /  30 /  12 /   3                64 /  30 /   6 /   0
+longArcGpu_dev003_2026-10-28_23-32-44.pt                      58 /  24 /  12 /   4                52 /  30 /  10 /   4                59 /  24 /  12 /   4                62 /  24 /   9 /   4                64 /  30 /   5 /   0
+
+[2026-10-29 09:32:58] run done
+[2026-10-29 09:33:08] run start: ['to100kGpu_dev003']
+[2026-10-29 09:33:08] phase to100kGpu_dev003: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.025, ES, lr 0.12, repeat 5, smooth 0.96875, population 800 on 24 workers, up to 1000000 gens / 24.00 h
+[2026-10-29 13:45:25] run start: ['lowPenaltyCpu']
+[2026-10-29 13:45:25] phase lowPenaltyCpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.025, ES, lr 0.12, repeat 5, smooth 0.96875, population 800 on 30 workers, up to 1000000 gens / 24.00 h
+[2026-10-29 16:57:11] run start: ['scratchGpu']
+[2026-10-29 16:57:11] phase scratchGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 12 on 4 workers, up to 12 gens / 0.00 h
+[2026-10-29 16:57:21] phase scratchGpu finished -> models/scratchGpu_2026-10-29_16-57-11.pt
+[2026-10-29 16:57:21] benchmarking ...
+[2026-10-29 16:57:31] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+50 games per column (1 seed sets x 50), fixed seeds
+
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchGpu_2026-10-29_16-57-11.pt                  194  per set [194]                  188  per set [188]                  180  per set [180]                  183  per set [183]                  173  per set [173]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchGpu_2026-10-29_16-57-11.pt                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+
+[2026-10-29 16:57:31] run done
+[2026-10-29 17:01:47] run start: ['scratchGpu']
+[2026-10-29 17:01:47] phase scratchGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 2 workers, up to 1000000 gens / 24.00 h
+[2026-10-29 17:10:00] run start: ['scratchGpu']
+[2026-10-29 17:10:00] phase scratchGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 2 workers, up to 1000000 gens / 24.00 h
+[2026-10-29 17:14:56] run start: ['scratchGpu']
+[2026-10-29 17:14:56] phase scratchGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 2 workers, up to 1000000 gens / 24.00 h
+[2026-10-29 17:37:53] run start: ['scratchGpu200']
+[2026-10-29 17:37:53] phase scratchGpu200: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-29 17:40:12] run start: ['scratchCpuTest']
+[2026-10-29 17:40:12] phase scratchCpuTest: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 8 workers (CPU), up to 1000000 gens / 0.12 h
+[2026-10-29 17:48:13] phase scratchCpuTest finished -> models/scratchCpuTest_2026-10-29_17-40-12.pt
+[2026-10-29 17:48:13] benchmarking ...
+[2026-10-29 17:48:15] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-40-12.pt      203  per set [194, 216, 168, 232]      164  per set [180, 158, 154, 166]      177  per set [176, 193, 173, 166]      183  per set [183, 171, 156, 221]      169  per set [173, 170, 161, 172]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-40-12.pt                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+
+[2026-10-29 17:48:15] run done
+[2026-10-29 17:48:23] run start: ['scratchCpuTest']
+[2026-10-29 17:48:23] phase scratchCpuTest: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 8 workers (CPU), up to 1000000 gens / 0.12 h
+[2026-10-29 17:50:02] run start: ['scratchGpuTest']
+[2026-10-29 17:50:02] phase scratchGpuTest: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 0.12 h
+[2026-10-29 17:51:32] run start: ['t1DeadZoneOnly']
+[2026-10-29 17:51:32] phase t1DeadZoneOnly: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 0.06 h
+[2026-10-29 17:55:31] phase t1DeadZoneOnly finished -> models/t1DeadZoneOnly_2026-10-29_17-51-32.pt
+[2026-10-29 17:55:31] benchmarking ...
+[2026-10-29 17:55:46] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t1DeadZoneOnly_2026-10-29_17-51-32.pt    6,843  per set [6769, 7050, 6852, 6699]    2,343  per set [2266, 2519, 2514, 2073]    3,681  per set [3567, 3540, 4440, 3176]    4,542  per set [3648, 4435, 4976, 5110]    1,629  per set [1479, 1822, 1557, 1660]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t1DeadZoneOnly_2026-10-29_17-51-32.pt                40 /  12 /  36 /  12                40 /  20 /  34 /   6                41 /  18 /  33 /   8                43 /  11 /  39 /   7                46 /  20 /  24 /   9
+
+[2026-10-29 17:55:46] run done
+[2026-10-29 17:55:50] run start: ['t2PenaltiesOnly']
+[2026-10-29 17:55:50] phase t2PenaltiesOnly: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 0.06 h
+[2026-10-29 17:56:28] phase scratchCpuTest finished -> models/scratchCpuTest_2026-10-29_17-48-23.pt
+[2026-10-29 17:56:28] benchmarking ...
+[2026-10-29 17:56:39] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-48-23.pt    4,837  per set [4975, 5385, 4241, 4747]    1,711  per set [1731, 1856, 1777, 1481]    2,876  per set [2542, 3501, 2630, 2829]    3,558  per set [3624, 3899, 3059, 3648]    1,532  per set [1570, 1728, 1291, 1540]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-48-23.pt                21 /  10 /  55 /  14                28 /  18 /  48 /   6                32 /  20 /  41 /   8                20 /  18 /  50 /  12                36 /  18 /  41 /   5
+
+[2026-10-29 17:56:39] run done
+[2026-10-29 17:58:46] run start: ['t3MissOnly']
+[2026-10-29 17:58:46] phase t3MissOnly: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 0.05 h
+[2026-10-29 17:59:52] phase t2PenaltiesOnly finished -> models/t2PenaltiesOnly_2026-10-29_17-55-50.pt
+[2026-10-29 17:59:52] benchmarking ...
+[2026-10-29 18:00:03] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                    start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t2PenaltiesOnly_2026-10-29_17-55-50_g1000.pt      203  per set [194, 216, 168, 232]      164  per set [180, 158, 154, 166]      177  per set [176, 193, 173, 166]      183  per set [183, 171, 156, 221]      169  per set [173, 170, 161, 172]
+t2PenaltiesOnly_2026-10-29_17-55-50.pt            203  per set [194, 216, 168, 232]      164  per set [180, 158, 154, 166]      177  per set [176, 193, 173, 166]      183  per set [183, 171, 156, 221]      169  per set [173, 170, 161, 172]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                    start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t2PenaltiesOnly_2026-10-29_17-55-50_g1000.pt                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+t2PenaltiesOnly_2026-10-29_17-55-50.pt                       0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+
+[2026-10-29 18:00:03] run done
+[2026-10-29 18:02:06] phase t3MissOnly finished -> models/t3MissOnly_2026-10-29_17-58-46.pt
+[2026-10-29 18:02:06] benchmarking ...
+[2026-10-29 18:02:11] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t3MissOnly_2026-10-29_17-58-46.pt    4,205  per set [4528, 4134, 3901, 4255]    1,094  per set [893, 1233, 1155, 1097]    1,548  per set [1421, 1763, 1404, 1604]    2,720  per set [2108, 2793, 2989, 2989]      750  per set [781, 715, 739, 765]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                         start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t3MissOnly_2026-10-29_17-58-46.pt                50 /  11 /  34 /   5                55 /  14 /  26 /   5                66 /  12 /  18 /   4                46 /  16 /  32 /   7                60 /  21 /  16 /   2
+
+[2026-10-29 18:02:11] run done
+[2026-10-29 18:03:05] run start: ['t4MovementOnly']
+[2026-10-29 18:03:05] phase t4MovementOnly: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 0.05 h
+[2026-10-29 18:06:28] phase t4MovementOnly finished -> models/t4MovementOnly_2026-10-29_18-03-05.pt
+[2026-10-29 18:06:28] benchmarking ...
+[2026-10-29 18:06:30] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                   start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t4MovementOnly_2026-10-29_18-03-05_g1000.pt      203  per set [194, 216, 168, 232]      171  per set [194, 162, 160, 170]      180  per set [180, 195, 175, 168]      185  per set [187, 171, 160, 221]      179  per set [179, 184, 167, 186]
+t4MovementOnly_2026-10-29_18-03-05.pt            203  per set [194, 216, 168, 232]      171  per set [194, 162, 160, 170]      180  per set [180, 195, 175, 168]      185  per set [187, 171, 160, 221]      179  per set [179, 184, 167, 186]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                   start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+t4MovementOnly_2026-10-29_18-03-05_g1000.pt                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+t4MovementOnly_2026-10-29_18-03-05.pt                       0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100                 0 /   0 /   0 / 100
+
+[2026-10-29 18:06:30] run done
+[2026-10-29 18:06:57] phase lowPenaltyCpu finished -> models/lowPenaltyCpu_2026-10-29_13-45-25.pt
+[2026-10-29 18:06:57] benchmarking ...
+[2026-10-29 18:07:09] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===[worker 1267079] long game still running: 25,000 frames, best live score 99,821
+[worker 1267090] long game still running: 25,000 frames, best live score 83,524
+[worker 1267088] long game still running: 25,000 frames, best live score 85,114
+[worker 1267076] long game still running: 25,000 frames, best live score 82,911
+[worker 1267075] long game still running: 25,000 frames, best live score 84,428
+[worker 1267090] long game still running: 50,000 frames, best live score 165,234
+[worker 1267083] long game still running: 25,000 frames, best live score 80,568
+[worker 1267079] long game still running: 25,000 frames, best live score 83,280
+[worker 1267089] long game still running: 25,000 frames, best live score 83,260
+[worker 1267086] long game still running: 25,000 frames, best live score 83,815
+[worker 1267081] long game still running: 25,000 frames, best live score 99,649
+[worker 1267090] long game still running: 75,000 frames, best live score 247,837
+[worker 1267088] long game still running: 50,000 frames, best live score 168,364
+[worker 1267078] long game still running: 25,000 frames, best live score 82,290
+[worker 1267076] long game still running: 50,000 frames, best live score 166,388
+[worker 1267067] long game still running: 25,000 frames, best live score 84,208
+[worker 1267065] long game still running: 25,000 frames, best live score 80,228
+[worker 1267069] long game still running: 25,000 frames, best live score 83,357
+[worker 1267066] long game still running: 25,000 frames, best live score 83,011
+[worker 1267082] long game still running: 25,000 frames, best live score 80,392
+[worker 1267075] long game still running: 50,000 frames, best live score 164,146
+[worker 1267088] long game still running: 75,000 frames, best live score 248,678
+[worker 1267079] long game still running: 50,000 frames, best live score 164,764
+[worker 1267083] long game still running: 50,000 frames, best live score 161,642
+[worker 1267086] long game still running: 50,000 frames, best live score 162,236
+[worker 1267076] long game still running: 75,000 frames, best live score 242,191
+[worker 1267089] long game still running: 50,000 frames, best live score 166,318
+[worker 1267084] long game still running: 25,000 frames, best live score 80,482
+[worker 1267072] long game still running: 25,000 frames, best live score 83,947
+[worker 1267073] long game still running: 25,000 frames, best live score 83,459
+[worker 1267091] long game still running: 25,000 frames, best live score 83,797
+[worker 1267062] long game still running: 25,000 frames, best live score 81,324
+[worker 1267088] long game still running: 100,000 frames, best live score 326,132
+[worker 1267071] long game still running: 25,000 frames, best live score 83,931
+[worker 1267063] long game still running: 25,000 frames, best live score 81,366
+[worker 1267086] long game still running: 75,000 frames, best live score 244,855
+[worker 1267078] long game still running: 50,000 frames, best live score 163,807
+[worker 1267075] long game still running: 75,000 frames, best live score 242,710
+[worker 1267069] long game still running: 50,000 frames, best live score 166,420
+[worker 1267089] long game still running: 75,000 frames, best live score 244,563
+[worker 1267066] long game still running: 50,000 frames, best live score 164,373
+[worker 1267079] long game still running: 75,000 frames, best live score 247,000
+[worker 1267070] long game still running: 25,000 frames, best live score 82,969
+[worker 1267080] long game still running: 25,000 frames, best live score 100,987
+[worker 1267083] long game still running: 75,000 frames, best live score 240,569
+[worker 1267087] long game still running: 25,000 frames, best live score 84,733
+[worker 1267065] long game still running: 50,000 frames, best live score 161,139
+[worker 1267068] long game still running: 25,000 frames, best live score 82,773
+[worker 1267067] long game still running: 50,000 frames, best live score 164,146
+[worker 1267086] long game still running: 100,000 frames, best live score 328,956
+[worker 1267075] long game still running: 100,000 frames, best live score 319,169
+[worker 1267085] long game still running: 25,000 frames, best live score 81,176
+[worker 1267089] long game still running: 100,000 frames, best live score 323,219
+[worker 1267069] long game still running: 75,000 frames, best live score 243,359
+[worker 1267078] long game still running: 75,000 frames, best live score 243,303
+[worker 1267066] long game still running: 75,000 frames, best live score 245,200
+[worker 1267079] long game still running: 100,000 frames, best live score 327,865
+[worker 1267083] long game still running: 100,000 frames, best live score 320,817
+[worker 1267082] long game still running: 50,000 frames, best live score 162,794
+[worker 1267072] long game still running: 50,000 frames, best live score 164,049
+[worker 1267074] long game still running: 25,000 frames, best live score 84,768
+[worker 1267065] long game still running: 75,000 frames, best live score 242,311
+[worker 1267073] long game still running: 50,000 frames, best live score 164,929
+[worker 1267062] long game still running: 50,000 frames, best live score 161,677
+[worker 1267063] long game still running: 50,000 frames, best live score 162,436
+[worker 1267084] long game still running: 50,000 frames, best live score 163,836
+[worker 1267069] long game still running: 100,000 frames, best live score 325,116
+[worker 1267071] long game still running: 50,000 frames, best live score 165,432
+[worker 1267078] long game still running: 100,000 frames, best live score 323,881
+[worker 1267065] long game still running: 100,000 frames, best live score 322,697
+[worker 1267066] long game still running: 100,000 frames, best live score 324,769
+[worker 1267068] long game still running: 50,000 frames, best live score 161,990
+[worker 1267070] long game still running: 50,000 frames, best live score 165,419
+[worker 1267090] long game still running: 25,000 frames, best live score 83,311
+[worker 1267081] long game still running: 25,000 frames, best live score 84,644
+[worker 1267087] long game still running: 50,000 frames, best live score 164,273
+[worker 1267091] long game still running: 50,000 frames, best live score 165,283
+[worker 1267072] long game still running: 75,000 frames, best live score 246,671
+[worker 1267062] long game still running: 75,000 frames, best live score 244,493
+[worker 1267086] long game still running: 25,000 frames, best live score 100,745
+[worker 1267073] long game still running: 75,000 frames, best live score 245,583
+[worker 1267085] long game still running: 50,000 frames, best live score 161,434
+[worker 1267064] long game still running: 25,000 frames, best live score 79,725
+[worker 1267063] long game still running: 75,000 frames, best live score 245,232
+[worker 1267082] long game still running: 75,000 frames, best live score 242,180
+[worker 1267068] long game still running: 75,000 frames, best live score 246,097
+[worker 1267071] long game still running: 75,000 frames, best live score 247,124
+[worker 1267072] long game still running: 100,000 frames, best live score 325,131
+[worker 1267070] long game still running: 75,000 frames, best live score 241,594
+[worker 1267076] long game still running: 25,000 frames, best live score 83,216
+[worker 1267087] long game still running: 75,000 frames, best live score 245,780
+[worker 1267091] long game still running: 75,000 frames, best live score 245,263
+[worker 1267068] long game still running: 100,000 frames, best live score 326,062
+[worker 1267084] long game still running: 75,000 frames, best live score 244,324
+[worker 1267074] long game still running: 50,000 frames, best live score 165,121
+[worker 1267063] long game still running: 100,000 frames, best live score 326,872
+[worker 1267070] long game still running: 100,000 frames, best live score 320,800
+[worker 1267082] long game still running: 100,000 frames, best live score 321,705
+[worker 1267073] long game still running: 100,000 frames, best live score 328,447
+[worker 1267071] long game still running: 100,000 frames, best live score 327,345
+[worker 1267091] long game still running: 100,000 frames, best live score 323,665
+[worker 1267087] long game still running: 100,000 frames, best live score 330,154
+[worker 1267085] long game still running: 75,000 frames, best live score 242,053
+[worker 1267090] long game still running: 50,000 frames, best live score 163,758
+[worker 1267081] long game still running: 50,000 frames, best live score 165,202
+[worker 1267088] long game still running: 25,000 frames, best live score 83,779
+[worker 1267074] long game still running: 75,000 frames, best live score 247,033
+[worker 1267084] long game still running: 100,000 frames, best live score 325,499
+[worker 1267077] long game still running: 25,000 frames, best live score 83,393
+[worker 1267076] long game still running: 50,000 frames, best live score 164,205
+[worker 1267085] long game still running: 100,000 frames, best live score 322,512
+[worker 1267064] long game still running: 50,000 frames, best live score 162,986
+[worker 1267090] long game still running: 75,000 frames, best live score 245,671
+[worker 1267081] long game still running: 75,000 frames, best live score 244,009
+[worker 1267073] long game still running: 25,000 frames, best live score 101,302
+[worker 1267074] long game still running: 100,000 frames, best live score 320,617
+[worker 1267079] long game still running: 25,000 frames, best live score 79,829
+[worker 1267082] long game still running: 25,000 frames, best live score 101,844
+[worker 1267078] long game still running: 25,000 frames, best live score 82,867
+[worker 1267083] long game still running: 25,000 frames, best live score 80,831
+[worker 1267065] long game still running: 25,000 frames, best live score 83,671
+[worker 1267076] long game still running: 75,000 frames, best live score 244,468
+[worker 1267081] long game still running: 100,000 frames, best live score 319,881
+[worker 1267069] long game still running: 25,000 frames, best live score 81,176
+[worker 1267090] long game still running: 100,000 frames, best live score 327,874
+[worker 1267067] long game still running: 25,000 frames, best live score 80,454
+[worker 1267066] long game still running: 25,000 frames, best live score 83,573
+[worker 1267064] long game still running: 75,000 frames, best live score 244,918
+[worker 1267075] long game still running: 25,000 frames, best live score 85,123
+[worker 1267089] long game still running: 25,000 frames, best live score 83,595
+[worker 1267062] long game still running: 25,000 frames, best live score 83,451
+[worker 1267064] long game still running: 100,000 frames, best live score 324,186
+[worker 1267080] long game still running: 25,000 frames, best live score 84,580
+[worker 1267072] long game still running: 25,000 frames, best live score 85,023
+[worker 1267086] long game still running: 25,000 frames, best live score 84,289
+[worker 1267076] long game still running: 100,000 frames, best live score 326,132
+[worker 1267088] long game still running: 50,000 frames, best live score 166,318
+[worker 1267077] long game still running: 50,000 frames, best live score 166,420
+[worker 1267079] long game still running: 50,000 frames, best live score 161,591
+[worker 1267078] long game still running: 50,000 frames, best live score 162,759
+[worker 1267083] long game still running: 50,000 frames, best live score 163,117
+[worker 1267066] long game still running: 50,000 frames, best live score 165,325
+[worker 1267065] long game still running: 50,000 frames, best live score 164,472
+[worker 1267070] long game still running: 25,000 frames, best live score 85,123
+[worker 1267063] long game still running: 25,000 frames, best live score 82,316
+[worker 1267068] long game still running: 25,000 frames, best live score 83,733
+[worker 1267075] long game still running: 50,000 frames, best live score 167,308
+[worker 1267078] long game still running: 75,000 frames, best live score 244,598
+[worker 1267062] long game still running: 50,000 frames, best live score 164,426
+[worker 1267079] long game still running: 75,000 frames, best live score 241,331
+[worker 1267067] long game still running: 50,000 frames, best live score 161,062
+[worker 1267083] long game still running: 75,000 frames, best live score 246,698
+[worker 1267072] long game still running: 50,000 frames, best live score 164,277
+[worker 1267089] long game still running: 50,000 frames, best live score 164,897
+[worker 1267065] long game still running: 75,000 frames, best live score 245,623
+[worker 1267069] long game still running: 50,000 frames, best live score 164,131
+[worker 1267088] long game still running: 75,000 frames, best live score 247,329
+[worker 1267077] long game still running: 75,000 frames, best live score 244,741
+[worker 1267066] long game still running: 75,000 frames, best live score 246,885
+[worker 1267075] long game still running: 75,000 frames, best live score 246,227
+[worker 1267083] long game still running: 100,000 frames, best live score 321,865
+[worker 1267080] long game still running: 50,000 frames, best live score 166,209
+[worker 1267065] long game still running: 100,000 frames, best live score 326,782
+[worker 1267075] long game still running: 100,000 frames, best live score 327,152
+[worker 1267088] long game still running: 100,000 frames, best live score 327,672
+[worker 1267062] long game still running: 75,000 frames, best live score 244,217
+[worker 1267072] long game still running: 75,000 frames, best live score 247,503
+[worker 1267066] long game still running: 100,000 frames, best live score 326,338
+[worker 1267067] long game still running: 75,000 frames, best live score 243,994
+[worker 1267077] long game still running: 100,000 frames, best live score 327,293
+[worker 1267063] long game still running: 50,000 frames, best live score 166,565
+[worker 1267086] long game still running: 50,000 frames, best live score 164,803
+[worker 1267069] long game still running: 75,000 frames, best live score 242,308
+[worker 1267070] long game still running: 50,000 frames, best live score 167,308
+[worker 1267089] long game still running: 75,000 frames, best live score 245,455
+[worker 1267068] long game still running: 50,000 frames, best live score 161,489
+[worker 1267072] long game still running: 100,000 frames, best live score 327,175
+[worker 1267062] long game still running: 100,000 frames, best live score 321,999
+[worker 1267080] long game still running: 75,000 frames, best live score 247,561
+[worker 1267063] long game still running: 75,000 frames, best live score 248,222
+[worker 1267069] long game still running: 100,000 frames, best live score 321,468
+[worker 1267080] long game still running: 100,000 frames, best live score 325,005
+[worker 1267068] long game still running: 75,000 frames, best live score 244,790
+[worker 1267089] long game still running: 100,000 frames, best live score 324,582
+[worker 1267063] long game still running: 100,000 frames, best live score 326,338
+[worker 1267086] long game still running: 75,000 frames, best live score 245,660
+[worker 1267070] long game still running: 75,000 frames, best live score 247,609
+[worker 1267068] long game still running: 100,000 frames, best live score 324,611
+[worker 1267086] long game still running: 100,000 frames, best live score 325,666
+[worker 1267070] long game still running: 100,000 frames, best live score 327,781
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+lowPenaltyCpu_2026-10-29_13-45-25_g1000.pt   89,774  per set [88008, 93122, 97520, 80445]   83,716  per set [84896, 91162, 75857, 82949]   92,998  per set [85937, 97465, 86095, 102495]   95,162  per set [97639, 102986, 78604, 101419]   22,350  per set [17547, 22493, 27137, 22222]
+lowPenaltyCpu_2026-10-29_13-45-25_g2000.pt  110,310  per set [119959, 100660, 122017, 98605]   80,644  per set [71047, 97463, 78787, 75281]   89,681  per set [69834, 109874, 90931, 88086]   99,621  per set [98065, 92751, 78379, 129287]   23,984  per set [25068, 26230, 23296, 21344]
+lowPenaltyCpu_2026-10-29_13-45-25.pt        101,333  per set [97459, 99042, 110408, 98423]   82,150  per set [70828, 89797, 91614, 76360]   98,682  per set [90543, 105567, 110494, 88122]   99,313  per set [97709, 110724, 80291, 108529]   22,633  per set [24425, 23792, 22959, 19356]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+lowPenaltyCpu_2026-10-29_13-45-25_g1000.pt                55 /  26 /  13 /   4                60 /  26 /  10 /   2                61 /  24 /  10 /   2                48 /  30 /  16 /   4                62 /  32 /   6 /   1
+lowPenaltyCpu_2026-10-29_13-45-25_g2000.pt                58 /  24 /   9 /   2                52 /  30 /  11 /   4                52 /  29 /  12 /   4                53 /  28 /  12 /   4                58 /  34 /   6 /   1
+lowPenaltyCpu_2026-10-29_13-45-25.pt                      51 /  29 /  12 /   6                58 /  27 /   9 /   4                54 /  24 /  14 /   4                55 /  26 /  11 /   4                66 /  28 /   6 /   1
+
+[2026-10-29 18:07:09] run done
+[2026-10-29 18:17:48] run start: ['scratchRampGpu']
+[2026-10-29 18:17:48] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h

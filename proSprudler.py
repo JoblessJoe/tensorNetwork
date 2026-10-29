@@ -487,7 +487,8 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
                         steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0,
                         fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0,
-                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False, penaltyRamp: float = 0.0) -> Network:
+                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False, penaltyRamp: float = 0.0,
+                        penaltyStartScore: float | None = None, penaltyFullScore: float | None = None) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -502,6 +503,9 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     'penaltyRamp': the penalties AND the steer dead zone grow linearly from 0 to their full size over this share of the run (progress as in scheduledValue: the clock
     if 'maxHours' is set); 0 = full size from the first generation. A net from scratch dies within seconds, a full penalty on its tiny scores would drown the
     signal to jump, and inside the dead zone (steer output within 0.2 of 0.5) a random net never moves, so all children score the same and ES learns nothing.
+    'penaltyStartScore' / 'penaltyFullScore': the ramp follows the net's COMPETENCE instead of the clock (overrides penaltyRamp): the factor is 0 until the smoothed generation
+    mean first reaches penaltyStartScore, grows linearly to 1 at penaltyFullScore, and never shrinks again. Found 2026-10-29: from scratch even 1-3% of the penalties stop ES from
+    learning to climb (the ranks follow the consistent penalty signal, not the weak score signal), so a fresh net must learn to play first and only then get penalised.
     'gpu': evaluate the population on the GPU (sprudelJump/gpuEnv.py, needs ~/venv-gpu; the worker pool is then unused, start the run with few workers).
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
@@ -539,6 +543,8 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     parent = flattenNetwork(parent)
     currGen, noise = betterBreed(parent, sigma, populationSize)
     gpuState = {}    # the GPU batch, created on the first generation (after the worker pool has forked)
+    competence = None    # smoothed generation mean (penaltyStartScore / penaltyFullScore ramp)
+    competenceBest = 0.0
 
     evalTime = 0.0
     bestEver = float("-inf")
@@ -556,9 +562,12 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     ## EVALUATION
                     evalStart = time.perf_counter()
                     seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]  # shared by all networks this generation
-                    rampFactor = 1.0 if penaltyRamp <= 0 else min(1.0, runProgress(i, generations, start, maxHours) / penaltyRamp)
+                    if penaltyStartScore is not None:
+                        rampFactor = min(1.0, max(0.0, (competenceBest - penaltyStartScore) / (penaltyFullScore - penaltyStartScore)))
+                    else:
+                        rampFactor = 1.0 if penaltyRamp <= 0 else min(1.0, runProgress(i, generations, start, maxHours) / penaltyRamp)
                     genPenalties = tuple(x * rampFactor for x in penalties)    # the penalties of this generation (grow during the ramp)
-                    genDeadZone = None if penaltyRamp <= 0 else STEER_DEAD_ZONE * rampFactor    # the steer dead zone grows with them (a net from scratch never moves inside it)
+                    genDeadZone = None if (penaltyRamp <= 0 and penaltyStartScore is None) else STEER_DEAD_ZONE * rampFactor    # the steer dead zone grows with them (a net from scratch never moves inside it)
 
                     if gpu:    # all children's games at once on the GPU (gpuEnv), straight from the flat parameter rows
                         popScores = torch.tensor(evaluatePopulationGpu(gpuState, currGen, template, seeds, maxFramesPerGame, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, genPenalties, genDeadZone))
@@ -582,6 +591,9 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     currLearningRate = scheduledValue(learningRate, learningRateEnd, progress)
                     parent, currGen, noise =  betterSelection(parent, noise, currLearningRate, currSigma, ranks, populationSize)
 
+                    genMean = popScores.mean().item()
+                    competence = genMean if competence is None else 0.98 * competence + 0.02 * genMean
+                    competenceBest = max(competenceBest, competence)
                     perNetwork = popScores.mean(dim=1)             # mean score per child
                     bestChild = perNetwork.max().item()            # the parent itself never plays, so the best child is the 'best' score
                     # saving a network every 50 iterations as a 'Checkpoint' if the run fails
