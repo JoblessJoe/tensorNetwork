@@ -444,6 +444,7 @@ class Panels:
             if c not in claimed and len(self.paths) < MAX_PANELS:
                 self.paths.append(c)
                 claimed.add(c)
+        self.paths = [p for p in self.paths if p in active]          # a run that ended and was not replaced loses its panel
         if not self.paths:
             self.paths = [newestCsv()]                  # nothing is running: show the newest run
         if len(self.subs) != len(self.paths):

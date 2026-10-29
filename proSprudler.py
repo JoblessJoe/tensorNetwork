@@ -567,7 +567,10 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     else:
                         rampFactor = 1.0 if penaltyRamp <= 0 else min(1.0, runProgress(i, generations, start, maxHours) / penaltyRamp)
                     genPenalties = tuple(x * rampFactor for x in penalties)    # the penalties of this generation (grow during the ramp)
-                    genDeadZone = None if (penaltyRamp <= 0 and penaltyStartScore is None) else STEER_DEAD_ZONE * rampFactor    # the steer dead zone grows with them (a net from scratch never moves inside it)
+                    if penaltyStartScore is not None:    # competence ramp: the dead zone is a fixed game rule, full size as soon as the net is competent (the penalties then grow)
+                        genDeadZone = STEER_DEAD_ZONE if competenceBest >= penaltyStartScore else 0.0
+                    else:
+                        genDeadZone = None if penaltyRamp <= 0 else STEER_DEAD_ZONE * rampFactor    # the steer dead zone grows with them (a net from scratch never moves inside it)
 
                     if gpu:    # all children's games at once on the GPU (gpuEnv), straight from the flat parameter rows
                         popScores = torch.tensor(evaluatePopulationGpu(gpuState, currGen, template, seeds, maxFramesPerGame, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, genPenalties, genDeadZone))

@@ -9587,3 +9587,9 @@ lowPenaltyCpu_2026-10-29_13-45-25.pt                      51 /  29 /  12 /   6  
 [2026-10-29 18:07:09] run done
 [2026-10-29 18:17:48] run start: ['scratchRampGpu']
 [2026-10-29 18:17:48] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-29 18:31:39] run start: ['scratchRampGpu']
+[2026-10-29 18:31:39] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-29 18:38:13] run start: ['scratchRampGpu']
+[2026-10-29 18:38:13] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-29 19:01:23] run start: ['scratchRampGpu']
+[2026-10-29 19:01:23] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
