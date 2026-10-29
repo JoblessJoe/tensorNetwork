@@ -55,6 +55,7 @@ from proSprudler import OBSERVATION_LENGTH
 #   penalties                   (ES + fast only, optional) (shotFree, shotAll, steer[, shotMiss[, detour]]): points subtracted per game for bullets fired with no monster on screen,
 #                               for every bullet, per unit of summed steer change between decisions, for every bullet that hit nothing, and per px of detour (sideways distance travelled beyond the net displacement of a jump) (proSprudler.behaviourPenalty); default (0, 0, 0)
 #   gpu                         (ES only, optional) evaluate the population on the GPU (sprudelJump/gpuEnv.py); run nightRun with ~/venv-gpu/bin/python and a small --workers
+#   penaltyRamp                 (ES only, optional) share of the run over which the penalties grow linearly from 0 to full size (by the clock, via `hours`); 0 = full from the start
 #   sigmaEnd / lrEnd            (ES only, optional) sigma / lr move geometrically from `sigma` / `lr` to this value over the phase (by the clock, via `hours`)
 #                               ES uses sigma, games, population; mutRate / replace / elites / keepPart / stage1Games are GA-only
 RECIPE = dict(inputs=OBSERVATION_LENGTH, outputs=2, hidden=[OBSERVATION_LENGTH] * 3, minStart=0, maxStart=None, zero=0.0, sigma=0.05, mutRate=1.0,
@@ -319,6 +320,29 @@ LONG_ARC_GPU_EXPERIMENT = [dict(slotPhase("longArcGpu_dev003", CONTROL_SLOTS), e
                                 penalties=(0.0, 0.0, 0.0, 10.0, 0.1, 0.03), pool=ARC_POOL, games=50, population=800, gens=1000000, hours=9.0,
                                 repeat=5, smooth=1 - 0.5 ** 5, snap=(1000, 2500, 4000))]
 
+# To 100k (2026-10-29): continue the 9 h GPU long run until a snapshot reaches 100k on the start-0 benchmark. Snapshot every 1,000 generations; targetWatch.py
+# benchmarks each one and Ctrl-Cs the run at the target (start it in tmux: a background process started from a script ignores SIGINT). Schedules continue
+# where the 9 h run ended (sigma 0.025, lr 0.12) and decay further over the 24 h cap. Same penalties (deviation 0.03: the user sees no difference to 0.1).
+LONG_ARC_GPU_POOL = "models/longArcGpu_dev003_2026-10-28_23-32-44_pool.pt"
+TO_100K_GPU_EXPERIMENT = [dict(LONG_ARC_GPU_EXPERIMENT[0], name="to100kGpu_dev003", pool=LONG_ARC_GPU_POOL, sigma=0.025, sigmaEnd=0.02, lr=0.12, lrEnd=0.08,
+                               hours=24.0, snap=tuple(range(1000, 40001, 1000)))]
+
+# Lower penalties on the CPU (2026-10-29), next to to100kGpu: its training mean nearly stopped (+0.5k per 1,000 gens, snapshots ~90k start 0). Same start pool,
+# schedules and snapshots, only the penalties are lower (miss 10 -> 5, detour 0.1 -> 0.05, deviation 0.03 -> 0): climbs it faster per generation, the penalties
+# are the brake. targetWatch.py stops it at 100k like the GPU run. Start: python nightRun.py --experiment lowPenaltyCpu --workers 30 (GPU run + watcher need 2 threads)
+LOW_PENALTY_CPU_EXPERIMENT = [dict(TO_100K_GPU_EXPERIMENT[0], name="lowPenaltyCpu", gpu=False, penalties=(0.0, 0.0, 0.0, 5.0, 0.05, 0.0))]
+
+# From scratch on the GPU (2026-10-29): the continuations from the long run (trained with other settings, then penalties) stalled around 90k at start 0. A fresh net learns
+# the final objective from the beginning: miss 10 + detour 0.1 + deviation 0.1 (the user's favourite nets), the penalties ramp up linearly over the first 25% of the
+# 24 h cap (a net from scratch dies in seconds, full penalties would swamp its tiny scores). Recipe of the best from-scratch / long runs: 800 x 50, repeat 5, sigma
+# 0.05 -> 0.03 and lr 0.5 -> 0.2 geometric over the clock. Snapshot every 1,000 gens for targetWatch.py (stops the run at 100k start 0).
+# Start in tmux: ~/venv-gpu/bin/python nightRun.py --experiment scratchGpu --workers 2 --no-plot
+# The penalty ramp also grows the steer dead zone from 0 to 0.2: inside the dead zone a random net never moves, all its children score the same and ES learns nothing
+# (first attempt, 3,000 generations at ~190 points: 97% of the generations had p10 = median = p90; a net with a larger output layer collapsed the same way).
+SCRATCH_GPU_EXPERIMENT = [dict(slotPhase("scratchGpu", CONTROL_SLOTS), es=True, lr=0.5, lrEnd=0.2, sigma=0.05, sigmaEnd=0.03, gpu=True,
+                               penalties=(0.0, 0.0, 0.0, 10.0, 0.1, 0.1), penaltyRamp=0.25, games=50, population=800, gens=1000000, hours=24.0,
+                               repeat=5, smooth=1 - 0.5 ** 5, snap=tuple(range(1000, 40001, 1000)))]
+
 GAMES_FEWER_EXPERIMENT =[dict(GAMES_PER_CHILD_EXPERIMENT[0], name=f"continueBest_{g}games", games=g) for g in (100, 50)]
 
 # Sigma on a strong net (2026-10-25, server, 12 workers): every sigma test so far was 1-1.5 h from scratch (0.05 best at repeat 5), but the best step size
@@ -336,7 +360,7 @@ ES_SIGMA2_EXPERIMENT = [dict(slotPhase(f"sig{str(sg).replace('.', '')}{r}", CONT
                         for r in "AB" for sg in (0.15, 0.2)]
 
 # 'all': the cheap feature screening first (~1.5 h; may change what is worth polishing), then the three polish branches (3 h each)
-EXPERIMENTS = {"longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+EXPERIMENTS = {"scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -372,7 +396,7 @@ def runPhase(ph, cfg, a, results, note):
     population = cfg["population"] if a.smoke else ph.get("population", cfg["population"])
     method = (f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}") + f", repeat {ph.get('repeat', 1)}, smooth {ph.get('smooth', 1.0):g}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-         f"{method}, population {population} on {cfg['workers']} workers, up to {gens} gens / {hours:.2f} h")
+         f"{method}, population {population} on {cfg['workers']} workers ({'GPU' if ph.get('gpu') else 'CPU'}), up to {gens} gens / {hours:.2f} h")
     try:
         games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
         common = dict(networkName=ph["name"], livePlot=False,
@@ -384,7 +408,7 @@ def runPhase(ph, cfg, a, results, note):
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), **common)
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), penaltyRamp=ph.get("penaltyRamp", 0.0), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],
@@ -446,7 +470,8 @@ def main():
     startTime = time.time()
     note(f"run start: {[p['name'] for p in phases]}")
     if not a.smoke and not a.no_plot:    # ONE live window for the whole night: follows the newest run, chained to its parent runs
-        subprocess.Popen([sys.executable, "plotRun.py", "--live", "--chain", "--latest"])
+        if subprocess.run(["pgrep", "-f", "plotRun.py --live"], capture_output=True).returncode != 0:    # one window shows every running run: do not open a second one
+            subprocess.Popen([sys.executable, "plotRun.py", "--live", "--running", "--chain"])
     for ph in phases:
         runPhase(ph, cfg, a, results, note)
 

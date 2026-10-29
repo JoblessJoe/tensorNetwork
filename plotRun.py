@@ -7,6 +7,7 @@ Runs in its own process, so it never slows the training down.
     python plotRun.py --chain              join all runs of this model's lineage (follows 'startFrom' links)
     python plotRun.py a.csv b.csv          join several runs by hand, oldest first
     python plotRun.py --live               same, redrawn every 5 s while the run is going
+    python plotRun.py --live --running --chain   one window with a panel for EVERY run that is going right now (2 runs in parallel = 2 panels side by side)
     python plotRun.py models/x.csv --save curve.png
     python plotRun.py --last 200           zoom into the last 200 generations
     python plotRun.py --full               x axis over the planned run length (default: follows the data)
@@ -18,6 +19,7 @@ The y axis rescales itself on every redraw, so it zooms out as the scores grow.
 import argparse
 import glob
 import os
+import re
 import sys
 import time
 
@@ -179,6 +181,28 @@ def spread(positions, lo, hi, minGap):
     return out
 
 
+def runInfo(csvPath, meta):
+    '''(time cap in hours or None, device 'GPU' / 'CPU' or None) of a run. New runs write both into the CSV header (maxHours, device). Older runs: the cap from
+    the phase line in models/night_log.txt ('up to N gens / H h', the last one of that name), the device from an optional sidecar file '<csv>.device'.'''
+    cap, device = None, meta.get("device")
+    if meta.get("maxHours") not in (None, "None", ""):
+        cap = float(meta["maxHours"])
+    elif meta.get("name"):
+        log = os.path.join(os.path.dirname(os.path.abspath(csvPath)), "night_log.txt")
+        try:
+            with open(log, errors="replace") as f:
+                for line in f:
+                    m = re.search(r"phase (\S+): .* up to \d+ gens / ([\d.]+) h", line)
+                    if m and m.group(1) == meta["name"]:
+                        cap = float(m.group(2))
+        except OSError:
+            pass
+    if device is None and os.path.exists(csvPath + ".device"):
+        with open(csvPath + ".device") as f:
+            device = f.read().strip()
+    return cap, (device.upper() if device else None)
+
+
 def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     T = THEMES[theme]
     if chain and len(paths) == 1:
@@ -188,19 +212,27 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     else:
         meta, d, bounds, totalGens = {}, {"gen": np.empty(0)}, [], 0
     fig.clear()
-    fig.set_facecolor(T["surface"])
+    fig.patch.set_facecolor(T["surface"])
+    wIn = fig.bbox.width / fig.dpi
+    k = min(1.0, wIn / 12.5)                 # panels are narrower than a single window: shrink the texts with them
+    left = max(0.075, 1.0 / wIn)             # room for the y tick labels and the axis label
     if len(d["gen"]) == 0:
         fig.text(0.5, 0.5, "waiting for the first generation...", color=T["ink2"], ha="center", va="center", fontsize=14)
         return None
 
     total = totalGens or None
     gen = d["gen"]
+    cap, device = runInfo(paths[-1], meta)
+    ownElapsed = loadRun(paths[-1])[1]["elapsed_s"][-1]          # clock of the newest run alone (the time cap counts that, not the chain)
+    perGen = rolling(d["dt"], 20)[-1]
+    live = time.time() - os.path.getmtime(paths[-1]) < max(90.0, 8 * perGen)    # the CSV is still being written
+    timeLeft = max(0.0, cap * 3600 - ownElapsed) if cap else None
     sel = slice(-last, None) if last else slice(None)
     bestEver = np.maximum.accumulate(d["best"])
     window = max(5, len(gen) // 12)
     smooth = rolling(d["mean"], window)
 
-    gs = fig.add_gridspec(2, 1, height_ratios=[4.2, 1], hspace=0.08, left=0.075, right=0.82, top=0.765, bottom=0.09)
+    gs = fig.add_gridspec(2, 1, height_ratios=[4.2, 1], hspace=0.08, left=left, right=0.82, top=0.725, bottom=0.09)
     ax = fig.add_subplot(gs[0])
     axT = fig.add_subplot(gs[1], sharex=ax)
     for a in (ax, axT):
@@ -240,9 +272,17 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
         ax.set_ylim(low, top * 1.10 if top > 0 else 1)
     x0 = gen[sel][0]
     xr = total if (full and total and not last) else gen[-1]   # follows the data; --full shows the planned run length
+    if full and cap and live and not last and timeLeft:
+        xr = gen[-1] + timeLeft / max(perGen, 1e-9)                 # time-capped: where the cap will be reached at the current speed
     ax.set_xlim(x0 - 0.5, max(xr, x0 + 1) + 0.5)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.set_ylabel("score per game (points)", color=T["ink2"], fontsize=10)
+    unit, perUnit = ("minutes", 60.0) if d["elapsed_s"][-1] < 5400 else ("hours", 3600.0)
+    hours = d["elapsed_s"] / perUnit
+    secAx = ax.secondary_xaxis("top", functions=(lambda g: np.interp(g, gen, hours), lambda h: np.interp(h, hours, gen)))
+    secAx.set_xlabel(f"elapsed {unit}", color=T["muted"], fontsize=9 * k)
+    secAx.tick_params(colors=T["ink2"], length=0, labelsize=9 * k)
+    secAx.spines["top"].set_visible(False)
 
     # end labels (text stays in ink; the dot carries the series color)
     y0, y1 = ax.get_ylim()
@@ -277,14 +317,33 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
 
     # headline + facts
     elapsed = d["elapsed_s"][-1]
-    perGen = rolling(dt, 20)[-1]
     done = int(gen[-1])
-    eta = f"   ETA {fmtTime((total - done) * perGen)}" if total and done < total else ("   finished" if total else "")
-    prog = f"generation {done}" + (f" / {total}" if total else "")
+    if cap:      # time-capped run: the cap, not the generation count, ends it
+        if timeLeft <= 0:
+            eta = f"   |   time cap {cap:g} h reached"
+        elif live:
+            eta = f"   |   {fmtTime(timeLeft)} left of {cap:g} h, ends ~{time.strftime('%a %H:%M', time.localtime(time.time() + timeLeft))}"
+        else:
+            eta = f"   |   stopped at {fmtTime(ownElapsed)} of {cap:g} h"
+    else:
+        eta = f"   |   ETA {fmtTime((total - done) * perGen)}" if total and done < total else ("   |   finished" if total else "")
+    prog = f"generation {done:,}" + (f" / {total:,}" if total and not cap else "")
+    speed = f"{perGen:.2f}" if perGen < 1 else f"{perGen:.1f}"
     name = meta.get("name", os.path.basename(paths[-1]))
-    fig.text(0.075, 0.955, name, color=T["ink"], fontsize=17, fontweight="bold", va="top")
+    fig.text(left, 0.965, name, color=T["ink"], fontsize=17 * k, fontweight="bold", va="top")
+    if device:
+        fig.text(0.82, 0.962, f" {device} ", color=T["ink"], fontsize=11 * k, fontweight="bold", va="top", ha="right",
+                 bbox=dict(boxstyle="round,pad=0.3", fc=T["aqua"] if device == "GPU" else T["blue"], ec="none", alpha=0.85))
+    # time progress bar (time cap) - or generation progress for a run with a sensible planned length
+    frac = min(1.0, ownElapsed / (cap * 3600)) if cap else (min(1.0, done / total) if total and total <= 100000 else None)
+    if frac is not None:
+        from matplotlib.patches import Rectangle
+        bar = fig.add_axes([left, 0.917, 0.82 - left, 0.010])
+        bar.set_xlim(0, 1); bar.set_ylim(0, 1); bar.axis("off")
+        bar.add_patch(Rectangle((0, 0), 1, 1, color=T["grid"], linewidth=0))
+        bar.add_patch(Rectangle((0, 0), frac, 1, color=T["blue"], linewidth=0))
     chained = f"   |   {len(bounds) + 1} runs chained" if bounds else ""
-    fig.text(0.075, 0.915, f"{prog}   |   elapsed {fmtTime(elapsed)}{eta}   |   {perGen:.1f} s/gen{chained}", color=T["ink2"], fontsize=10.5, va="top")
+    fig.text(left, 0.903, f"{prog}   |   elapsed {fmtTime(elapsed)}{eta}   |   {speed} s/gen ({3600 / max(perGen, 1e-9):,.0f} gens/h){chained}", color=T["ink2"], fontsize=10.5 * k, va="top")
 
     sinceRecord = done - int(gen[rec[-1]]) if len(rec) else done
     facts = f"trend now {smooth[-1]:,.0f}"
@@ -293,29 +352,30 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
         gain = smooth[-1] - smooth[-1 - recent]
         facts += f"   ({gain:+,.0f} / {recent} gens, {100 * gain / max(smooth[-1 - recent], 1e-9):+.0f}%)"
     facts += f"   |   best ever {bestEver[-1]:,.0f}, set {sinceRecord} gens ago   |   {len(rec)} records"
-    fig.text(0.075, 0.875, facts, color=T["ink2"], fontsize=10.5, va="top")
+    fig.text(left, 0.866, facts, color=T["ink2"], fontsize=10.5 * k, va="top")
     cfg = (f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}"
            f"  start heights {meta.get('minStartHeight', 0)}-{meta.get('maxStartHeight')}" if meta.get("maxStartHeight", "None") != "None" else
            f"population {meta.get('population', '?')}  games/network {meta.get('games', '?')}  mutation {meta.get('mutationRate', '?')}"
            f" / sigma {meta.get('sigma', '?')}  elites {meta.get('elites', '?')}  keep {meta.get('keepPart', '?')}  normal start")
-    fig.text(0.075, 0.838, cfg, color=T["muted"], fontsize=9.5, va="top")
+    fig.text(left, 0.830, cfg, color=T["muted"], fontsize=9.5 * k, va="top")
     info = networkInfo(paths[-1], meta)
     parts = []
     if info:
         sizes, nWeights = info
         kind = "  (target mode)" if sizes[0] == 25 and sizes[-1] == 7 and meta.get("stableSlots") == "True" else ""
         parts.append(f"network {' \u2192 '.join(str(n) for n in sizes)}{kind}   {nWeights:,} weights")
-    parts.append(describeSlots(meta.get("stableSlots")))
+    if meta.get("stableSlots") is not None:           # older runs: their observation layout (the current one is fixed)
+        parts.append(describeSlots(meta.get("stableSlots")))
     if meta.get("steerSmoothing") not in (None, "1.0", "1"):
         parts.append(f"steer smoothing {meta['steerSmoothing']}")
     if meta.get("zeroFraction") not in (None, "0.0", "0"):
         parts.append(f"{100 * float(meta['zeroFraction']):.0f}% of the games start at 0")
     if meta.get("startFrom") not in (None, "None"):
-        parts.append(f"continues {os.path.basename(meta['startFrom'])}")
+        parts.append("continues " + os.path.basename(meta["startFrom"]).replace(".pt", "").replace("_pool", "")[:34])
     else:
         parts.append("from scratch")
-    fig.text(0.075, 0.803, "   |   ".join(parts), color=T["muted"], fontsize=9.5, va="top")
+    fig.text(left, 0.796, "   |   ".join(parts), color=T["muted"], fontsize=9.5 * k, va="top")
 
     return dict(ax=ax, gen=gen, d=d, smooth=smooth, bestEver=bestEver)
 
@@ -353,6 +413,48 @@ def newestCsv():
     return max(files, key=os.path.getmtime)
 
 
+def activeCsvs(maxAge=180.0):
+    '''The run CSVs written to within the last maxAge seconds = the runs that are going right now, oldest start first.'''
+    now = time.time()
+    files = [f for f in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "*.csv"))
+             if now - os.path.getmtime(f) < maxAge and not os.path.basename(f).startswith("stress")]
+    return sorted(files, key=lambda f: os.path.basename(f)[-23:])          # '<name>_YYYY-MM-DD_HH-MM-SS.csv'
+
+
+MAX_PANELS = 4
+
+
+class Panels:
+    '''One window with a panel per running run (sub-figures of one figure). A panel keeps following its run; when that run ends (the next phase of a
+    nightRun starts a new CSV) it takes over a running CSV nobody shows yet, so two parallel runs never swap places.'''
+
+    def __init__(self, fig):
+        self.fig, self.paths, self.subs = fig, [], []
+
+    def update(self):
+        active = activeCsvs()
+        claimed = {p for p in self.paths if p in active}
+        for k, p in enumerate(self.paths):
+            if p not in active:
+                free = [c for c in active if c not in claimed]
+                if free:
+                    self.paths[k] = free[0]
+                    claimed.add(free[0])
+        for c in active:
+            if c not in claimed and len(self.paths) < MAX_PANELS:
+                self.paths.append(c)
+                claimed.add(c)
+        if not self.paths:
+            self.paths = [newestCsv()]                  # nothing is running: show the newest run
+        if len(self.subs) != len(self.paths):
+            n = len(self.paths)
+            cols = n if n <= 2 else 2
+            rows = -(-n // cols)
+            self.fig.clear()
+            self.fig.set_size_inches(12.5 if cols == 1 else 10.2 * cols, 7.6 * rows, forward=True)
+            self.subs = list(self.fig.subfigures(rows, cols, wspace=0.01, hspace=0.01, squeeze=False).ravel())[:n]
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Learning curve of a GA training run")
     ap.add_argument("csv", nargs="*", help="run CSV(s), oldest first (default: newest in models/)")
@@ -361,7 +463,8 @@ if __name__ == "__main__":
     ap.add_argument("--save", metavar="PNG", help="write a PNG instead of opening a window")
     ap.add_argument("--last", type=int, metavar="N", help="zoom into the last N generations")
     ap.add_argument("--latest", action="store_true", help="with --live: always follow the newest CSV in models/ (switches by itself when a new run/phase starts)")
-    ap.add_argument("--full", action="store_true", help="x axis spans the whole planned run, not just the finished generations")
+    ap.add_argument("--running", action="store_true", help="one panel per run that is going right now (CSV written in the last 3 minutes), up to 4; with --live they follow their runs")
+    ap.add_argument("--full", action="store_true", help="x axis spans the whole planned run, not just the finished generations (time-capped: up to where the cap is reached)")
     ap.add_argument("--log", action="store_true", help="logarithmic y axis")
     ap.add_argument("--light", action="store_true", help="light theme")
     a = ap.parse_args()
@@ -374,14 +477,27 @@ if __name__ == "__main__":
         raise SystemExit(f"matplotlib has no window backend in this Python ({sys.executable}).\n"
                          "Use the project venv (source venv/bin/activate, or ./venv/bin/python plotRun.py ...), "
                          "which has PyQt6, or write a PNG with --save out.png.")
-    fig = plt.figure(figsize=(12.5, 7.6), dpi=110)
-    state = draw(fig, paths, theme, a.last, a.log, a.full, a.chain)
+    fig = plt.figure(figsize=(12.5, 7.6), dpi=100)
+    panels = Panels(fig) if a.running else None
+
+    def redraw():
+        '''Draws everything once; returns the hover states.'''
+        if panels:
+            panels.update()
+            return [draw(sub, [p], theme, a.last, a.log, a.full, a.chain) for sub, p in zip(panels.subs, panels.paths)]
+        return [draw(fig, paths, theme, a.last, a.log, a.full, a.chain)]
+
+    def hover(states):
+        for target, st in zip(panels.subs if panels else [fig], states):
+            if st:
+                addHover(target, st, theme)
+
+    states = redraw()
     if a.save:
         fig.savefig(a.save, facecolor=fig.get_facecolor())
         print("saved", a.save)
     else:
-        if state:
-            addHover(fig, state, theme)
+        hover(states)
         plt.show(block=not a.live)
         while a.live and plt.fignum_exists(fig.number):
             # wait inside the window's own event loop (keeps it responsive). NOT plt.pause(): that calls
@@ -389,7 +505,7 @@ if __name__ == "__main__":
             fig.canvas.start_event_loop(a.live)
             if not plt.fignum_exists(fig.number):
                 break
-            if a.latest:
+            if a.latest and not panels:
                 try:
                     newest = newestCsv()
                     if newest != paths[-1]:
@@ -398,9 +514,7 @@ if __name__ == "__main__":
                 except SystemExit:
                     pass
             try:
-                state = draw(fig, paths, theme, a.last, a.log, a.full, a.chain)
-                if state:
-                    addHover(fig, state, theme)
+                hover(redraw())
                 fig.canvas.draw_idle()
             except Exception:                         # a bad frame (e.g. half-written CSV line) must never close the window
                 import traceback

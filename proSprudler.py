@@ -18,7 +18,7 @@ from multiprocessing import Pool, Manager, TimeoutError
 from network import Network, buildNetwork, DEVICE, flattenNetwork, unflattenNetwork
 from training import buildPopulation
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprudelJump"))
-from env import SprudelJumpEnv, OBSERVATION_LENGTH
+from env import SprudelJumpEnv, OBSERVATION_LENGTH, STEER_DEAD_ZONE
 try:
     from fastEnv import FastBatch, forwardLogits, HAVE_BLAS
 except ImportError:
@@ -198,7 +198,7 @@ def betterBreed(parent: torch.Tensor, sigma: float, populationSize: int) -> tupl
     return (children, noise)
 
 
-def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, returnCauses: bool = False, penalties: tuple = (0.0, 0.0, 0.0)):
+def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrames: int = MAX_FRAMES_PER_GAME, maxStartHeight: int | None = None, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, returnCauses: bool = False, penalties: tuple = (0.0, 0.0, 0.0), deadZone: float | None = None):
     '''
     Plays 'iterations' games with the network side by side (lockstep) and
     returns its score, averaged over these games.
@@ -213,18 +213,19 @@ def evaluateNetwork(network: Network, seeds: list, iterations: int = 5, maxFrame
     'fast': play with the numba-compiled env (fastEnv, needs numba; same rules, same levels, same scores for actionRepeat=1).
     'actionRepeat': the network decides every actionRepeat-th frame and its action is repeated in between (fast=True only).
     'penalties' (fast=True only): see behaviourPenalty; (0, 0, 0) = the plain game score.
+    'deadZone': the steer dead zone of the games (env.STEER_DEAD_ZONE when None; trainingLoopES lowers it during a penalty ramp).
     'monsterFraction'/'monsterMult': monster practice - that share of the games has monsterMult x the normal monster spawn chance.
     'returnCauses' (fast=True only): return (scores, causes) instead of scores; causes[i] = how game i ended: 1 monster while rising, 2 monster otherwise,
     3 fell, 4 no progress, 0 = still running (hit maxFrames).
     '''
     if fast:
-        return evaluateNetworkFast(network, seeds, maxFrames, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, returnCauses, penalties)
+        return evaluateNetworkFast(network, seeds, maxFrames, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, returnCauses, penalties, deadZone)
     assert not returnCauses, "returnCauses needs fast=True"
     assert actionRepeat == 1, "actionRepeat > 1 needs fast=True"
     # the network as plain numpy arrays: for batches this small torch's per-call overhead dominates.
     # same computation as Network.forwardPass (ReLU hidden layers, sigmoid output), same float32 results.
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
-    envs = [SprudelJumpEnv() for i in range(0, iterations)]
+    envs = [SprudelJumpEnv() if deadZone is None else SprudelJumpEnv(steerDeadZone=deadZone) for i in range(0, iterations)]
     states = [env.reset(maxStartHeight, seed, minStartHeight, zeroFraction, monsterFraction, monsterMult) for env, seed in zip(envs, seeds)]
     scores = [0.0] * iterations
     # indices of the games still running. Row k of the batch belongs to game alive[k] -
@@ -278,7 +279,7 @@ def behaviourPenalty(batch, penalties: tuple) -> np.ndarray:
 
 
 def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing,
-                        monsterFraction, monsterMult, actionRepeat, returnCauses=False, penalties=(0.0, 0.0, 0.0)):
+                        monsterFraction, monsterMult, actionRepeat, returnCauses=False, penalties=(0.0, 0.0, 0.0), deadZone=None):
     '''
     Same as evaluateNetwork, but the games run in the numba-compiled env (fastEnv.FastBatch) and the network decides only every
     'actionRepeat' frames (its action is repeated in between). With actionRepeat=1 the scores are identical to evaluateNetwork's.
@@ -286,7 +287,7 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
     '''
     layers = [(w.detach().cpu().numpy().astype(np.float32).T.copy(), b.detach().cpu().numpy().astype(np.float32)) for w, b in network.layers]
     nIn, nOut = layers[0][0].shape[0], layers[-1][0].shape[1]
-    batch = FastBatch(seeds, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult)
+    batch = FastBatch(seeds, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult, **({} if deadZone is None else dict(deadZone=deadZone)))
     # fused loop: stepObserve does the smoothing, the frames, dropping finished games and the next observation in one
     # compiled call (same results as observe -> step -> filter, ~13% faster). alive[:n] = games still running, obs[:n] = their observations
     alive, obs = batch.startLoop()
@@ -332,7 +333,7 @@ def evaluateNetworkFast(network: Network, seeds: list, maxFrames: int, maxStartH
 
 
 def evaluateNetworksFast(networks: list, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing,
-                         monsterFraction, monsterMult, actionRepeat, returnCauses=False, penalties=(0.0, 0.0, 0.0)):
+                         monsterFraction, monsterMult, actionRepeat, returnCauses=False, penalties=(0.0, 0.0, 0.0), deadZone=None):
     '''
     evaluateNetworkFast for a GROUP of networks of the same shape: they all play the same 'seeds' in ONE lockstep loop (one FastBatch of
     len(networks) * len(seeds) games, FastBatch.runGroup). Every game plays exactly as it would alone (bit-identical scores), but the fixed cost of a
@@ -344,7 +345,7 @@ def evaluateNetworksFast(networks: list, seeds: list, maxFrames: int, maxStartHe
     nIn, nOut = per[0][0][0].shape[0], per[0][-1][0].shape[1]
     wsStack = tuple(np.ascontiguousarray(np.stack([layers[L][0] for layers in per])) for L in range(len(per[0])))
     bsStack = tuple(np.ascontiguousarray(np.stack([layers[L][1] for layers in per])) for L in range(len(per[0])))
-    batch = FastBatch(list(seeds) * k, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult)
+    batch = FastBatch(list(seeds) * k, maxStartHeight, minStartHeight, zeroFraction, monsterFraction, monsterMult, **({} if deadZone is None else dict(deadZone=deadZone)))
     alive, obs = batch.startLoop()
     n = len(alive)
     applied = np.full(k * S, 0.5)
@@ -394,15 +395,15 @@ def logGeneration(logPath: str, meta: str, row: list):
 
 
 def evaluatePopulation(p, networks: list[Network], seeds: list, maxFrames: int, maxStartHeight: int | None,
-                       sharedStatus, desc: str, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, penalties: tuple = (0.0, 0.0, 0.0)) -> list[list[float]]:
+                       sharedStatus, desc: str, minStartHeight: int = 0, zeroFraction: float = 0.0, steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0, fast: bool = False, actionRepeat: int = 1, penalties: tuple = (0.0, 0.0, 0.0), deadZone: float | None = None) -> list[list[float]]:
     '''
     Plays every network in 'networks' on the same 'seeds' (one game per seed) using the worker pool 'p'.
     Returns one list of per-game scores per network, in the same order as 'networks'.
     '''
-    evaluate = partial(evaluateNetwork, seeds=seeds, iterations=len(seeds), maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, monsterFraction=monsterFraction, monsterMult=monsterMult, fast=fast, actionRepeat=actionRepeat, penalties=penalties)
+    evaluate = partial(evaluateNetwork, seeds=seeds, iterations=len(seeds), maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, monsterFraction=monsterFraction, monsterMult=monsterMult, fast=fast, actionRepeat=actionRepeat, penalties=penalties, deadZone=deadZone)
     k = groupSize(len(networks), len(seeds), getattr(p, "_processes", 1)) if fast and COMPILED_FORWARD and hasattr(FastBatch, "runGroup") else 1
     if k > 1:    # several children per task, played in one lockstep loop (same scores, less fixed cost per decision)
-        evaluate = partial(evaluateNetworksFast, seeds=seeds, maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, monsterFraction=monsterFraction, monsterMult=monsterMult, actionRepeat=actionRepeat, penalties=penalties)
+        evaluate = partial(evaluateNetworksFast, seeds=seeds, maxFrames=maxFrames, maxStartHeight=maxStartHeight, minStartHeight=minStartHeight, zeroFraction=zeroFraction, steerSmoothing=steerSmoothing, monsterFraction=monsterFraction, monsterMult=monsterMult, actionRepeat=actionRepeat, penalties=penalties, deadZone=deadZone)
         tasks = [networks[i:i + k] for i in range(0, len(networks), k)]
     else:
         tasks = networks
@@ -446,7 +447,7 @@ class _GpuCounters:
 
 
 def evaluatePopulationGpu(state: dict, rows: torch.Tensor, template: Network, seeds: list, maxFrames: int, maxStartHeight, minStartHeight, zeroFraction,
-                          steerSmoothing, monsterFraction, monsterMult, actionRepeat, penalties) -> np.ndarray:
+                          steerSmoothing, monsterFraction, monsterMult, actionRepeat, penalties, deadZone=None) -> np.ndarray:
     '''evaluatePopulation on the GPU: every child (a flat parameter row, layout of flattenNetwork) plays all 'seeds'. Returns [children, games] scores minus the
     behaviour penalties, like the CPU path. 'state' keeps the GPU batch between generations.'''
     from gpuEnv import GpuBatch
@@ -463,7 +464,8 @@ def evaluatePopulationGpu(state: dict, rows: torch.Tensor, template: Network, se
         biases.append(flat[:, offset:offset + b.numel()])
         offset += b.numel()
     r = state["batch"].evaluate([a for wb in zip(weights, biases) for a in wb], seeds, smooth=steerSmoothing, repeat=actionRepeat, maxStart=maxStartHeight,
-                                minStart=minStartHeight, zeroFraction=zeroFraction, monsterFraction=monsterFraction, monsterMult=monsterMult, maxFrames=maxFrames)
+                                minStart=minStartHeight, zeroFraction=zeroFraction, monsterFraction=monsterFraction, monsterMult=monsterMult, maxFrames=maxFrames,
+                                **({} if deadZone is None else dict(deadZone=deadZone)))
     scores = r["score"]
     if any(penalties):
         scores = scores - behaviourPenalty(_GpuCounters(r), penalties).reshape(P, S)
@@ -485,7 +487,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         minStartHeight: int = 0,       zeroFraction: float = 0.0,              snapshotAt: tuple = (), 
                         steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0,
                         fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0,
-                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False) -> Network:
+                        sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False, penaltyRamp: float = 0.0) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -497,6 +499,9 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     (by the clock if 'maxHours' is set, else by generation, see scheduledValue); None = fixed.
     'penalties' (fast=True only): (shotFree, shotAll, steer[, shotMiss[, detour[, deviation]]]) per game, subtracted from the score the votes are made of (see behaviourPenalty); the CSV's
     mean / median / best are then penalised fitness, not game score. (0, 0, 0) = off.
+    'penaltyRamp': the penalties AND the steer dead zone grow linearly from 0 to their full size over this share of the run (progress as in scheduledValue: the clock
+    if 'maxHours' is set); 0 = full size from the first generation. A net from scratch dies within seconds, a full penalty on its tiny scores would drown the
+    signal to jump, and inside the dead zone (steer output within 0.2 of 0.5) a random net never moves, so all children score the same and ES learns nothing.
     'gpu': evaluate the population on the GPU (sprudelJump/gpuEnv.py, needs ~/venv-gpu; the worker pool is then unused, start the run with few workers).
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
@@ -551,12 +556,15 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     ## EVALUATION
                     evalStart = time.perf_counter()
                     seeds = [random.randrange(2**32) for _ in range(perNetworkIterations)]  # shared by all networks this generation
+                    rampFactor = 1.0 if penaltyRamp <= 0 else min(1.0, runProgress(i, generations, start, maxHours) / penaltyRamp)
+                    genPenalties = tuple(x * rampFactor for x in penalties)    # the penalties of this generation (grow during the ramp)
+                    genDeadZone = None if penaltyRamp <= 0 else STEER_DEAD_ZONE * rampFactor    # the steer dead zone grows with them (a net from scratch never moves inside it)
 
                     if gpu:    # all children's games at once on the GPU (gpuEnv), straight from the flat parameter rows
-                        popScores = torch.tensor(evaluatePopulationGpu(gpuState, currGen, template, seeds, maxFramesPerGame, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, penalties))
+                        popScores = torch.tensor(evaluatePopulationGpu(gpuState, currGen, template, seeds, maxFramesPerGame, maxStartHeight, minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, actionRepeat, genPenalties, genDeadZone))
                     else:
                         currGenUnflattened = [unflattenNetwork(row, template) for row in currGen]
-                        popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, penalties))                           # [population, games]: everyone, all games
+                        popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
 
                     evalTime += time.perf_counter() - evalStart
 
@@ -591,7 +599,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                                   f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
                                   f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                                   f"shape={'-'.join(str(n) for n in [template.layers[0][0].shape[1]] + [w.shape[0] for w, _ in template.layers])} "
-                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat} sigmaEnd={sigmaEnd} learningRateEnd={learningRateEnd}",
+                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat} sigmaEnd={sigmaEnd} learningRateEnd={learningRateEnd} maxHours={maxHours} device={'gpu' if gpu else 'cpu'} penaltyRamp={penaltyRamp}",
                                   [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(), bestChild, bestChild])    # 'best' and 'chosen' columns: both the best child
                     pbar.set_postfix(best=f"{bestChild:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}", sigma=f"{currSigma:.4f}", lr=f"{currLearningRate:.3f}")
                     pbar.update(1)
