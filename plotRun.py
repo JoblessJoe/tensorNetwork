@@ -347,8 +347,8 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
 
     sinceRecord = done - int(gen[rec[-1]]) if len(rec) else done
     facts = f"trend now {smooth[-1]:,.0f}"
-    if len(gen) > 1:                                  # change over the last (up to) 100 generations needs a point to compare with
-        recent = min(100, len(gen) - 1)
+    if len(gen) > 1:                                  # change over the last (up to) 1,000 generations needs a point to compare with
+        recent = min(1000, len(gen) - 1)
         gain = smooth[-1] - smooth[-1 - recent]
         facts += f"   ({gain:+,.0f} / {recent} gens, {100 * gain / max(smooth[-1 - recent], 1e-9):+.0f}%)"
     facts += f"   |   best ever {bestEver[-1]:,.0f}, set {sinceRecord} gens ago   |   {len(rec)} records"

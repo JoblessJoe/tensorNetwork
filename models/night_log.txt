@@ -9593,3 +9593,519 @@ lowPenaltyCpu_2026-10-29_13-45-25.pt                      51 /  29 /  12 /   6  
 [2026-10-29 18:38:13] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
 [2026-10-29 19:01:23] run start: ['scratchRampGpu']
 [2026-10-29 19:01:23] phase scratchRampGpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-30 10:26:27] run start: ['scratchRamp800Gpu']
+[2026-10-30 10:26:27] phase scratchRamp800Gpu: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.0372, ES, lr 0.295, repeat 5, smooth 0.96875, population 800 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-30 10:35:53] run start: ['shapeScratch_200networks_200games_A', 'shapeScratch_400networks_100games_A', 'shapeScratch_800networks_50games_A', 'shapeScratch_1600networks_25games_A', 'shapeScratch_200networks_100games_A', 'shapeScratch_400networks_50games_A', 'shapeScratch_800networks_25games_A', 'shapeScratch_200networks_200games_B', 'shapeScratch_400networks_100games_B', 'shapeScratch_800networks_50games_B', 'shapeScratch_1600networks_25games_B', 'shapeScratch_200networks_100games_B', 'shapeScratch_400networks_50games_B', 'shapeScratch_800networks_25games_B']
+[2026-10-30 10:35:53] phase shapeScratch_200networks_200games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:35:55] phase shapeScratch_200networks_200games_A FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 631, in trainingLoopES
+    manager.shutdown()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/managers.py", line 675, in _finalize_manager
+    process.join(timeout=shutdown_timeout)
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/popen_fork.py", line 40, in wait
+    if not wait([self.sentinel], timeout):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 1136, in wait
+    ready = selector.select(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:35:55] phase shapeScratch_400networks_100games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:35:58] phase shapeScratch_400networks_100games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 695, in _terminate_pool
+    cls._help_stuff_finish(inqueue, task_handler, len(pool))
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 675, in _help_stuff_finish
+    inqueue._rlock.acquire()
+KeyboardInterrupt
+
+[2026-10-30 10:35:58] phase shapeScratch_800networks_50games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:35:58] phase shapeScratch_800networks_50games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:35:58] phase shapeScratch_1600networks_25games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 1600 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:35:59] phase shapeScratch_1600networks_25games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:35:59] phase shapeScratch_200networks_100games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:35:59] phase shapeScratch_200networks_100games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:35:59] phase shapeScratch_400networks_50games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:00] phase shapeScratch_400networks_50games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:00] phase shapeScratch_800networks_25games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:00] phase shapeScratch_800networks_25games_A FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:00] phase shapeScratch_200networks_200games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:00] phase shapeScratch_200networks_200games_B FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:00] phase shapeScratch_400networks_100games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:01] phase shapeScratch_400networks_100games_B FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/context.py", line 119, in Pool
+    return Pool(processes, initializer, initargs, maxtasksperchild,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 215, in __init__
+    self._repopulate_pool()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 306, in _repopulate_pool
+    return self._repopulate_pool_static(self._ctx, self.Process,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 329, in _repopulate_pool_static
+    w.start()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+                  ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/context.py", line 282, in _Popen
+    return Popen(process_obj)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/usr/lib/python3.12/multiprocessing/popen_fork.py", line 65, in _launch
+    child_r, parent_w = os.pipe()
+                        ^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:01] phase shapeScratch_800networks_50games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:01] phase shapeScratch_800networks_50games_B FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:01] phase shapeScratch_1600networks_25games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 1600 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:01] phase shapeScratch_1600networks_25games_B FAILED:
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 578, in trainingLoopES
+    currGenUnflattened = [unflattenNetwork(row, template) for row in currGen]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/network.py", line 134, in unflattenNetwork
+    matrix = piece.reshape(shape)
+             ^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:01] phase shapeScratch_200networks_100games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:02] phase shapeScratch_200networks_100games_B FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:02] phase shapeScratch_400networks_50games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:02] phase shapeScratch_400networks_50games_B FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:02] phase shapeScratch_800networks_25games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 10:36:03] phase shapeScratch_800networks_25games_B FAILED:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 856, in next
+    item = self._items.popleft()
+           ^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from an empty deque
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 579, in trainingLoopES
+    popScores = torch.tensor(evaluatePopulation(p, currGenUnflattened, seeds, maxFramesPerGame, maxStartHeight, sharedStatus, f"  gen {i + 1}", minStartHeight, zeroFraction, steerSmoothing, monsterFraction, monsterMult, fast, actionRepeat, genPenalties, genDeadZone))                           # [population, games]: everyone, all games
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 415, in evaluatePopulation
+    got = results.next(timeout=1.0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 861, in next
+    self._cond.wait(timeout)
+  File "/usr/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jtebbert/projects/tensorNetwork/nightRun.py", line 433, in runPhase
+    ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
+  File "/home/jtebbert/projects/tensorNetwork/proSprudler.py", line 555, in trainingLoopES
+    with Pool(concInstances, initializer=workerInit, initargs=(sharedStatus,)) as p:
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 739, in __exit__
+    self.terminate()
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 657, in terminate
+    self._terminate()
+  File "/usr/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 709, in _terminate_pool
+    worker_handler.join()
+  File "/usr/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/usr/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[2026-10-30 10:36:03] run done
+[2026-10-30 10:36:11] run start: ['shapeScratch_200networks_200games_A', 'shapeScratch_400networks_100games_A', 'shapeScratch_800networks_50games_A', 'shapeScratch_1600networks_25games_A', 'shapeScratch_200networks_100games_A', 'shapeScratch_400networks_50games_A', 'shapeScratch_800networks_25games_A', 'shapeScratch_200networks_200games_B', 'shapeScratch_400networks_100games_B', 'shapeScratch_800networks_50games_B', 'shapeScratch_1600networks_25games_B', 'shapeScratch_200networks_100games_B', 'shapeScratch_400networks_50games_B', 'shapeScratch_800networks_25games_B']
+[2026-10-30 10:36:11] phase shapeScratch_200networks_200games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 12:49:38] phase shapeScratch_200networks_200games_A finished -> models/shapeScratch_200networks_200games_A_2026-10-30_10-36-11.pt
+[2026-10-30 12:49:38] phase shapeScratch_400networks_100games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 15:03:01] phase shapeScratch_400networks_100games_A finished -> models/shapeScratch_400networks_100games_A_2026-10-30_12-49-38.pt
+[2026-10-30 15:03:01] phase shapeScratch_800networks_50games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 17:16:24] phase shapeScratch_800networks_50games_A finished -> models/shapeScratch_800networks_50games_A_2026-10-30_15-03-01.pt
+[2026-10-30 17:16:24] phase shapeScratch_1600networks_25games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 1600 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 19:29:51] phase shapeScratch_1600networks_25games_A finished -> models/shapeScratch_1600networks_25games_A_2026-10-30_17-16-24.pt
+[2026-10-30 19:29:51] phase shapeScratch_200networks_100games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 21:43:14] phase shapeScratch_200networks_100games_A finished -> models/shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt
+[2026-10-30 21:43:14] phase shapeScratch_400networks_50games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
