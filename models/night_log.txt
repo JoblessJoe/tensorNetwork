@@ -10109,3 +10109,21 @@ KeyboardInterrupt
 [2026-10-30 19:29:51] phase shapeScratch_200networks_100games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
 [2026-10-30 21:43:14] phase shapeScratch_200networks_100games_A finished -> models/shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt
 [2026-10-30 21:43:14] phase shapeScratch_400networks_50games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-30 23:56:39] phase shapeScratch_400networks_50games_A finished -> models/shapeScratch_400networks_50games_A_2026-10-30_21-43-14.pt
+[2026-10-30 23:56:39] phase shapeScratch_800networks_25games_A: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 02:10:03] phase shapeScratch_800networks_25games_A finished -> models/shapeScratch_800networks_25games_A_2026-10-30_23-56-39.pt
+[2026-10-31 02:10:03] phase shapeScratch_200networks_200games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 04:23:29] phase shapeScratch_200networks_200games_B finished -> models/shapeScratch_200networks_200games_B_2026-10-31_02-10-03.pt
+[2026-10-31 04:23:29] phase shapeScratch_400networks_100games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 06:36:53] phase shapeScratch_400networks_100games_B finished -> models/shapeScratch_400networks_100games_B_2026-10-31_04-23-29.pt
+[2026-10-31 06:36:53] phase shapeScratch_800networks_50games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 08:50:16] phase shapeScratch_800networks_50games_B finished -> models/shapeScratch_800networks_50games_B_2026-10-31_06-36-53.pt
+[2026-10-31 08:50:16] phase shapeScratch_1600networks_25games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 1600 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 11:03:38] phase shapeScratch_1600networks_25games_B finished -> models/shapeScratch_1600networks_25games_B_2026-10-31_08-50-16.pt
+[2026-10-31 11:03:38] phase shapeScratch_200networks_100games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 13:17:06] phase shapeScratch_200networks_100games_B finished -> models/shapeScratch_200networks_100games_B_2026-10-31_11-03-38.pt
+[2026-10-31 13:17:06] phase shapeScratch_400networks_50games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 13:43:41] run start: ['momentumScratchGpu']
+[2026-10-31 13:43:41] phase momentumScratchGpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-31 13:48:18] run start: ['momentumScratchGpu']
+[2026-10-31 13:48:18] phase momentumScratchGpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
