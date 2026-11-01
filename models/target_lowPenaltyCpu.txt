@@ -1,4 +1,0 @@
-[2026-10-29 13:45:44] watching models/lowPenaltyCpu_*_g*.pt of pid 1159785, target start 0 >= 100,000 (200 games)
-[2026-10-29 15:52:23] lowPenaltyCpu_2026-10-29_13-45-25_g1000.pt: start 0 89,774  per set [88008, 93122, 97520, 80445]
-[2026-10-29 18:06:49] lowPenaltyCpu_2026-10-29_13-45-25_g2000.pt: start 0 110,310  per set [119959, 100660, 122017, 98605]
-[2026-10-29 18:06:49] target reached -> SIGINT to pid 1159785 (run ends the phase, saves, benchmarks)
