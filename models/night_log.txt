@@ -10361,3 +10361,62 @@ momentum48Cpu_2026-11-01_12-46-57.pt                       24 /  22 /  50 /   4 
 [2026-11-01 15:57:18] benchmarking ...
 [2026-11-01 16:02:19] run start: ['momentum48GpuMirrored']
 [2026-11-01 16:02:19] phase momentum48GpuMirrored: 24 inputs, hidden [48, 48, 48], starts 0-None, sigma 0.0478, ES, lr 0.467, repeat 5, smooth 0.96875, population 400 on 2 workers (GPU), up to 149561 gens / no time cap
+[2026-11-01 22:34:07] phase momentum48GpuMirrored finished -> models/momentum48GpuMirrored_2026-11-01_16-02-19.pt
+[2026-11-01 22:34:07] benchmarking ...
+[2026-11-01 22:34:08] phase momentum48Cpu400 finished -> models/momentum48Cpu400_2026-11-01_14-55-02.pt
+[2026-11-01 22:34:08] benchmarking ...
+[2026-11-01 22:34:12] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                           start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentum48GpuMirrored_2026-11-01_16-02-19_g10000.pt    9,614  per set [9309, 9500, 10436, 9213]    6,452  per set [6550, 6320, 6149, 6789]    7,200  per set [6648, 7199, 8145, 6807]    7,949  per set [8427, 7133, 7207, 9031]    3,858  per set [4462, 3395, 3917, 3660]
+momentum48GpuMirrored_2026-11-01_16-02-19_g15000.pt   10,888  per set [11056, 11009, 10820, 10670]    6,840  per set [7387, 7246, 6501, 6224]    9,106  per set [8464, 9082, 10995, 7882]    9,191  per set [9260, 10154, 8362, 8989]    4,181  per set [3773, 4441, 4183, 4329]
+momentum48GpuMirrored_2026-11-01_16-02-19_g20000.pt    6,059  per set [5775, 5896, 6676, 5888]    1,938  per set [1683, 2250, 1776, 2044]    2,825  per set [2615, 3025, 3013, 2647]    3,917  per set [3283, 4199, 3558, 4629]    1,218  per set [1196, 1121, 1228, 1329]
+momentum48GpuMirrored_2026-11-01_16-02-19_g5000.pt     8,863  per set [9236, 8140, 10241, 7834]    6,286  per set [7133, 6426, 5626, 5959]    7,943  per set [7436, 7350, 8914, 8072]    7,600  per set [9260, 7712, 6335, 7093]    3,337  per set [2478, 3765, 3886, 3217]
+momentum48GpuMirrored_2026-11-01_16-02-19.pt           6,442  per set [6030, 5888, 7024, 6826]    1,998  per set [2125, 2044, 2023, 1802]    2,783  per set [2785, 3067, 3083, 2196]    4,467  per set [4051, 4757, 4196, 4865]    1,286  per set [1318, 1197, 1305, 1325]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                           start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentum48GpuMirrored_2026-11-01_16-02-19_g10000.pt                27 /  20 /  46 /   6                39 /  41 /  18 /   2                43 /  32 /  24 /   1                26 /  30 /  38 /   6                46 /  38 /  14 /   1
+momentum48GpuMirrored_2026-11-01_16-02-19_g15000.pt                32 /  26 /  41 /   2                46 /  36 /  16 /   2                47 /  36 /  16 /   2                39 /  31 /  28 /   2                55 /  34 /  10 /   1
+momentum48GpuMirrored_2026-11-01_16-02-19_g20000.pt                46 /  18 /  34 /   1                48 /  31 /  20 /   1                44 /  38 /  17 /   1                38 /  25 /  35 /   2                46 /  37 /  17 /   0
+momentum48GpuMirrored_2026-11-01_16-02-19_g5000.pt                 28 /  19 /  44 /  10                54 /  30 /  14 /   2                48 /  32 /  20 /   0                34 /  30 /  31 /   4                54 /  34 /  11 /   1
+momentum48GpuMirrored_2026-11-01_16-02-19.pt                       46 /  19 /  32 /   2                44 /  35 /  18 /   2                58 /  27 /  13 /   2                42 /  30 /  26 /   2                56 /  32 /  12 /   0
+
+[2026-11-01 22:34:12] run done
+[2026-11-01 22:34:19] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===[worker 1980786] long game still running: 25,000 frames, best live score 81,110
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                      start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentum48Cpu400_2026-11-01_14-55-02_g10000.pt   10,666  per set [10356, 10421, 10465, 11421]    8,199  per set [8956, 6280, 8216, 9345]    8,980  per set [7606, 9640, 9610, 9065]    9,733  per set [11137, 8587, 7773, 11434]    4,449  per set [4326, 4589, 4301, 4579]
+momentum48Cpu400_2026-11-01_14-55-02_g15000.pt   13,096  per set [10994, 13858, 14120, 13412]    9,620  per set [8554, 9107, 10522, 10294]   10,454  per set [6840, 10733, 13397, 10845]   10,734  per set [10958, 10429, 9484, 12063]    4,856  per set [5055, 5510, 4193, 4667]
+momentum48Cpu400_2026-11-01_14-55-02_g20000.pt   15,053  per set [15541, 17027, 14198, 13447]    9,692  per set [12217, 6899, 7941, 11709]   11,068  per set [9339, 13457, 11241, 10237]   12,348  per set [13419, 10828, 12438, 12707]    5,170  per set [5292, 5644, 5406, 4337]
+momentum48Cpu400_2026-11-01_14-55-02_g25000.pt    6,254  per set [6242, 5980, 6396, 6396]    2,107  per set [2118, 2342, 1760, 2209]    2,797  per set [2892, 2689, 2929, 2677]    4,603  per set [4437, 4826, 4141, 5009]    1,432  per set [1433, 1258, 1452, 1586]
+momentum48Cpu400_2026-11-01_14-55-02_g30000.pt    6,869  per set [6930, 6891, 7114, 6540]    2,394  per set [3012, 2179, 1840, 2544]    2,876  per set [2803, 3326, 3190, 2184]    5,216  per set [4543, 5251, 5010, 6060]    1,414  per set [1503, 1317, 1489, 1348]
+momentum48Cpu400_2026-11-01_14-55-02_g35000.pt    7,459  per set [7621, 7456, 7742, 7019]    2,269  per set [2048, 2145, 2440, 2445]    3,077  per set [3249, 2967, 3287, 2804]    5,341  per set [5094, 5650, 5375, 5246]    1,434  per set [1463, 1340, 1442, 1491]
+momentum48Cpu400_2026-11-01_14-55-02_g40000.pt    7,224  per set [6868, 7187, 7700, 7141]    2,646  per set [2721, 2603, 2584, 2678]    3,258  per set [3038, 3275, 3403, 3315]    5,557  per set [5532, 5590, 5240, 5867]    1,514  per set [1583, 1339, 1688, 1447]
+momentum48Cpu400_2026-11-01_14-55-02_g5000.pt     8,944  per set [9866, 8843, 9430, 7637]    6,132  per set [5898, 6275, 5771, 6584]    7,669  per set [6775, 7406, 8320, 8175]    7,103  per set [7436, 7670, 5721, 7585]    3,274  per set [3059, 3699, 3185, 3154]
+momentum48Cpu400_2026-11-01_14-55-02.pt           7,769  per set [7791, 7459, 9173, 6653]    2,692  per set [2491, 2616, 2398, 3265]    3,740  per set [4094, 3669, 4161, 3034]    5,793  per set [4952, 5141, 6336, 6741]    1,597  per set [1714, 1466, 1421, 1785]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                      start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentum48Cpu400_2026-11-01_14-55-02_g10000.pt                32 /  28 /  40 /   2                47 /  42 /  12 /   0                41 /  37 /  21 /   1                40 /  32 /  27 /   2                53 /  35 /  10 /   2
+momentum48Cpu400_2026-11-01_14-55-02_g15000.pt                38 /  32 /  26 /   4                46 /  38 /  16 /   1                46 /  35 /  18 /   1                37 /  38 /  22 /   3                50 /  34 /  15 /   1
+momentum48Cpu400_2026-11-01_14-55-02_g20000.pt                46 /  24 /  28 /   3                51 /  36 /  12 /   0                48 /  34 /  16 /   2                52 /  25 /  20 /   2                48 /  36 /  15 /   0
+momentum48Cpu400_2026-11-01_14-55-02_g25000.pt                54 /  19 /  26 /   2                53 /  32 /  14 /   1                55 /  30 /  14 /   1                46 /  31 /  22 /   2                60 /  32 /   8 /   0
+momentum48Cpu400_2026-11-01_14-55-02_g30000.pt                52 /  16 /  30 /   3                43 /  38 /  17 /   2                58 /  28 /  14 /   2                44 /  33 /  20 /   2                52 /  34 /  12 /   1
+momentum48Cpu400_2026-11-01_14-55-02_g35000.pt                50 /  22 /  27 /   1                50 /  28 /  20 /   2                56 /  22 /  19 /   2                50 /  28 /  20 /   2                58 /  27 /  14 /   0
+momentum48Cpu400_2026-11-01_14-55-02_g40000.pt                47 /  20 /  32 /   2                42 /  34 /  22 /   2                49 /  26 /  22 /   3                36 /  32 /  30 /   2                52 /  32 /  14 /   1
+momentum48Cpu400_2026-11-01_14-55-02_g5000.pt                 32 /  16 /  46 /   4                45 /  39 /  14 /   2                46 /  32 /  22 /   2                36 /  26 /  36 /   2                52 /  34 /  14 /   0
+momentum48Cpu400_2026-11-01_14-55-02.pt                       47 /  22 /  28 /   4                38 /  40 /  20 /   2                40 /  34 /  24 /   2                36 /  32 /  26 /   6                44 /  38 /  16 /   1
+
+[2026-11-01 22:34:19] run done
+[2026-11-01 22:35:05] run start: ['deadZoneOnlyGpu']
+[2026-11-01 22:35:05] phase deadZoneOnlyGpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 2 workers (GPU), up to 150000 gens / no time cap
+[2026-11-01 22:35:05] run start: ['deadZoneMissCpu']
+[2026-11-01 22:35:05] phase deadZoneMissCpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 400 on 31 workers (CPU), up to 150000 gens / no time cap
