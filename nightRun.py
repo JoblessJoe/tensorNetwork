@@ -407,7 +407,18 @@ SHAPE_SCRATCH_EXPERIMENT = [dict(SCRATCH_RAMP_GPU_EXPERIMENT[0], name=f"shapeScr
 MOMENTUM_48_CPU_EXPERIMENT = [dict(MOMENTUM_SCRATCH_GPU_EXPERIMENT[0], name="momentum48Cpu", hidden=[48] * 3, gpu=False, gens=168000, hours=None,
                                    snap=tuple(range(1000, 40001, 1000)) + tuple(range(45000, 1000001, 5000)))]
 
-EXPERIMENTS = {"momentum48Cpu": MOMENTUM_48_CPU_EXPERIMENT, "momentum400Gpu":MOMENTUM_400_GPU_EXPERIMENT, "momentumScratchGpu": MOMENTUM_SCRATCH_GPU_EXPERIMENT, "shapeScratch": SHAPE_SCRATCH_EXPERIMENT, "scratchRamp800Gpu": SCRATCH_RAMP_800_GPU_EXPERIMENT, "scratchRampGpu": SCRATCH_RAMP_GPU_EXPERIMENT, "scratchGpu200": SCRATCH_GPU200_EXPERIMENT, "scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+# Continue momentum48Cpu with 400 x 50 (2026-11-01, user: the shape test winner): stopped at gen 18,439 (mean ~7.3k); sigma / lr pick up where the generation
+# schedule stood (0.0478 / 0.467), the rest of the 168k gens. Same switch as the 24 x 3 run (200 x 100 -> 400 x 50), only at another generation.
+MOMENTUM_48_400_CPU_EXPERIMENT = [dict(MOMENTUM_48_CPU_EXPERIMENT[0], name="momentum48Cpu400", population=400, games=50, gens=168000 - 18439,
+                                       pool="models/momentum48Cpu_2026-11-01_12-46-57_pool.pt", sigma=0.0478, lr=0.467,
+                                       snap=tuple(range(5000, 1000001, 5000)))]
+
+# Mirrored sampling (2026-11-01): momentum48Cpu400 with +eps / -eps pairs, on the GPU (gpuEnv hidden width from the phase, 48). Same pool, sigma / lr, 400 x 50 and
+# generation cap as momentum48Cpu400: the only difference is mirrored=True -> compare the two curves generation by generation.
+# Start in tmux: PYTHONPATH=../sj_momentum OPENBLAS_NUM_THREADS=1 ~/venv-gpu/bin/python nightRun.py --experiment momentum48GpuMirrored --workers 2 --no-plot
+MOMENTUM_48_GPU_MIRRORED_EXPERIMENT = [dict(MOMENTUM_48_400_CPU_EXPERIMENT[0], name="momentum48GpuMirrored", gpu=True, mirrored=True)]
+
+EXPERIMENTS = {"momentum48GpuMirrored": MOMENTUM_48_GPU_MIRRORED_EXPERIMENT, "momentum48Cpu400": MOMENTUM_48_400_CPU_EXPERIMENT,"momentum48Cpu": MOMENTUM_48_CPU_EXPERIMENT,"momentum400Gpu":MOMENTUM_400_GPU_EXPERIMENT, "momentumScratchGpu": MOMENTUM_SCRATCH_GPU_EXPERIMENT, "shapeScratch": SHAPE_SCRATCH_EXPERIMENT, "scratchRamp800Gpu": SCRATCH_RAMP_800_GPU_EXPERIMENT, "scratchRampGpu": SCRATCH_RAMP_GPU_EXPERIMENT, "scratchGpu200": SCRATCH_GPU200_EXPERIMENT, "scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -444,6 +455,10 @@ def runPhase(ph, cfg, a, results, note):
     method = (f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}") + f", repeat {ph.get('repeat', 1)}, smooth {ph.get('smooth', 1.0):g}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
          f"{method}, population {population} on {cfg['workers']} workers ({'GPU' if ph.get('gpu') else 'CPU'}), up to {gens} gens / {"no time cap" if hours is None else f"{hours:.2f} h"}")
+    if ph.get("gpu"):    # gpuEnv compiles the hidden width into its kernel at import (one width per process, all hidden layers equal)
+        if len(set(ph["hidden"])) != 1:
+            raise ValueError(f"the GPU kernel needs equal hidden layers, got {ph['hidden']}")
+        os.environ["SPRUDEL_GPU_HIDDEN"] = str(ph["hidden"][0])
     try:
         games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
         common = dict(networkName=ph["name"], livePlot=False,
@@ -455,7 +470,7 @@ def runPhase(ph, cfg, a, results, note):
         if ph.get("es"):
             ps.trainingLoopES(cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], ph["lr"], cfg["keepPart"],
                               snapshotAt=(5,) if a.smoke and ph.get("snap") else ph.get("snap", ()),
-                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), penaltyRamp=ph.get("penaltyRamp", 0.0), penaltyStartScore=ph.get("penaltyStartScore"), penaltyFullScore=ph.get("penaltyFullScore"), **common)
+                              sigmaEnd=ph.get("sigmaEnd"), learningRateEnd=ph.get("lrEnd"), penalties=ph.get("penalties", (0.0, 0.0, 0.0)), gpu=ph.get("gpu", False), penaltyRamp=ph.get("penaltyRamp", 0.0), penaltyStartScore=ph.get("penaltyStartScore"), penaltyFullScore=ph.get("penaltyFullScore"), mirrored=ph.get("mirrored", False), **common)
         else:
             ps.sprudlerTrainingLoop(
                 cfg["workers"], games, gens, population, ph["mutRate"], ph["sigma"], cfg["elites"], cfg["keepPart"],

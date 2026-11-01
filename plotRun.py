@@ -439,6 +439,8 @@ def activeCsvs(maxAge=180.0):
     now = time.time()
     files = [f for f in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "*.csv"))
              if now - os.path.getmtime(f) < maxAge and not os.path.basename(f).startswith("stress")]
+    continued = {os.path.abspath(p) for f in files for p in resolveChain(f)[:-1]}    # a run that a running run continues has just ended (no extra panel)
+    files = [f for f in files if os.path.abspath(f) not in continued]
     return sorted(files, key=lambda f: os.path.basename(f)[-23:])          # '<name>_YYYY-MM-DD_HH-MM-SS.csv'
 
 

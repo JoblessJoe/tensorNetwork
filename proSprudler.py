@@ -170,30 +170,37 @@ def runProgress(generation: int, generations: int, startTime: float, maxHours: f
 
 
 def betterSelection(parent: torch.Tensor, noise: torch.Tensor, learningRate: float, sigma: float,
-                    ranks: torch.Tensor, populationSize: int) -> tuple:
+                    ranks: torch.Tensor, populationSize: int, mirrored: bool = False) -> tuple:
     '''
     Takes the parent, its children's noise and their ranks, moves the parent toward the better children and returns
     (newParent, newChildren, newNoise) for the next generation.
     - 'noise': [populationSize, P] tensor, row i = the noise that made child i
     - 'ranks': one rank per child (0 = best); turned into vote weights 0.5 - rank / (N - 1), i.e. +0.5 best ... -0.5 worst
     - 'learningRate': how far the parent moves along the average vote
-    - 'sigma', 'populationSize': passed on to betterBreed for the new children
+    - 'sigma', 'populationSize', 'mirrored': passed on to betterBreed for the new children
     '''
     weightedRanks = [0.5 - rank / (len(ranks) - 1) for rank in ranks]
     avgVote = sum([noise[i] * weightedRanks[i] for i in range(0, populationSize)]) / populationSize
     newParent = parent + learningRate * avgVote
-    newPopulation, newNoise = betterBreed(newParent, sigma, populationSize)
+    newPopulation, newNoise = betterBreed(newParent, sigma, populationSize, mirrored)
     return (newParent, newPopulation, newNoise) 
 
 
-def betterBreed(parent: torch.Tensor, sigma: float, populationSize: int) -> tuple[torch.Tensor, torch.Tensor]:
+def betterBreed(parent: torch.Tensor, sigma: float, populationSize: int, mirrored: bool = False) -> tuple[torch.Tensor, torch.Tensor]:
     '''
     Takes a parent vector, makes 'populationSize' children from it (parent + sigma * noise) and returns (children, noise).
     - 'parent': flattened network, shape [P]
     - 'sigma': size of the noise (std of the gaussian)
+    - 'mirrored': half the noise rows are drawn, the other half are their negatives (+eps / -eps pairs on the same games: luck both share cancels in the vote)
     - returns: children and noise, both [populationSize, P]; row i of noise is what made child i
     '''
-    noise = torch.randn(populationSize, *parent.shape) # creating the new random noise
+    if mirrored:
+        if populationSize % 2:
+            raise ValueError("mirrored sampling needs an even populationSize")
+        half = torch.randn(populationSize // 2, *parent.shape)
+        noise = torch.cat([half, -half])
+    else:
+        noise = torch.randn(populationSize, *parent.shape) # creating the new random noise
     children = parent + sigma * noise
     return (children, noise)
 
@@ -488,7 +495,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                         steerSmoothing: float = 1.0, monsterFraction: float = 0.0, monsterMult: float = 1.0,
                         fast: bool = False, actionRepeat: int = 1, replaceRate: float = 0.0,
                         sigmaEnd: float | None = None, learningRateEnd: float | None = None, penalties: tuple = (0.0, 0.0, 0.0), gpu: bool = False, penaltyRamp: float = 0.0,
-                        penaltyStartScore: float | None = None, penaltyFullScore: float | None = None) -> Network:
+                        penaltyStartScore: float | None = None, penaltyFullScore: float | None = None, mirrored: bool = False) -> Network:
     '''
     creates/takes a Network instance and trains it for a certain 
     amount of times. Then it returns the trained network and writes its weights into a file.
@@ -506,6 +513,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
     'penaltyStartScore' / 'penaltyFullScore': the ramp follows the net's COMPETENCE instead of the clock (overrides penaltyRamp): the factor is 0 until the smoothed generation
     mean first reaches penaltyStartScore, grows linearly to 1 at penaltyFullScore, and never shrinks again. Found 2026-10-29: from scratch even 1-3% of the penalties stop ES from
     learning to climb (the ranks follow the consistent penalty signal, not the weak score signal), so a fresh net must learn to play first and only then get penalised.
+    'mirrored': mirrored sampling - the children come in +eps / -eps pairs (see betterBreed); needs an even populationSize.
     'gpu': evaluate the population on the GPU (sprudelJump/gpuEnv.py, needs ~/venv-gpu; the worker pool is then unused, start the run with few workers).
     'maxHours': the run stops cleanly after the generation in which this many hours have passed (everything is saved).
     Ctrl-C does the same after the current generation was interrupted: best network + pool of the last finished generation are saved.
@@ -541,7 +549,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
 
     template = parent
     parent = flattenNetwork(parent)
-    currGen, noise = betterBreed(parent, sigma, populationSize)
+    currGen, noise = betterBreed(parent, sigma, populationSize, mirrored)
     gpuState = {}    # the GPU batch, created on the first generation (after the worker pool has forked)
     competence = None    # smoothed generation mean (penaltyStartScore / penaltyFullScore ramp)
     competenceBest = 0.0
@@ -592,7 +600,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                     progress = runProgress(i + 1, generations, start, maxHours)
                     currSigma = scheduledValue(sigma, sigmaEnd, progress)
                     currLearningRate = scheduledValue(learningRate, learningRateEnd, progress)
-                    parent, currGen, noise =  betterSelection(parent, noise, currLearningRate, currSigma, ranks, populationSize)
+                    parent, currGen, noise =  betterSelection(parent, noise, currLearningRate, currSigma, ranks, populationSize, mirrored)
 
                     genMean = popScores.mean().item()
                     competence = genMean if competence is None else 0.98 * competence + 0.02 * genMean
@@ -614,7 +622,7 @@ def trainingLoopES(concInstances: int,            perNetworkIterations: int,    
                                   f"name={networkName} generations={generations} population={populationSize} games={perNetworkIterations} "
                                   f"startFrom={(startNetwork[0] if isinstance(startNetwork, list) else startNetwork).source if startNetwork is not None else None} "
                                   f"shape={'-'.join(str(n) for n in [template.layers[0][0].shape[1]] + [w.shape[0] for w, _ in template.layers])} "
-                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat} sigmaEnd={sigmaEnd} learningRateEnd={learningRateEnd} maxHours={maxHours} device={'gpu' if gpu else 'cpu'} penaltyRamp={penaltyRamp}",
+                                  f"method=ES learningRate={learningRate} mutationRate={mutationRate} replaceRate={replaceRate} sigma={sigma} elites={eliteCount} keepPart={keepPartSelection} minStartHeight={minStartHeight} maxStartHeight={maxStartHeight} zeroFraction={zeroFraction} steerSmoothing={steerSmoothing} monsterFraction={monsterFraction} monsterMult={monsterMult} fast={fast} actionRepeat={actionRepeat} sigmaEnd={sigmaEnd} learningRateEnd={learningRateEnd} maxHours={maxHours} device={'gpu' if gpu else 'cpu'} penaltyRamp={penaltyRamp} mirrored={mirrored}",
                                   [i + 1, time.perf_counter() - start, perNetwork.mean().item(), q[1].item(), q[0].item(), q[2].item(), bestChild, bestChild])    # 'best' and 'chosen' columns: both the best child
                     pbar.set_postfix(best=f"{bestChild:.0f}", avg=f"{perNetwork.mean().item():.0f}", bestEver=f"{bestEver:.0f}", sigma=f"{currSigma:.4f}", lr=f"{currLearningRate:.3f}")
                     pbar.update(1)
