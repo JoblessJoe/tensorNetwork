@@ -1,0 +1,10 @@
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-48-23.pt    4,837  per set [4975, 5385, 4241, 4747]    1,711  per set [1731, 1856, 1777, 1481]    2,876  per set [2542, 3501, 2630, 2829]    3,558  per set [3624, 3899, 3059, 3648]    1,532  per set [1570, 1728, 1291, 1540]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                             start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+scratchCpuTest_2026-10-29_17-48-23.pt                21 /  10 /  55 /  14                28 /  18 /  48 /   6                32 /  20 /  41 /   8                20 /  18 /  50 /  12                36 /  18 /  41 /   5

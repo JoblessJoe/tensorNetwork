@@ -1,0 +1,68 @@
+
+=== smoothing 0.96875, repeat 5 ===[worker 1205335] long game still running: 25,000 frames, best live score 76,057
+[worker 1205343] long game still running: 25,000 frames, best live score 76,400
+[worker 1205331] long game still running: 25,000 frames, best live score 77,738
+[worker 1205352] long game still running: 25,000 frames, best live score 83,722
+[worker 1205351] long game still running: 25,000 frames, best live score 77,848
+[worker 1205332] long game still running: 25,000 frames, best live score 79,912
+[worker 1205350] long game still running: 25,000 frames, best live score 77,311
+[worker 1205354] long game still running: 25,000 frames, best live score 81,629
+[worker 1205352] long game still running: 25,000 frames, best live score 80,504
+[worker 1205343] long game still running: 25,000 frames, best live score 79,331
+[worker 1205330] long game still running: 25,000 frames, best live score 77,805
+[worker 1205329] long game still running: 25,000 frames, best live score 79,287
+[worker 1205351] long game still running: 25,000 frames, best live score 77,627
+[worker 1205332] long game still running: 25,000 frames, best live score 77,756
+[worker 1205346] long game still running: 25,000 frames, best live score 78,322
+[worker 1205345] long game still running: 25,000 frames, best live score 76,727
+[worker 1205326] long game still running: 25,000 frames, best live score 80,466
+[worker 1205347] long game still running: 25,000 frames, best live score 76,719
+[worker 1205328] long game still running: 25,000 frames, best live score 80,995
+[worker 1205333] long game still running: 25,000 frames, best live score 82,424
+[worker 1205341] long game still running: 25,000 frames, best live score 80,685
+[worker 1205330] long game still running: 25,000 frames, best live score 76,377
+[worker 1205354] long game still running: 25,000 frames, best live score 80,037
+[worker 1205343] long game still running: 25,000 frames, best live score 79,856
+[worker 1205337] long game still running: 25,000 frames, best live score 78,225
+[worker 1205348] long game still running: 25,000 frames, best live score 80,849
+[worker 1205346] long game still running: 25,000 frames, best live score 79,420
+[worker 1205328] long game still running: 25,000 frames, best live score 79,301
+[worker 1205333] long game still running: 25,000 frames, best live score 78,575
+[worker 1205354] long game still running: 25,000 frames, best live score 82,158
+[worker 1205333] long game still running: 25,000 frames, best live score 77,243
+[worker 1205346] long game still running: 25,000 frames, best live score 77,778
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+shapeScratch_200networks_200games_A_2026-10-30_10-36-11.pt   16,565  per set [15672, 14481, 17827, 18279]    7,341  per set [8322, 6602, 7537, 6902]    9,807  per set [9180, 9413, 10980, 9657]   12,205  per set [12398, 12920, 12692, 10812]    4,103  per set [4400, 4952, 3648, 3414]
+shapeScratch_400networks_100games_A_2026-10-30_12-49-38.pt   19,471  per set [18170, 19387, 22851, 17475]   10,494  per set [12366, 10269, 9533, 9810]   14,474  per set [13671, 16056, 15113, 13058]   15,423  per set [15483, 14474, 15490, 16245]    6,106  per set [5569, 6868, 6219, 5767]
+shapeScratch_800networks_50games_A_2026-10-30_15-03-01.pt    16,645  per set [17051, 15699, 18721, 15109]    8,160  per set [9611, 8635, 6971, 7423]   11,423  per set [11246, 11820, 11511, 11116]   13,337  per set [12430, 12786, 14321, 13810]    4,350  per set [4380, 4798, 4107, 4116]
+shapeScratch_1600networks_25games_A_2026-10-30_17-16-24.pt   14,499  per set [14650, 14813, 14669, 13862]    7,709  per set [10442, 6420, 6172, 7803]    9,719  per set [9778, 9159, 10506, 9432]   11,539  per set [10730, 10157, 12053, 13214]    4,357  per set [4019, 4916, 4554, 3937]
+shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt   25,967  per set [24317, 27226, 30307, 22016]   15,945  per set [16575, 20386, 13713, 13105]   17,541  per set [17503, 18495, 17897, 16269]   20,163  per set [20385, 20292, 18811, 21163]    6,488  per set [6511, 7746, 5636, 6058]
+shapeScratch_400networks_50games_A_2026-10-30_21-43-14.pt    23,963  per set [21350, 23284, 27647, 23569]   16,793  per set [17733, 17697, 14639, 17103]   17,425  per set [17100, 18303, 16849, 17446]   23,207  per set [22458, 23801, 22592, 23975]    8,085  per set [8878, 8762, 8634, 6064]
+shapeScratch_800networks_25games_A_2026-10-30_23-56-39.pt    23,073  per set [25971, 21108, 23634, 21578]   12,710  per set [12877, 13612, 11845, 12507]   17,302  per set [14909, 20622, 15585, 18093]   17,490  per set [18146, 16810, 16966, 18037]    6,820  per set [8138, 6893, 7012, 5236]
+shapeScratch_200networks_200games_B_2026-10-31_02-10-03.pt   16,639  per set [17520, 16092, 18075, 14871]    7,933  per set [7548, 7554, 7676, 8953]   10,251  per set [10655, 10512, 10900, 8938]   12,194  per set [11238, 10284, 15400, 11855]    4,419  per set [5175, 3802, 3541, 5158]
+shapeScratch_400networks_100games_B_2026-10-31_04-23-29.pt   18,478  per set [18523, 16192, 19435, 19763]   11,722  per set [11390, 12023, 11121, 12353]   12,936  per set [10617, 14783, 13160, 13183]   15,583  per set [15773, 17123, 15561, 13874]    5,221  per set [4670, 5661, 4888, 5665]
+shapeScratch_800networks_50games_B_2026-10-31_06-36-53.pt    15,681  per set [15897, 14410, 18959, 13458]    9,081  per set [11257, 9016, 9150, 6902]    9,912  per set [10428, 8578, 12510, 8132]   12,349  per set [11700, 13068, 12384, 12245]    4,255  per set [4887, 3682, 4110, 4343]
+shapeScratch_1600networks_25games_B_2026-10-31_08-50-16.pt   12,859  per set [12260, 11917, 15305, 11955]    4,155  per set [5003, 3961, 4079, 3578]    6,177  per set [5520, 7095, 6384, 5711]    8,544  per set [7942, 8874, 8341, 9020]    2,969  per set [2447, 3314, 3047, 3069]
+shapeScratch_200networks_100games_B_2026-10-31_11-03-38.pt   15,196  per set [14957, 13912, 17880, 14034]    6,532  per set [7100, 6765, 6596, 5668]   10,427  per set [9260, 12452, 9297, 10700]   11,433  per set [10429, 12157, 11752, 11396]    4,139  per set [3756, 4392, 2970, 5441]
+shapeScratch_400networks_50games_B_2026-10-31_13-17-06.pt    21,268  per set [23659, 20975, 20664, 19772]   14,848  per set [15605, 14683, 16753, 12353]   18,224  per set [20907, 16153, 20874, 14961]   19,124  per set [16858, 20057, 19270, 20310]    6,748  per set [6378, 6909, 7573, 6132]
+shapeScratch_800networks_25games_B_2026-10-31_15-30-31.pt    28,789  per set [28877, 27552, 32469, 26258]   20,780  per set [23015, 20746, 19509, 19852]   21,847  per set [19354, 24969, 21522, 21543]   25,525  per set [22116, 28295, 27004, 24685]    6,536  per set [7183, 7073, 6208, 5680]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+shapeScratch_200networks_200games_A_2026-10-30_10-36-11.pt                44 /  23 /  28 /   6                28 /  36 /  24 /  13                34 /  32 /  24 /  10                36 /  32 /  24 /   8                50 /  38 /   9 /   4
+shapeScratch_400networks_100games_A_2026-10-30_12-49-38.pt                46 /  32 /  14 /   9                39 /  36 /  18 /   8                43 /  34 /  16 /   8                52 /  29 /  15 /   4                54 /  32 /  11 /   2
+shapeScratch_800networks_50games_A_2026-10-30_15-03-01.pt                 44 /  33 /  18 /   6                41 /  41 /  12 /   6                46 /  37 /  12 /   5                44 /  38 /  12 /   6                46 /  46 /   8 /   1
+shapeScratch_1600networks_25games_A_2026-10-30_17-16-24.pt                55 /  36 /   6 /   2                40 /  52 /   6 /   2                50 /  38 /   8 /   4                44 /  46 /   8 /   2                51 /  44 /   4 /   0
+shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt                35 /  42 /  18 /   6                36 /  46 /  12 /   5                34 /  42 /  16 /   8                32 /  42 /  20 /   6                39 /  49 /  10 /   2
+shapeScratch_400networks_50games_A_2026-10-30_21-43-14.pt                 62 /  25 /  10 /   4                54 /  36 /   8 /   3                59 /  26 /  12 /   2                60 /  28 /  11 /   1                68 /  26 /   4 /   1
+shapeScratch_800networks_25games_A_2026-10-30_23-56-39.pt                 52 /  36 /   9 /   3                44 /  39 /  10 /   8                48 /  34 /  13 /   4                48 /  35 /  12 /   4                54 /  42 /   3 /   1
+shapeScratch_200networks_200games_B_2026-10-31_02-10-03.pt                42 /  38 /  14 /   6                36 /  34 /  20 /  10                40 /  36 /  17 /   8                36 /  38 /  18 /   8                40 /  38 /  17 /   4
+shapeScratch_400networks_100games_B_2026-10-31_04-23-29.pt                46 /  36 /  14 /   4                42 /  39 /  16 /   3                40 /  37 /  18 /   6                42 /  39 /  13 /   6                50 /  37 /   9 /   4
+shapeScratch_800networks_50games_B_2026-10-31_06-36-53.pt                 44 /  38 /  16 /   3                42 /  40 /  13 /   4                42 /  40 /  14 /   4                48 /  39 /   8 /   4                44 /  48 /   6 /   2
+shapeScratch_1600networks_25games_B_2026-10-31_08-50-16.pt                56 /  27 /  16 /   2                36 /  43 /  12 /   9                44 /  36 /  15 /   6                41 /  38 /  14 /   7                48 /  40 /  10 /   2
+shapeScratch_200networks_100games_B_2026-10-31_11-03-38.pt                46 /  34 /  14 /   6                40 /  32 /  18 /  10                40 /  34 /  19 /   6                38 /  40 /  16 /   6                45 /  40 /  10 /   4
+shapeScratch_400networks_50games_B_2026-10-31_13-17-06.pt                 54 /  30 /  15 /   2                46 /  38 /  14 /   2                54 /  32 /  11 /   3                50 /  35 /  13 /   2                52 /  42 /   4 /   2
+shapeScratch_800networks_25games_B_2026-10-31_15-30-31.pt                 42 /  34 /  19 /   4                40 /  35 /  18 /   7                42 /  30 /  20 /   6                38 /  38 /  18 /   6                52 /  38 /   8 /   2

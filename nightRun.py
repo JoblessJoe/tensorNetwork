@@ -383,6 +383,13 @@ SCRATCH_RAMP_800_GPU_EXPERIMENT = [dict(SCRATCH_RAMP_GPU_EXPERIMENT[0], name="sc
 MOMENTUM_SCRATCH_GPU_EXPERIMENT = [dict(SCRATCH_RAMP_GPU_EXPERIMENT[0], name="momentumScratchGpu", population=200, games=100,
                                         penalties=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0), inputs=OBSERVATION_LENGTH, hidden=[OBSERVATION_LENGTH] * 3)]
 
+# Continue the momentum run with 400 x 50 (2026-11-01): shape test winner (benchmark start 0 / hard, mean of 2 replicates: 400x50 22.6k / 15.8k, the most consistent;
+# 800x25 25.9k / 16.7k; 200x100 20.6k / 11.2k). Stopped at gen 139,889 (mean 15.2k, 18.8 h); sigma / lr pick up where the schedule stood (0.0335 / 0.244).
+# Snapshots every 5,000 generations (every 1,000 was more than targetWatch could benchmark at ~7k gens/h).
+MOMENTUM_400_GPU_EXPERIMENT = [dict(MOMENTUM_SCRATCH_GPU_EXPERIMENT[0], name="momentum400Gpu", population=400, games=50,
+                                    pool="models/momentumScratchGpu_2026-10-31_13-48-18_pool.pt", sigma=0.0335, sigmaEnd=0.03, lr=0.244, lrEnd=0.2,
+                                    snap=tuple(range(5000, 1000001, 5000)))]
+
 # Population x games per child from scratch (2026-10-30, PC CPU): which split learns fastest per hour without losing quality? Only ever compared on trained nets
 # (AGENTS 2zh / 2zi); from scratch nothing usable (the 10-29 800 x 50 try died of the clock-timed penalties). scratchRampGpu recipe (new view rule, miss 10 /
 # detour 0.1 / deviation 0.1, competence ramp 10k -> 30k) on the CPU, fixed sigma 0.05 / lr 0.5, 2 h per arm. 40k games per generation (200x200 = control,
@@ -392,7 +399,15 @@ SHAPE_SCRATCH_EXPERIMENT = [dict(SCRATCH_RAMP_GPU_EXPERIMENT[0], name=f"shapeScr
                                  sigma=0.05, sigmaEnd=None, lr=0.5, lrEnd=None, hours=2.0, snap=())
                             for r in "AB" for n, g in ((200, 200), (400, 100), (800, 50), (1600, 25), (200, 100), (400, 50), (800, 25))]
 
-EXPERIMENTS = {"momentumScratchGpu": MOMENTUM_SCRATCH_GPU_EXPERIMENT, "shapeScratch": SHAPE_SCRATCH_EXPERIMENT, "scratchRamp800Gpu": SCRATCH_RAMP_800_GPU_EXPERIMENT, "scratchRampGpu": SCRATCH_RAMP_GPU_EXPERIMENT, "scratchGpu200": SCRATCH_GPU200_EXPERIMENT, "scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
+# Is the 24 x 3 net too small for the momentum game without the landing prediction? (2026-11-01: momentumScratchGpu flat at ~14k from gen ~88k, the old
+# 33-input game had a 23k mean at gen 20k.) Same recipe as momentumScratchGpu, hidden 48 x 3, on the CPU (gpuEnv: hidden = input size), 24 h.
+# Compare by GENERATIONS with the momentumScratchGpu curve (CPU and GPU scores are identical, their speeds are not): capped at 168k gens (where the 24 x 3
+# chain ends, 2026-11-01 15:50), no time cap, sigma / lr scheduled by generation. ~2-3 days on the CPU. Start:
+# PYTHONPATH=../sj_momentum OPENBLAS_NUM_THREADS=1 ./venv/bin/python nightRun.py --experiment momentum48Cpu --workers 31
+MOMENTUM_48_CPU_EXPERIMENT = [dict(MOMENTUM_SCRATCH_GPU_EXPERIMENT[0], name="momentum48Cpu", hidden=[48] * 3, gpu=False, gens=168000, hours=None,
+                                   snap=tuple(range(1000, 40001, 1000)) + tuple(range(45000, 1000001, 5000)))]
+
+EXPERIMENTS = {"momentum48Cpu": MOMENTUM_48_CPU_EXPERIMENT, "momentum400Gpu":MOMENTUM_400_GPU_EXPERIMENT, "momentumScratchGpu": MOMENTUM_SCRATCH_GPU_EXPERIMENT, "shapeScratch": SHAPE_SCRATCH_EXPERIMENT, "scratchRamp800Gpu": SCRATCH_RAMP_800_GPU_EXPERIMENT, "scratchRampGpu": SCRATCH_RAMP_GPU_EXPERIMENT, "scratchGpu200": SCRATCH_GPU200_EXPERIMENT, "scratchGpu": SCRATCH_GPU_EXPERIMENT, "lowPenaltyCpu": LOW_PENALTY_CPU_EXPERIMENT, "to100kGpu": TO_100K_GPU_EXPERIMENT, "longArcGpu": LONG_ARC_GPU_EXPERIMENT, "arcGpu": ARC_GPU_EXPERIMENT, "arcReplicate": ARC_REPLICATE_EXPERIMENT, "arc": ARC_EXPERIMENT, "deadZone": DEAD_ZONE_EXPERIMENT, "headReset": HEAD_RESET_EXPERIMENT, "steerScreen": STEER_EXPERIMENT, "behaviour": BEHAVIOUR_EXPERIMENT, "longRun2b": LONG_RUN2B_EXPERIMENT, "longRun2": LONG_RUN2_EXPERIMENT, "screenLrStartsMonsters": SCREEN_EXPERIMENT, "longRun": LONG_RUN_EXPERIMENT, "sigmaContinue": SIGMA_CONTINUE_EXPERIMENT, "populationScan": POPULATION_SCAN_EXPERIMENT, "moreChildren": CHILDREN_EXPERIMENT, "gamesFewer": GAMES_FEWER_EXPERIMENT, "gamesPerChild": GAMES_PER_CHILD_EXPERIMENT, "repLong": REPEAT_LONG_EXPERIMENT, "esSigma2": ES_SIGMA2_EXPERIMENT, "sigmaRep": SIGMA_REPEAT_EXPERIMENT, "repeat2": REPEAT2_EXPERIMENT, "esLr": ES_LR_EXPERIMENT, "esSigma": ES_SIGMA_EXPERIMENT, "repeat": REPEAT_EXPERIMENT, "esLong2": ES_LONG2_EXPERIMENT, "esLong": ES_LONG_EXPERIMENT,"es": ES_EXPERIMENT, "scratchReplace": SCRATCH_REPLACE_EXPERIMENT, "replace": REPLACE_EXPERIMENT, }    # python nightRun.py --experiment features
 
 
 # =============================================================================================================
@@ -424,11 +439,11 @@ def startNetworkArgs(ph, results):
 def runPhase(ph, cfg, a, results, note):
     '''Trains one phase; on success stores its result file in results[name].'''
     gens = 12 if a.smoke else max(1, int(ph["gens"] * a.scale))
-    hours = 0.0004 if a.smoke else ph["hours"] * a.scale
+    hours = 0.0004 if a.smoke else None if ph.get("hours") is None else ph["hours"] * a.scale    # hours=None: no time cap, stops at 'gens'
     population = cfg["population"] if a.smoke else ph.get("population", cfg["population"])
     method = (f"ES, lr {ph['lr']}" if ph.get("es") else f"GA, mutRate {ph['mutRate']}, replace {ph.get('replace', 0.0)}") + f", repeat {ph.get('repeat', 1)}, smooth {ph.get('smooth', 1.0):g}"
     note(f"phase {ph['name']}: {ph['inputs']} inputs, hidden {ph['hidden']}, starts {ph['minStart']}-{ph['maxStart']}, sigma {ph['sigma']}, "
-         f"{method}, population {population} on {cfg['workers']} workers ({'GPU' if ph.get('gpu') else 'CPU'}), up to {gens} gens / {hours:.2f} h")
+         f"{method}, population {population} on {cfg['workers']} workers ({'GPU' if ph.get('gpu') else 'CPU'}), up to {gens} gens / {"no time cap" if hours is None else f"{hours:.2f} h"}")
     try:
         games = cfg["games"] if a.smoke else ph.get("games", cfg["games"])
         common = dict(networkName=ph["name"], livePlot=False,

@@ -10127,3 +10127,180 @@ KeyboardInterrupt
 [2026-10-31 13:43:41] phase momentumScratchGpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
 [2026-10-31 13:48:18] run start: ['momentumScratchGpu']
 [2026-10-31 13:48:18] phase momentumScratchGpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-10-31 15:30:30] phase shapeScratch_400networks_50games_B finished -> models/shapeScratch_400networks_50games_B_2026-10-31_13-17-06.pt
+[2026-10-31 15:30:30] phase shapeScratch_800networks_25games_B: 33 inputs, hidden [33, 33, 33], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 800 on 31 workers (CPU), up to 1000000 gens / 2.00 h
+[2026-10-31 17:43:58] phase shapeScratch_800networks_25games_B finished -> models/shapeScratch_800networks_25games_B_2026-10-31_15-30-31.pt
+[2026-10-31 17:43:58] benchmarking ...
+[2026-10-31 17:44:01] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===[worker 1205335] long game still running: 25,000 frames, best live score 76,057
+[worker 1205343] long game still running: 25,000 frames, best live score 76,400
+[worker 1205331] long game still running: 25,000 frames, best live score 77,738
+[worker 1205352] long game still running: 25,000 frames, best live score 83,722
+[worker 1205351] long game still running: 25,000 frames, best live score 77,848
+[worker 1205332] long game still running: 25,000 frames, best live score 79,912
+[worker 1205350] long game still running: 25,000 frames, best live score 77,311
+[worker 1205354] long game still running: 25,000 frames, best live score 81,629
+[worker 1205352] long game still running: 25,000 frames, best live score 80,504
+[worker 1205343] long game still running: 25,000 frames, best live score 79,331
+[worker 1205330] long game still running: 25,000 frames, best live score 77,805
+[worker 1205329] long game still running: 25,000 frames, best live score 79,287
+[worker 1205351] long game still running: 25,000 frames, best live score 77,627
+[worker 1205332] long game still running: 25,000 frames, best live score 77,756
+[worker 1205346] long game still running: 25,000 frames, best live score 78,322
+[worker 1205345] long game still running: 25,000 frames, best live score 76,727
+[worker 1205326] long game still running: 25,000 frames, best live score 80,466
+[worker 1205347] long game still running: 25,000 frames, best live score 76,719
+[worker 1205328] long game still running: 25,000 frames, best live score 80,995
+[worker 1205333] long game still running: 25,000 frames, best live score 82,424
+[worker 1205341] long game still running: 25,000 frames, best live score 80,685
+[worker 1205330] long game still running: 25,000 frames, best live score 76,377
+[worker 1205354] long game still running: 25,000 frames, best live score 80,037
+[worker 1205343] long game still running: 25,000 frames, best live score 79,856
+[worker 1205337] long game still running: 25,000 frames, best live score 78,225
+[worker 1205348] long game still running: 25,000 frames, best live score 80,849
+[worker 1205346] long game still running: 25,000 frames, best live score 79,420
+[worker 1205328] long game still running: 25,000 frames, best live score 79,301
+[worker 1205333] long game still running: 25,000 frames, best live score 78,575
+[worker 1205354] long game still running: 25,000 frames, best live score 82,158
+[worker 1205333] long game still running: 25,000 frames, best live score 77,243
+[worker 1205346] long game still running: 25,000 frames, best live score 77,778
+
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+shapeScratch_200networks_200games_A_2026-10-30_10-36-11.pt   16,565  per set [15672, 14481, 17827, 18279]    7,341  per set [8322, 6602, 7537, 6902]    9,807  per set [9180, 9413, 10980, 9657]   12,205  per set [12398, 12920, 12692, 10812]    4,103  per set [4400, 4952, 3648, 3414]
+shapeScratch_400networks_100games_A_2026-10-30_12-49-38.pt   19,471  per set [18170, 19387, 22851, 17475]   10,494  per set [12366, 10269, 9533, 9810]   14,474  per set [13671, 16056, 15113, 13058]   15,423  per set [15483, 14474, 15490, 16245]    6,106  per set [5569, 6868, 6219, 5767]
+shapeScratch_800networks_50games_A_2026-10-30_15-03-01.pt    16,645  per set [17051, 15699, 18721, 15109]    8,160  per set [9611, 8635, 6971, 7423]   11,423  per set [11246, 11820, 11511, 11116]   13,337  per set [12430, 12786, 14321, 13810]    4,350  per set [4380, 4798, 4107, 4116]
+shapeScratch_1600networks_25games_A_2026-10-30_17-16-24.pt   14,499  per set [14650, 14813, 14669, 13862]    7,709  per set [10442, 6420, 6172, 7803]    9,719  per set [9778, 9159, 10506, 9432]   11,539  per set [10730, 10157, 12053, 13214]    4,357  per set [4019, 4916, 4554, 3937]
+shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt   25,967  per set [24317, 27226, 30307, 22016]   15,945  per set [16575, 20386, 13713, 13105]   17,541  per set [17503, 18495, 17897, 16269]   20,163  per set [20385, 20292, 18811, 21163]    6,488  per set [6511, 7746, 5636, 6058]
+shapeScratch_400networks_50games_A_2026-10-30_21-43-14.pt    23,963  per set [21350, 23284, 27647, 23569]   16,793  per set [17733, 17697, 14639, 17103]   17,425  per set [17100, 18303, 16849, 17446]   23,207  per set [22458, 23801, 22592, 23975]    8,085  per set [8878, 8762, 8634, 6064]
+shapeScratch_800networks_25games_A_2026-10-30_23-56-39.pt    23,073  per set [25971, 21108, 23634, 21578]   12,710  per set [12877, 13612, 11845, 12507]   17,302  per set [14909, 20622, 15585, 18093]   17,490  per set [18146, 16810, 16966, 18037]    6,820  per set [8138, 6893, 7012, 5236]
+shapeScratch_200networks_200games_B_2026-10-31_02-10-03.pt   16,639  per set [17520, 16092, 18075, 14871]    7,933  per set [7548, 7554, 7676, 8953]   10,251  per set [10655, 10512, 10900, 8938]   12,194  per set [11238, 10284, 15400, 11855]    4,419  per set [5175, 3802, 3541, 5158]
+shapeScratch_400networks_100games_B_2026-10-31_04-23-29.pt   18,478  per set [18523, 16192, 19435, 19763]   11,722  per set [11390, 12023, 11121, 12353]   12,936  per set [10617, 14783, 13160, 13183]   15,583  per set [15773, 17123, 15561, 13874]    5,221  per set [4670, 5661, 4888, 5665]
+shapeScratch_800networks_50games_B_2026-10-31_06-36-53.pt    15,681  per set [15897, 14410, 18959, 13458]    9,081  per set [11257, 9016, 9150, 6902]    9,912  per set [10428, 8578, 12510, 8132]   12,349  per set [11700, 13068, 12384, 12245]    4,255  per set [4887, 3682, 4110, 4343]
+shapeScratch_1600networks_25games_B_2026-10-31_08-50-16.pt   12,859  per set [12260, 11917, 15305, 11955]    4,155  per set [5003, 3961, 4079, 3578]    6,177  per set [5520, 7095, 6384, 5711]    8,544  per set [7942, 8874, 8341, 9020]    2,969  per set [2447, 3314, 3047, 3069]
+shapeScratch_200networks_100games_B_2026-10-31_11-03-38.pt   15,196  per set [14957, 13912, 17880, 14034]    6,532  per set [7100, 6765, 6596, 5668]   10,427  per set [9260, 12452, 9297, 10700]   11,433  per set [10429, 12157, 11752, 11396]    4,139  per set [3756, 4392, 2970, 5441]
+shapeScratch_400networks_50games_B_2026-10-31_13-17-06.pt    21,268  per set [23659, 20975, 20664, 19772]   14,848  per set [15605, 14683, 16753, 12353]   18,224  per set [20907, 16153, 20874, 14961]   19,124  per set [16858, 20057, 19270, 20310]    6,748  per set [6378, 6909, 7573, 6132]
+shapeScratch_800networks_25games_B_2026-10-31_15-30-31.pt    28,789  per set [28877, 27552, 32469, 26258]   20,780  per set [23015, 20746, 19509, 19852]   21,847  per set [19354, 24969, 21522, 21543]   25,525  per set [22116, 28295, 27004, 24685]    6,536  per set [7183, 7073, 6208, 5680]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                                  start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+shapeScratch_200networks_200games_A_2026-10-30_10-36-11.pt                44 /  23 /  28 /   6                28 /  36 /  24 /  13                34 /  32 /  24 /  10                36 /  32 /  24 /   8                50 /  38 /   9 /   4
+shapeScratch_400networks_100games_A_2026-10-30_12-49-38.pt                46 /  32 /  14 /   9                39 /  36 /  18 /   8                43 /  34 /  16 /   8                52 /  29 /  15 /   4                54 /  32 /  11 /   2
+shapeScratch_800networks_50games_A_2026-10-30_15-03-01.pt                 44 /  33 /  18 /   6                41 /  41 /  12 /   6                46 /  37 /  12 /   5                44 /  38 /  12 /   6                46 /  46 /   8 /   1
+shapeScratch_1600networks_25games_A_2026-10-30_17-16-24.pt                55 /  36 /   6 /   2                40 /  52 /   6 /   2                50 /  38 /   8 /   4                44 /  46 /   8 /   2                51 /  44 /   4 /   0
+shapeScratch_200networks_100games_A_2026-10-30_19-29-51.pt                35 /  42 /  18 /   6                36 /  46 /  12 /   5                34 /  42 /  16 /   8                32 /  42 /  20 /   6                39 /  49 /  10 /   2
+shapeScratch_400networks_50games_A_2026-10-30_21-43-14.pt                 62 /  25 /  10 /   4                54 /  36 /   8 /   3                59 /  26 /  12 /   2                60 /  28 /  11 /   1                68 /  26 /   4 /   1
+shapeScratch_800networks_25games_A_2026-10-30_23-56-39.pt                 52 /  36 /   9 /   3                44 /  39 /  10 /   8                48 /  34 /  13 /   4                48 /  35 /  12 /   4                54 /  42 /   3 /   1
+shapeScratch_200networks_200games_B_2026-10-31_02-10-03.pt                42 /  38 /  14 /   6                36 /  34 /  20 /  10                40 /  36 /  17 /   8                36 /  38 /  18 /   8                40 /  38 /  17 /   4
+shapeScratch_400networks_100games_B_2026-10-31_04-23-29.pt                46 /  36 /  14 /   4                42 /  39 /  16 /   3                40 /  37 /  18 /   6                42 /  39 /  13 /   6                50 /  37 /   9 /   4
+shapeScratch_800networks_50games_B_2026-10-31_06-36-53.pt                 44 /  38 /  16 /   3                42 /  40 /  13 /   4                42 /  40 /  14 /   4                48 /  39 /   8 /   4                44 /  48 /   6 /   2
+shapeScratch_1600networks_25games_B_2026-10-31_08-50-16.pt                56 /  27 /  16 /   2                36 /  43 /  12 /   9                44 /  36 /  15 /   6                41 /  38 /  14 /   7                48 /  40 /  10 /   2
+shapeScratch_200networks_100games_B_2026-10-31_11-03-38.pt                46 /  34 /  14 /   6                40 /  32 /  18 /  10                40 /  34 /  19 /   6                38 /  40 /  16 /   6                45 /  40 /  10 /   4
+shapeScratch_400networks_50games_B_2026-10-31_13-17-06.pt                 54 /  30 /  15 /   2                46 /  38 /  14 /   2                54 /  32 /  11 /   3                50 /  35 /  13 /   2                52 /  42 /   4 /   2
+shapeScratch_800networks_25games_B_2026-10-31_15-30-31.pt                 42 /  34 /  19 /   4                40 /  35 /  18 /   7                42 /  30 /  20 /   6                38 /  38 /  18 /   6                52 /  38 /   8 /   2
+
+[2026-10-31 17:44:01] run done
+[2026-11-01 10:34:36] phase momentumScratchGpu finished -> models/momentumScratchGpu_2026-10-31_13-48-18.pt
+[2026-11-01 10:34:36] benchmarking ...
+[2026-11-01 10:34:46] run start: ['momentum400Gpu']
+[2026-11-01 10:34:46] phase momentum400Gpu: 24 inputs, hidden [24, 24, 24], starts 0-None, sigma 0.0335, ES, lr 0.244, repeat 5, smooth 0.96875, population 400 on 2 workers (GPU), up to 1000000 gens / 24.00 h
+[2026-11-01 10:34:47] benchmark written
+
+=== smoothing 0.96875, repeat 5 ===
+200 games per column (4 seed sets x 50), fixed seeds
+
+model                                                                        start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentumScratchGpu_2026-10-31_13-48-18_g1000.pt     4,428  per set [4292, 4242, 4706, 4472]    2,386  per set [2741, 2622, 1986, 2194]    3,006  per set [2951, 3310, 3096, 2667]    3,228  per set [3049, 3074, 2958, 3830]    1,893  per set [1661, 2281, 1961, 1668]
+momentumScratchGpu_2026-10-31_13-48-18_g10000.pt    5,436  per set [5338, 5464, 5688, 5255]    3,079  per set [2532, 3395, 3593, 2799]    3,742  per set [4041, 3384, 4036, 3507]    4,213  per set [4085, 4223, 4120, 4423]    2,118  per set [1893, 2344, 1873, 2364]
+momentumScratchGpu_2026-10-31_13-48-18_g11000.pt    5,597  per set [6000, 5825, 4914, 5651]    2,830  per set [3030, 3371, 2934, 1985]    3,713  per set [3952, 3870, 3124, 3904]    4,087  per set [3683, 4829, 4059, 3777]    2,148  per set [2197, 2236, 2146, 2014]
+momentumScratchGpu_2026-10-31_13-48-18_g12000.pt    5,667  per set [5322, 4368, 6274, 6703]    3,128  per set [3189, 3057, 3272, 2993]    3,963  per set [4378, 4024, 4041, 3408]    4,210  per set [3274, 5685, 4182, 3699]    2,058  per set [2207, 2120, 1861, 2045]
+momentumScratchGpu_2026-10-31_13-48-18_g13000.pt    5,775  per set [6300, 4496, 6685, 5621]    3,019  per set [3542, 2873, 3267, 2395]    3,879  per set [4693, 3583, 3689, 3550]    4,325  per set [4665, 4609, 4370, 3656]    2,105  per set [2028, 2184, 1847, 2362]
+momentumScratchGpu_2026-10-31_13-48-18_g14000.pt    6,509  per set [6211, 5051, 7834, 6939]    3,142  per set [3492, 3527, 3132, 2417]    4,026  per set [3970, 3989, 4490, 3655]    4,790  per set [4892, 4543, 4616, 5109]    2,316  per set [2292, 2788, 1728, 2454]
+momentumScratchGpu_2026-10-31_13-48-18_g15000.pt    5,769  per set [7528, 4532, 6062, 4956]    3,089  per set [3269, 3149, 3043, 2894]    4,219  per set [4311, 4031, 4112, 4421]    4,633  per set [4391, 5303, 4656, 4184]    2,167  per set [2106, 2667, 1876, 2018]
+momentumScratchGpu_2026-10-31_13-48-18_g16000.pt    5,915  per set [6546, 5445, 5723, 5945]    3,058  per set [2854, 3249, 3348, 2783]    4,383  per set [4519, 3838, 4819, 4355]    4,682  per set [4388, 5003, 4807, 4529]    2,258  per set [2537, 2482, 1704, 2307]
+momentumScratchGpu_2026-10-31_13-48-18_g17000.pt    6,908  per set [7617, 6232, 6667, 7118]    3,564  per set [3127, 3562, 3731, 3834]    4,539  per set [4893, 4431, 5136, 3697]    5,101  per set [5662, 4824, 5569, 4347]    2,369  per set [2449, 2394, 2252, 2379]
+momentumScratchGpu_2026-10-31_13-48-18_g18000.pt    6,834  per set [6858, 6946, 6540, 6991]    3,748  per set [4588, 2921, 3899, 3582]    4,705  per set [4619, 4989, 4682, 4532]    5,157  per set [4128, 5988, 4981, 5531]    2,435  per set [2146, 2579, 2496, 2518]
+momentumScratchGpu_2026-10-31_13-48-18_g19000.pt    6,542  per set [6452, 6556, 6364, 6797]    4,039  per set [4071, 3966, 4880, 3238]    4,927  per set [4795, 4848, 5345, 4720]    5,243  per set [5187, 5728, 5073, 4981]    2,589  per set [2171, 2618, 2251, 3316]
+momentumScratchGpu_2026-10-31_13-48-18_g2000.pt     4,710  per set [4957, 3957, 4736, 5189]    2,835  per set [2593, 3049, 2566, 3133]    3,254  per set [3434, 3351, 3376, 2855]    3,801  per set [3698, 3479, 3642, 4384]    2,148  per set [2102, 2689, 1920, 1880]
+momentumScratchGpu_2026-10-31_13-48-18_g20000.pt    7,097  per set [7944, 5765, 7520, 7161]    3,869  per set [4502, 3744, 3477, 3752]    5,149  per set [5380, 5039, 4791, 5383]    5,346  per set [4447, 6130, 4914, 5894]    2,368  per set [2148, 2879, 2215, 2229]
+momentumScratchGpu_2026-10-31_13-48-18_g21000.pt    7,001  per set [6428, 6926, 7017, 7633]    3,653  per set [4339, 3617, 3704, 2955]    5,235  per set [5238, 4270, 6167, 5265]    5,239  per set [4942, 5800, 5338, 4876]    2,777  per set [2317, 2837, 3076, 2880]
+momentumScratchGpu_2026-10-31_13-48-18_g22000.pt    6,521  per set [7294, 5770, 6607, 6414]    3,941  per set [4259, 4379, 3596, 3529]    5,145  per set [4722, 5752, 5373, 4733]    5,394  per set [5112, 5737, 5110, 5616]    2,770  per set [2745, 2775, 3249, 2312]
+momentumScratchGpu_2026-10-31_13-48-18_g23000.pt    6,855  per set [6363, 7495, 6949, 6614]    4,329  per set [5016, 4615, 3615, 4070]    5,318  per set [5297, 5532, 5691, 4752]    4,986  per set [3906, 5588, 5254, 5195]    2,418  per set [2279, 2684, 2471, 2237]
+momentumScratchGpu_2026-10-31_13-48-18_g24000.pt    7,486  per set [8326, 5630, 8405, 7585]    4,038  per set [4312, 3513, 4230, 4095]    5,566  per set [6556, 5320, 4897, 5490]    5,399  per set [4334, 6273, 5360, 5631]    2,739  per set [2318, 3432, 2837, 2369]
+momentumScratchGpu_2026-10-31_13-48-18_g25000.pt    7,309  per set [7311, 6984, 7656, 7284]    4,224  per set [3867, 5123, 4192, 3715]    5,372  per set [4935, 5029, 5573, 5953]    5,178  per set [4350, 6227, 5043, 5094]    2,685  per set [2374, 2866, 2452, 3047]
+momentumScratchGpu_2026-10-31_13-48-18_g26000.pt    7,182  per set [6892, 7281, 6879, 7677]    4,538  per set [4725, 4366, 4831, 4230]    5,345  per set [5274, 5156, 5529, 5422]    5,687  per set [4942, 5907, 6414, 5484]    2,565  per set [2417, 2828, 2450, 2566]
+momentumScratchGpu_2026-10-31_13-48-18_g27000.pt    7,104  per set [7229, 6445, 7444, 7298]    3,958  per set [3526, 3989, 4152, 4165]    5,413  per set [5539, 5779, 5443, 4889]    5,898  per set [4901, 6230, 5951, 6510]    2,702  per set [2839, 3198, 2313, 2460]
+momentumScratchGpu_2026-10-31_13-48-18_g28000.pt    9,266  per set [9017, 7852, 10767, 9428]    4,153  per set [4235, 4106, 4445, 3825]    5,716  per set [5689, 5415, 5869, 5892]    7,294  per set [6039, 6124, 8143, 8871]    2,479  per set [2237, 2455, 2296, 2928]
+momentumScratchGpu_2026-10-31_13-48-18_g29000.pt    9,727  per set [9342, 8368, 11498, 9699]    4,485  per set [5162, 4699, 4393, 3687]    5,924  per set [5473, 6866, 5859, 5497]    7,852  per set [8088, 7493, 7501, 8324]    3,004  per set [2961, 3402, 2900, 2754]
+momentumScratchGpu_2026-10-31_13-48-18_g3000.pt     5,055  per set [5656, 4280, 5291, 4994]    2,561  per set [2619, 2386, 2754, 2483]    3,659  per set [4285, 3423, 3655, 3273]    3,808  per set [3956, 4314, 3282, 3679]    1,946  per set [1578, 2412, 2092, 1701]
+momentumScratchGpu_2026-10-31_13-48-18_g30000.pt   10,974  per set [9997, 11105, 11888, 10905]    4,835  per set [5934, 5088, 3885, 4433]    6,600  per set [5910, 6739, 8365, 5387]    8,302  per set [7979, 8914, 6943, 9373]    3,241  per set [3378, 3843, 2753, 2989]
+momentumScratchGpu_2026-10-31_13-48-18_g31000.pt   10,909  per set [10727, 10228, 12433, 10248]    5,906  per set [6017, 6271, 6490, 4846]    7,496  per set [6524, 7986, 8960, 6513]    8,468  per set [8315, 8937, 7397, 9221]    3,289  per set [3190, 3416, 3092, 3457]
+momentumScratchGpu_2026-10-31_13-48-18_g32000.pt   11,675  per set [11951, 11591, 11994, 11166]    5,686  per set [5637, 6004, 5735, 5368]    7,847  per set [7543, 7851, 8879, 7116]    8,353  per set [8329, 7643, 7943, 9497]    3,801  per set [3214, 5300, 2951, 3737]
+momentumScratchGpu_2026-10-31_13-48-18_g33000.pt   12,451  per set [12752, 11347, 14138, 11566]    6,053  per set [6472, 6675, 5467, 5598]    8,388  per set [8803, 8170, 8862, 7718]    9,051  per set [8231, 8472, 8785, 10715]    3,511  per set [3104, 4500, 3013, 3426]
+momentumScratchGpu_2026-10-31_13-48-18_g34000.pt   12,315  per set [12431, 12912, 12529, 11389]    6,136  per set [8126, 4739, 5135, 6546]    8,538  per set [7636, 8554, 9993, 7970]    8,975  per set [8843, 7956, 8265, 10834]    4,045  per set [3737, 4593, 3537, 4314]
+momentumScratchGpu_2026-10-31_13-48-18_g35000.pt   13,950  per set [14764, 13652, 13748, 13636]    7,138  per set [7388, 8522, 7272, 5370]    9,695  per set [10162, 10219, 10680, 7721]   10,163  per set [8735, 11299, 10684, 9934]    4,090  per set [4518, 4782, 2851, 4208]
+momentumScratchGpu_2026-10-31_13-48-18_g36000.pt   13,495  per set [13281, 14474, 13665, 12559]    6,852  per set [7986, 7204, 5852, 6366]    8,581  per set [9491, 8018, 7188, 9628]   10,752  per set [11161, 9549, 11087, 11211]    4,164  per set [3893, 3907, 4228, 4626]
+momentumScratchGpu_2026-10-31_13-48-18_g37000.pt   13,496  per set [13015, 14412, 12245, 14313]    7,112  per set [7782, 6288, 7258, 7119]    8,905  per set [8487, 9483, 10325, 7325]   10,369  per set [10205, 8895, 10009, 12366]    4,385  per set [4372, 4374, 4184, 4608]
+momentumScratchGpu_2026-10-31_13-48-18_g38000.pt   14,360  per set [14338, 13916, 13946, 15240]    7,913  per set [9621, 6771, 7997, 7262]    9,501  per set [10751, 9121, 9795, 8338]   10,726  per set [8894, 10082, 12012, 11915]    4,062  per set [4226, 3670, 3719, 4635]
+momentumScratchGpu_2026-10-31_13-48-18_g39000.pt    8,852  per set [8523, 8636, 8596, 9653]    4,203  per set [5131, 3798, 3911, 3974]    4,660  per set [3828, 5035, 5629, 4149]    6,898  per set [5991, 6028, 7887, 7687]    2,225  per set [2149, 2355, 2011, 2386]
+momentumScratchGpu_2026-10-31_13-48-18_g4000.pt     5,241  per set [5301, 4947, 4962, 5753]    2,565  per set [2588, 2586, 3049, 2037]    3,518  per set [4465, 3049, 3421, 3138]    3,641  per set [3496, 3690, 3653, 3724]    1,846  per set [1871, 2002, 1820, 1690]
+momentumScratchGpu_2026-10-31_13-48-18_g40000.pt    6,239  per set [5728, 6581, 6157, 6489]    1,751  per set [2026, 1762, 1708, 1509]    2,549  per set [2357, 2663, 2688, 2489]    4,202  per set [3794, 3811, 4592, 4612]    1,034  per set [995, 877, 1075, 1190]
+momentumScratchGpu_2026-10-31_13-48-18_g5000.pt     5,095  per set [5119, 4553, 4468, 6240]    2,240  per set [2248, 2195, 2263, 2253]    3,463  per set [3470, 3810, 3494, 3076]    3,773  per set [4088, 3024, 3642, 4338]    1,996  per set [1932, 2171, 1827, 2053]
+momentumScratchGpu_2026-10-31_13-48-18_g6000.pt     5,246  per set [6236, 5014, 4896, 4839]    2,594  per set [2760, 2567, 2611, 2439]    3,213  per set [3388, 3107, 3738, 2621]    3,795  per set [3061, 3859, 3854, 4406]    1,904  per set [1899, 2134, 1732, 1849]
+momentumScratchGpu_2026-10-31_13-48-18_g7000.pt     4,991  per set [5772, 4745, 4672, 4776]    2,538  per set [2675, 2484, 2761, 2232]    3,339  per set [3447, 3122, 3772, 3017]    3,682  per set [3887, 3801, 3170, 3870]    1,853  per set [1833, 1969, 1890, 1718]
+momentumScratchGpu_2026-10-31_13-48-18_g8000.pt     4,886  per set [6221, 3564, 4646, 5114]    2,611  per set [2825, 2564, 2806, 2248]    3,578  per set [4055, 3305, 3165, 3786]    3,597  per set [3193, 3796, 3473, 3925]    1,849  per set [1753, 2164, 1751, 1727]
+momentumScratchGpu_2026-10-31_13-48-18_g9000.pt     5,470  per set [7104, 4285, 5052, 5441]    2,477  per set [2635, 2500, 2651, 2122]    3,403  per set [3244, 3013, 3746, 3609]    3,868  per set [3582, 4475, 3516, 3901]    1,865  per set [2000, 2081, 1670, 1707]
+momentumScratchGpu_2026-10-31_13-48-18.pt          14,393  per set [13366, 14269, 15768, 14167]    6,827  per set [5355, 7108, 7403, 7441]   10,688  per set [10726, 10781, 12232, 9014]   12,333  per set [11370, 11587, 12496, 13881]    3,147  per set [3700, 2723, 3275, 2888]
+
+deaths (% of games): monster-rising / monster-other / fell / stuck
+model                                                                        start 0                       random 20-30k                        random 0-30k                random 20-30k +50%@0            hard 20-30k, monsters x2
+momentumScratchGpu_2026-10-31_13-48-18_g1000.pt                 24 /   6 /  62 /   8                32 /  26 /  38 /   5                36 /  18 /  41 /   5                23 /  20 /  50 /   8                38 /  25 /  34 /   4
+momentumScratchGpu_2026-10-31_13-48-18_g10000.pt                24 /  12 /  61 /   3                38 /  32 /  24 /   6                42 /  20 /  34 /   4                24 /  20 /  48 /   6                42 /  28 /  26 /   4
+momentumScratchGpu_2026-10-31_13-48-18_g11000.pt                28 /  10 /  58 /   4                43 /  24 /  28 /   4                40 /  30 /  28 /   2                28 /  20 /  48 /   4                45 /  28 /  24 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g12000.pt                26 /  14 /  56 /   6                41 /  22 /  29 /   8                46 /  19 /  28 /   7                31 /  22 /  40 /   8                40 /  32 /  23 /   5
+momentumScratchGpu_2026-10-31_13-48-18_g13000.pt                32 /  10 /  54 /   4                42 /  30 /  23 /   4                50 /  18 /  28 /   4                36 /  17 /  44 /   4                46 /  30 /  22 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g14000.pt                29 /  12 /  54 /   6                42 /  22 /  34 /   2                40 /  26 /  32 /   2                30 /  20 /  47 /   2                49 /  26 /  24 /   1
+momentumScratchGpu_2026-10-31_13-48-18_g15000.pt                24 /  11 /  59 /   6                42 /  23 /  32 /   2                40 /  20 /  38 /   2                36 /  16 /  45 /   4                46 /  26 /  26 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g16000.pt                32 /  10 /  52 /   6                44 /  28 /  26 /   2                45 /  24 /  28 /   2                32 /  19 /  46 /   4                48 /  31 /  18 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g17000.pt                28 /  18 /  48 /   6                42 /  32 /  26 /   1                38 /  26 /  36 /   0                38 /  22 /  37 /   3                50 /  30 /  20 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g18000.pt                29 /  14 /  54 /   4                46 /  28 /  24 /   2                47 /  22 /  28 /   3                31 /  21 /  44 /   4                54 /  24 /  20 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g19000.pt                28 /  15 /  52 /   4                44 /  27 /  28 /   1                52 /  18 /  28 /   2                38 /  14 /  45 /   4                50 /  26 /  22 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g2000.pt                 18 /   6 /  64 /  12                34 /  25 /  37 /   4                38 /  27 /  32 /   2                22 /  16 /  54 /   8                50 /  29 /  18 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g20000.pt                32 /  14 /  50 /   4                42 /  23 /  34 /   0                46 /  26 /  26 /   2                31 /  18 /  46 /   4                44 /  30 /  25 /   1
+momentumScratchGpu_2026-10-31_13-48-18_g21000.pt                23 /  18 /  52 /   7                42 /  30 /  28 /   0                43 /  24 /  33 /   0                31 /  18 /  49 /   2                43 /  33 /  24 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g22000.pt                26 /  14 /  55 /   5                47 /  27 /  26 /   0                40 /  24 /  34 /   1                26 /  20 /  52 /   2                46 /  25 /  29 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g23000.pt                29 /  14 /  52 /   6                36 /  32 /  31 /   2                40 /  22 /  37 /   0                34 /  16 /  47 /   2                47 /  20 /  31 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g24000.pt                26 /  19 /  52 /   3                38 /  32 /  29 /   2                32 /  30 /  36 /   1                31 /  22 /  44 /   4                44 /  34 /  22 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g25000.pt                26 /  18 /  51 /   4                40 /  32 /  27 /   0                40 /  32 /  28 /   0                26 /  27 /  42 /   4                51 /  27 /  22 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g26000.pt                35 /  12 /  48 /   4                40 /  28 /  30 /   2                42 /  24 /  34 /   0                32 /  20 /  44 /   3                47 /  28 /  24 /   1
+momentumScratchGpu_2026-10-31_13-48-18_g27000.pt                28 /  21 /  45 /   6                41 /  23 /  34 /   2                45 /  25 /  29 /   1                36 /  25 /  36 /   4                50 /  28 /  22 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g28000.pt                48 /  20 /  30 /   2                40 /  33 /  26 /   0                46 /  30 /  23 /   1                38 /  30 /  32 /   2                49 /  24 /  25 /   2
+momentumScratchGpu_2026-10-31_13-48-18_g29000.pt                46 /  21 /  32 /   1                44 /  32 /  24 /   0                50 /  23 /  26 /   0                39 /  30 /  30 /   1                50 /  31 /  20 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g3000.pt                 17 /  14 /  60 /   8                37 /  34 /  26 /   2                38 /  24 /  34 /   4                26 /  21 /  44 /   9                39 /  32 /  26 /   4
+momentumScratchGpu_2026-10-31_13-48-18_g30000.pt                44 /  23 /  31 /   2                56 /  24 /  18 /   0                48 /  33 /  18 /   0                51 /  26 /  23 /   0                51 /  30 /  18 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g31000.pt                46 /  29 /  24 /   0                50 /  28 /  20 /   1                52 /  26 /  20 /   0                44 /  30 /  24 /   2                46 /  31 /  23 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g32000.pt                54 /  22 /  24 /   2                52 /  32 /  16 /   0                53 /  30 /  16 /   1                46 /  34 /  19 /   1                60 /  28 /  12 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g33000.pt                49 /  30 /  20 /   0                48 /  36 /  16 /   0                50 /  32 /  18 /   0                53 /  26 /  18 /   2                62 /  27 /  11 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g34000.pt                45 /  28 /  24 /   2                50 /  30 /  18 /   1                56 /  28 /  14 /   0                47 /  27 /  24 /   2                62 /  26 /  13 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g35000.pt                48 /  24 /  26 /   2                52 /  26 /  21 /   1                50 /  32 /  17 /   0                43 /  37 /  20 /   0                60 /  24 /  16 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g36000.pt                51 /  22 /  24 /   2                42 /  34 /  22 /   2                52 /  28 /  18 /   2                50 /  26 /  21 /   2                54 /  30 /  16 /   1
+momentumScratchGpu_2026-10-31_13-48-18_g37000.pt                51 /  26 /  22 /   2                50 /  32 /  18 /   0                48 /  29 /  23 /   0                45 /  32 /  22 /   1                59 /  24 /  16 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g38000.pt                45 /  24 /  29 /   2                46 /  34 /  20 /   0                48 /  29 /  22 /   0                40 /  34 /  26 /   1                56 /  32 /  12 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g39000.pt                58 /  24 /  18 /   0                50 /  31 /  18 /   0                56 /  33 /  11 /   0                48 /  28 /  22 /   1                56 /  32 /  13 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g4000.pt                 22 /  10 /  60 /   8                36 /  26 /  34 /   4                38 /  27 /  32 /   2                26 /  17 /  52 /   5                43 /  22 /  32 /   3
+momentumScratchGpu_2026-10-31_13-48-18_g40000.pt                56 /  26 /  18 /   1                43 /  30 /  22 /   4                46 /  26 /  26 /   2                50 /  24 /  22 /   4                52 /  26 /  22 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g5000.pt                 18 /  12 /  62 /   8                38 /  34 /  26 /   2                38 /  22 /  36 /   4                24 /  22 /  49 /   5                40 /  32 /  28 /   0
+momentumScratchGpu_2026-10-31_13-48-18_g6000.pt                 18 /  12 /  66 /   5                34 /  30 /  31 /   4                35 /  28 /  34 /   4                26 /  12 /  56 /   6                36 /  33 /  30 /   1
+momentumScratchGpu_2026-10-31_13-48-18_g7000.pt                 19 /  16 /  60 /   6                34 /  32 /  30 /   4                37 /  27 /  32 /   4                22 /  20 /  52 /   6                41 /  30 /  25 /   4
+momentumScratchGpu_2026-10-31_13-48-18_g8000.pt                 15 /   7 /  68 /  10                36 /  30 /  31 /   3                41 /  25 /  32 /   2                27 /  20 /  50 /   3                42 /  31 /  23 /   4
+momentumScratchGpu_2026-10-31_13-48-18_g9000.pt                 28 /  12 /  57 /   4                34 /  32 /  30 /   4                38 /  26 /  34 /   3                28 /  17 /  48 /   8                30 /  35 /  32 /   2
+momentumScratchGpu_2026-10-31_13-48-18.pt                       44 /  24 /  28 /   6                36 /  32 /  22 /  10                44 /  25 /  25 /   6                42 /  25 /  25 /   8                46 /  28 /  22 /   4
+
+[2026-11-01 10:34:47] run done
+[2026-11-01 12:40:45] run start: ['momentum48Cpu']
+[2026-11-01 12:40:45] phase momentum48Cpu: 24 inputs, hidden [48, 48, 48], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 1000000 gens / 24.00 h
+[2026-11-01 12:44:33] run start: ['momentum48Cpu']
+[2026-11-01 12:46:57] run start: ['momentum48Cpu']
+[2026-11-01 12:46:57] phase momentum48Cpu: 24 inputs, hidden [48, 48, 48], starts 0-None, sigma 0.05, ES, lr 0.5, repeat 5, smooth 0.96875, population 200 on 31 workers (CPU), up to 168000 gens / no time cap

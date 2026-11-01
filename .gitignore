@@ -8,3 +8,5 @@ data
 venv-p40/
 
 .vibe-wise/
+live_running.png
+models/*_console.txt

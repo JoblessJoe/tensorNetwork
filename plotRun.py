@@ -41,16 +41,14 @@ def loadRun(path):
     '''Returns (meta dict, columns dict of float arrays). Tolerates a half-written last line (live mode).'''
     meta, rows = {}, []
     with open(path) as f:
-        for line in f:
-            line = line.strip()
+        for line in f.read().splitlines():
             if line.startswith("#"):
                 meta = dict(kv.split("=", 1) for kv in line[1:].split() if "=" in kv)
-            elif line and not line[0].isalpha():
-                parts = line.split(",")
-                if len(parts) == 8:
-                    rows.append([float(x) for x in parts])
+            elif line and not line[0].isalpha() and line.count(",") == 7 and not line.endswith(","):
+                rows.append(line)
     names = ["gen", "elapsed_s", "mean", "median", "p10", "p90", "best", "chosen"]
-    data = np.array(rows) if rows else np.empty((0, 8))
+    # one numpy parse of all rows (a float() per value took ~0.7 s for 150k generations)
+    data = np.array(",".join(rows).split(","), dtype=float).reshape(-1, 8) if rows else np.empty((0, 8))
     return meta, {n: data[:, k] for k, n in enumerate(names)}
 
 
@@ -117,11 +115,31 @@ def rolling(x, window):
     '''Centered-ish trailing moving average that is defined from the first point on.'''
     window = max(1, min(window, len(x)))
     c = np.cumsum(np.insert(x, 0, 0.0))
-    out = np.empty(len(x))
-    for i in range(len(x)):
-        lo = max(0, i + 1 - window)
-        out[i] = (c[i + 1] - c[lo]) / (i + 1 - lo)
-    return out
+    hi = np.arange(1, len(x) + 1)
+    lo = np.maximum(0, hi - window)
+    return (c[hi] - c[lo]) / (hi - lo)
+
+
+THIN_BUCKETS = 2000    # a window is ~1,000 px wide: more points than this only cost drawing time
+
+
+def thinned(x, y, reduce):
+    '''Fewer points for drawing: buckets of neighbouring generations, each drawn as its first and last x with reduce(bucket) (np.minimum / np.maximum: spikes
+    survive). Short runs come back unchanged.'''
+    if len(x) <= 2 * THIN_BUCKETS:
+        return x, y
+    edges = np.linspace(0, len(x), THIN_BUCKETS + 1).astype(int)
+    v = reduce.reduceat(y, edges[:-1])
+    return np.column_stack([x[edges[:-1]], x[edges[1:] - 1]]).ravel(), np.repeat(v, 2)
+
+
+def envelope(x, y):
+    '''Thinned line that keeps the look of a noisy curve: per bucket its min and max.'''
+    if len(x) <= 2 * THIN_BUCKETS:
+        return x, y
+    edges = np.linspace(0, len(x), THIN_BUCKETS + 1).astype(int)
+    lo, hi = np.minimum.reduceat(y, edges[:-1]), np.maximum.reduceat(y, edges[:-1])
+    return np.column_stack([x[edges[:-1]], x[edges[1:] - 1]]).ravel(), np.column_stack([lo, hi]).ravel()
 
 
 _shapeCache = {}
@@ -185,8 +203,8 @@ def runInfo(csvPath, meta):
     '''(time cap in hours or None, device 'GPU' / 'CPU' or None) of a run. New runs write both into the CSV header (maxHours, device). Older runs: the cap from
     the phase line in models/night_log.txt ('up to N gens / H h', the last one of that name), the device from an optional sidecar file '<csv>.device'.'''
     cap, device = None, meta.get("device")
-    if meta.get("maxHours") not in (None, "None", ""):
-        cap = float(meta["maxHours"])
+    if "maxHours" in meta:    # new runs: maxHours=None = no time cap (do not fall back to the log, an earlier run of the same name may have had one)
+        cap = None if meta["maxHours"] in ("None", "") else float(meta["maxHours"])
     elif meta.get("name"):
         log = os.path.join(os.path.dirname(os.path.abspath(csvPath)), "night_log.txt")
         try:
@@ -246,11 +264,14 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
     ax.tick_params(labelbottom=False)
 
     # population: 10th-90th percentile band + raw mean (faint) + smoothed mean (the trend)
-    ax.fill_between(gen, d["p10"], d["p90"], color=T["blue"], alpha=0.18, linewidth=0, zorder=2)
-    ax.plot(gen, d["mean"], color=T["blue"], alpha=0.35, linewidth=1, zorder=3)
-    ax.plot(gen, smooth, color=T["blue"], linewidth=2, solid_capstyle="round", zorder=5)
-    ax.plot(gen, d["best"], color=T["orange"], alpha=0.75, linewidth=1, zorder=4)
-    ax.step(gen, bestEver, where="post", color=T["aqua"], linewidth=2, zorder=6)
+    # drawn thinned (THIN_BUCKETS): only the visible part, low band edge = bucket min, high = bucket max
+    g = gen[sel]
+    gx, p10 = thinned(g, d["p10"][sel], np.minimum)
+    ax.fill_between(gx, p10, thinned(g, d["p90"][sel], np.maximum)[1], color=T["blue"], alpha=0.18, linewidth=0, zorder=2)
+    ax.plot(*envelope(g, d["mean"][sel]), color=T["blue"], alpha=0.35, linewidth=1, zorder=3)
+    ax.plot(*thinned(g, smooth[sel], np.maximum), color=T["blue"], linewidth=2, solid_capstyle="round", zorder=5)
+    ax.plot(*envelope(g, d["best"][sel]), color=T["orange"], alpha=0.75, linewidth=1, zorder=4)
+    ax.step(*thinned(g, bestEver[sel], np.maximum), where="post", color=T["aqua"], linewidth=2, zorder=6)
     # dots where the all-time best was beaten
     rec = np.flatnonzero(np.diff(bestEver, prepend=-np.inf) > 0)
     ax.scatter(gen[rec], bestEver[rec], s=34, color=T["aqua"], edgecolor=T["surface"], linewidth=2, zorder=7)
@@ -310,7 +331,7 @@ def draw(fig, paths, theme, last=None, log=False, full=False, chain=False):
 
     # seconds per generation
     dt = d["dt"]
-    axT.bar(gen, dt, width=1.0, color=T["muted"], alpha=0.55, linewidth=0, zorder=2)
+    axT.fill_between(*thinned(gen[sel], dt[sel], np.maximum), step="mid", color=T["muted"], alpha=0.55, linewidth=0, zorder=2)    # one shape, not one bar per generation (150k bars took ~70 s)
     axT.set_ylabel("sec / gen", color=T["ink2"], fontsize=10)
     axT.set_xlabel("generation", color=T["ink2"], fontsize=10)
     axT.set_ylim(0, max(dt[sel].max(), 1) * 1.15)

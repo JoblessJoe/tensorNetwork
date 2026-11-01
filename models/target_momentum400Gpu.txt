@@ -1,0 +1,2 @@
+[2026-11-01 10:35:33] watching models/momentum400Gpu_*_g*.pt of pid 1659733, target start 0 >= 100,000 (200 games)
+[2026-11-01 10:36:40] run process is gone, watcher ends
