@@ -555,7 +555,7 @@ def main():
         with socket.socket() as s:
             s.settimeout(2)    # WSL mirrored networking: a connect to a closed local port can hang instead of failing
             if s.connect_ex(("127.0.0.1", 8050)) != 0:
-                subprocess.run(["tmux", "new-session", "-d", "-s", "liveview", f"{sys.executable} liveView.py"], stdin=subprocess.DEVNULL,
+                subprocess.run(["tmux", "new-session", "-d", "-s", "liveview", f"nice -n 19 {sys.executable} liveView.py"], stdin=subprocess.DEVNULL,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 note("liveView started (tmux liveview, port 8050)")
     for ph in phases:
