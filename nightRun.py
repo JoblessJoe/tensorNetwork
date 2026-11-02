@@ -27,6 +27,7 @@ import argparse
 import glob
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -550,6 +551,13 @@ def main():
     if not a.smoke and not a.no_plot:    # ONE live window for the whole night: follows the newest run, chained to its parent runs
         if subprocess.run(["pgrep", "-f", "plotRun.py --live"], capture_output=True).returncode != 0:    # one window shows every running run: do not open a second one
             subprocess.Popen([sys.executable, "plotRun.py", "--live", "--running", "--chain"])
+    if not a.smoke:    # browser live view (liveView.py, port 8050): one server for every run, started here if none answers; tmux keeps it alive after this run
+        with socket.socket() as s:
+            s.settimeout(2)    # WSL mirrored networking: a connect to a closed local port can hang instead of failing
+            if s.connect_ex(("127.0.0.1", 8050)) != 0:
+                subprocess.run(["tmux", "new-session", "-d", "-s", "liveview", f"{sys.executable} liveView.py"], stdin=subprocess.DEVNULL,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                note("liveView started (tmux liveview, port 8050)")
     for ph in phases:
         runPhase(ph, cfg, a, results, note)
 
